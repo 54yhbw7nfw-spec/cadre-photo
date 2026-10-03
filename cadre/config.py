@@ -1,0 +1,60 @@
+"""Chemins et réglages partagés par le diaporama, l'admin web et le service réseau."""
+import json
+import os
+import tempfile
+
+DATA_DIR = os.environ.get("CADRE_DATA", "/var/lib/cadre")
+PHOTOS_DIR = os.path.join(DATA_DIR, "photos")
+SETTINGS_FILE = os.path.join(DATA_DIR, "settings.json")
+RUN_DIR = os.environ.get("CADRE_RUN", "/run/cadre")
+
+SCREEN_SIZE = (1280, 720)
+PHOTO_EXT = ".jpg"
+
+TRANSITIONS = ("fade", "slide_left", "slide_right", "slide_up", "slide_down", "wipe", "none")
+DEFAULTS = {"transition": "random", "delay": 10, "shuffle": True}
+
+
+def atomic_write_json(path, data):
+    """Écrit via un fichier temporaire + rename : un lecteur ne voit jamais un JSON partiel."""
+    fd, tmp = tempfile.mkstemp(dir=os.path.dirname(path), prefix=".tmp-")
+    try:
+        with os.fdopen(fd, "w") as f:
+            json.dump(data, f, indent=2)
+        os.replace(tmp, path)
+    except BaseException:
+        os.unlink(tmp)
+        raise
+
+
+def validate_settings(raw):
+    s = dict(DEFAULTS)
+    if raw.get("transition") in TRANSITIONS + ("random",):
+        s["transition"] = raw["transition"]
+    try:
+        s["delay"] = max(2, min(3600, int(raw.get("delay", s["delay"]))))
+    except (TypeError, ValueError):
+        pass
+    if isinstance(raw.get("shuffle"), bool):
+        s["shuffle"] = raw["shuffle"]
+    return s
+
+
+def load_settings():
+    try:
+        with open(SETTINGS_FILE) as f:
+            return validate_settings(json.load(f))
+    except (OSError, ValueError):
+        return dict(DEFAULTS)
+
+
+def save_settings(settings):
+    atomic_write_json(SETTINGS_FILE, validate_settings(settings))
+
+
+def list_photos():
+    try:
+        return sorted(n for n in os.listdir(PHOTOS_DIR)
+                      if n.endswith(PHOTO_EXT) and not n.startswith("."))
+    except FileNotFoundError:
+        return []
