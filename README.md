@@ -8,7 +8,7 @@ Cahier des charges : [docs/cahier-des-charges.md](docs/cahier-des-charges.md).
 | Étape | État |
 |---|---|
 | 1. Diaporama seul | ✅ testé sur le Pi (sans télé : rendu vérifié par les logs) |
-| 2. Admin web Flask | à faire |
+| 2. Admin web Flask | ✅ testé par API (20 photos 12 Mpx) — test navigateur à faire |
 | 3. QR code au boot | à faire |
 | 4. Hotspot / portail captif | à faire |
 | 5. install.sh | à faire |
@@ -19,6 +19,10 @@ Cahier des charges : [docs/cahier-des-charges.md](docs/cahier-des-charges.md).
 cadre/               paquet Python déployé dans /opt/cadre/cadre
   config.py          chemins, réglages JSON (lecture/écriture atomique), liste des photos
   display.py         diaporama (service cadre-display)
+  imaging.py         traitement des photos reçues (draft JPEG, EXIF, miniature)
+  web.py             admin web Flask servi par waitress (service cadre-web)
+  templates/         page unique de l'admin (HTML/CSS/JS sans framework)
+system/              fichiers de configuration système (repris par install.sh)
 systemd/             unités copiées dans /etc/systemd/system par deploy.sh
 tools/               outils côté PC (photos de test)
 deploy.sh            envoi du code vers le Pi + redémarrage des services
@@ -30,7 +34,14 @@ Sur le Pi :
 |---|---|
 | `/opt/cadre/` | code (propriétaire `cadre`) |
 | `/var/lib/cadre/photos/` | photos prêtes à afficher (≤ 1280x720, JPEG) |
+| `/var/lib/cadre/thumbs/` | miniatures 320x180 de l'admin |
+| `/var/lib/cadre/originals/` | originaux, si l'option est cochée |
 | `/var/lib/cadre/settings.json` | réglages, relus à chaud toutes les 2 s |
+| `/var/lib/cadre/auth.json` | empreinte du mot de passe admin (absent = pas d'authentification) |
+| `/run/cadre-web/incoming/` | fichiers reçus en attente de traitement (RAM) |
+
+Mot de passe de l'admin (optionnel, authentification HTTP Basic) : sur le Pi,
+`cd /opt/cadre && python3 -m cadre.web --set-password` (ou `--clear-password`).
 
 ## Travailler depuis VS Code
 
@@ -52,13 +63,32 @@ pour déployer) :
 
 ## Configuration déjà appliquée au Pi (à reprendre dans install.sh)
 
-- Paquets : `python3-pygame python3-pil libegl1 libegl-mesa0 libgles2 libgl1-mesa-dri`
-  (`--no-install-recommends`).
+- Paquets : `python3-pygame python3-pil libegl1 libegl-mesa0 libgles2 libgl1-mesa-dri
+  python3-flask python3-waitress iw` (`--no-install-recommends`).
 - `/boot/firmware/cmdline.txt` (sauvegarde `cmdline.txt.orig`) :
   `video=HDMI-A-1:1280x720@60D vt.global_cursor_default=0 consoleblank=0`.
   Le `D` force la sortie HDMI même sans télé branchée ou éteinte au boot ; sans cela SDL
   refuse KMSDRM (« kmsdrm not available »).
-- Service `cadre-display` activé (remplace getty sur tty1).
+- Services `cadre-display` (remplace getty sur tty1) et `cadre-web` (port 80) activés.
+- Économie d'énergie Wi-Fi désactivée : `system/NetworkManager/99-cadre-wifi.conf` copié dans
+  `/etc/NetworkManager/conf.d/` (débit d'upload ×2, plus de coupures).
+
+## Admin web
+
+- Upload séquentiel depuis le navigateur ; le serveur range chaque fichier en RAM et répond
+  503 quand la file dépasse 40 Mo (le navigateur réessaie). Un thread traite un fichier à la fois,
+  avec `Nice=10` et E/S en priorité basse pour ne pas saccader le diaporama.
+- Nom des photos `AAAAMMJJ-HHMMSS_<empreinte>.jpg` : date de prise de vue EXIF (sinon date de
+  réception) → ordre chronologique en mode non aléatoire ; empreinte → doublons ignorés et
+  miniatures mises en cache par le navigateur.
+- Écriture atomique (fichier caché + renommage) : le diaporama ne voit jamais de photo partielle.
+
+| Mesure (Pi Zero W) | Valeur |
+|---|---|
+| Traitement d'une photo 12 Mpx | 1,4 à 2,1 s (médiane), 5 s max |
+| Diaporama pendant le traitement | 59,5 i/s médiane, 52 i/s au pire |
+| Mémoire de l'admin | 31 Mo (pic 44 Mo) |
+| Débit d'upload actuel | ~200 à 500 Ko/s : signal Wi-Fi faible (-80 dBm) à l'emplacement du Pi |
 
 ## Choix techniques du diaporama
 

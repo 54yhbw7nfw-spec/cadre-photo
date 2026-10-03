@@ -1,9 +1,13 @@
-"""Génère des photos de test synthétiques (tailles, orientations, EXIF) dans le dossier indiqué.
+"""Génère des photos de test synthétiques dans le dossier indiqué.
 
-Usage : python tools/make_test_photos.py build/testphotos
+Usage :
+  python tools/make_test_photos.py build/testphotos              tailles et orientations variées
+  python tools/make_test_photos.py build/realistic --realistic   20 photos 12 Mpx bruitées (~3 Mo),
+                                                                 date EXIF, 1 sur 5 avec rotation EXIF
 """
 import colorsys
 import os
+import random
 import sys
 
 from PIL import Image, ImageDraw, ImageFont
@@ -42,5 +46,30 @@ def main(out):
     im.save(os.path.join(out, "05_exif_rot90.jpg"), quality=90, exif=exif)
 
 
+def realistic(out, count=20):
+    """Photos proches d'un smartphone : le bruit les rend aussi lourdes et lentes à décoder."""
+    os.makedirs(out, exist_ok=True)
+    rnd = random.Random(1)
+    for i in range(count):
+        w, h = (4032, 3024) if i % 4 else (3024, 4032)
+        base = Image.radial_gradient("L").resize((w, h)).convert("RGB")
+        color = Image.new("RGB", (w, h), tuple(rnd.randrange(256) for _ in range(3)))
+        im = Image.blend(base, color, 0.6)
+        noise = Image.effect_noise((w // 2, h // 2), 40).resize((w, h)).convert("RGB")
+        im = Image.blend(im, noise, 0.25)
+        ImageDraw.Draw(im).text((w // 2, h // 2), f"IMG_{i:04d}", fill="white",
+                                font=ImageFont.load_default(size=w // 12), anchor="mm")
+        exif = Image.Exif()
+        exif.get_ifd(0x8769)[0x9003] = f"2025:{1 + i % 9:02d}:{1 + i:02d} 12:00:00"
+        if i % 5 == 0:
+            im = im.rotate(90, expand=True)
+            exif[0x0112] = 6
+        im.save(os.path.join(out, f"IMG_{i:04d}.jpg"), quality=92, exif=exif)
+
+
 if __name__ == "__main__":
-    main(sys.argv[1] if len(sys.argv) > 1 else "build/testphotos")
+    args = [a for a in sys.argv[1:] if not a.startswith("--")]
+    if "--realistic" in sys.argv:
+        realistic(args[0] if args else "build/realistic")
+    else:
+        main(args[0] if args else "build/testphotos")
