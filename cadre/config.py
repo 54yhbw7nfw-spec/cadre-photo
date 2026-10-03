@@ -10,6 +10,7 @@ ORIGINALS_DIR = os.path.join(DATA_DIR, "originals")
 SETTINGS_FILE = os.path.join(DATA_DIR, "settings.json")
 AUTH_FILE = os.path.join(DATA_DIR, "auth.json")
 RUN_DIR = os.environ.get("CADRE_RUN", "/run/cadre")
+STATE_FILE = os.path.join(RUN_DIR, "state.json")  # état réseau publié par cadre-net
 # Fichiers reçus en attente de traitement : en RAM (tmpfs) pour épargner la carte SD.
 INCOMING_DIR = os.environ.get("CADRE_INCOMING", "/run/cadre-web/incoming")
 
@@ -25,6 +26,7 @@ def atomic_write_json(path, data):
     """Écrit via un fichier temporaire + rename : un lecteur ne voit jamais un JSON partiel."""
     fd, tmp = tempfile.mkstemp(dir=os.path.dirname(path), prefix=".tmp-")
     try:
+        os.fchmod(fd, 0o644)  # mkstemp crée en 0600 : les autres services doivent pouvoir lire
         with os.fdopen(fd, "w") as f:
             json.dump(data, f, indent=2)
         os.replace(tmp, path)
@@ -57,6 +59,14 @@ def load_settings():
 
 def save_settings(settings):
     atomic_write_json(SETTINGS_FILE, validate_settings(settings))
+
+
+def load_state():
+    try:
+        with open(STATE_FILE) as f:
+            return json.load(f)
+    except (OSError, ValueError):
+        return {}
 
 
 def list_photos():

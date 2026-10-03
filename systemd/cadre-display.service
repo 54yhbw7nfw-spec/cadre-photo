@@ -1,6 +1,6 @@
 [Unit]
 Description=Cadre photo - diaporama HDMI
-After=systemd-user-sessions.service
+# Aucune attente du réseau : l'écran s'allume le plus tôt possible (« Connexion au Wi-Fi... »).
 Conflicts=getty@tty1.service
 
 [Service]

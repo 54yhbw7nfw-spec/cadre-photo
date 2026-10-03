@@ -9,7 +9,7 @@ Cahier des charges : [docs/cahier-des-charges.md](docs/cahier-des-charges.md).
 |---|---|
 | 1. Diaporama seul | ✅ testé sur le Pi (sans télé : rendu vérifié par les logs) |
 | 2. Admin web Flask | ✅ testé par API (20 photos 12 Mpx) — test navigateur à faire |
-| 3. QR code au boot | à faire |
+| 3. QR code au boot | ✅ testé sur la télé (démarrage encore lent : netplan, voir ci-dessous) |
 | 4. Hotspot / portail captif | à faire |
 | 5. install.sh | à faire |
 
@@ -21,6 +21,7 @@ cadre/               paquet Python déployé dans /opt/cadre/cadre
   display.py         diaporama (service cadre-display)
   imaging.py         traitement des photos reçues (draft JPEG, EXIF, miniature)
   web.py             admin web Flask servi par waitress (service cadre-web)
+  net.py             surveillance réseau, état dans /run/cadre/state.json (service cadre-net)
   templates/         page unique de l'admin (HTML/CSS/JS sans framework)
 system/              fichiers de configuration système (repris par install.sh)
 systemd/             unités copiées dans /etc/systemd/system par deploy.sh
@@ -69,9 +70,24 @@ pour déployer) :
   `video=HDMI-A-1:1280x720@60D vt.global_cursor_default=0 consoleblank=0`.
   Le `D` force la sortie HDMI même sans télé branchée ou éteinte au boot ; sans cela SDL
   refuse KMSDRM (« kmsdrm not available »).
-- Services `cadre-display` (remplace getty sur tty1) et `cadre-web` (port 80) activés.
+- Paquet `python3-qrcode`.
+- Services `cadre-display` (remplace getty sur tty1), `cadre-web` (port 80) et `cadre-net` activés.
+- cloud-init désactivé (`/etc/cloud/cloud-init.disabled`) : il ne servait qu'à la première
+  configuration par Raspberry Pi Imager et bloquait chaque démarrage ~1 min.
 - Économie d'énergie Wi-Fi désactivée : `system/NetworkManager/99-cadre-wifi.conf` copié dans
   `/etc/NetworkManager/conf.d/` (débit d'upload ×2, plus de coupures).
+
+## Démarrage et QR code
+
+- `cadre-net` lit l'IP de `wlan0` directement dans le noyau (ioctl, aucun processus lancé) et
+  publie `connecting` / `connected` (ip, ssid) / `offline` (rien après 30 s) dans
+  `/run/cadre/state.json`, avec une date en horloge monotone (insensible au réglage NTP).
+- Le diaporama donne priorité aux écrans réseau : « Connexion au Wi-Fi... » (seulement avant la
+  première connexion), puis QR code `http://<ip>/` + `cadre.local` pendant 20 s, de nouveau si
+  l'adresse change.
+- Sortie forcée en 1280x720 (plein écran exclusif) : sinon SDL garde le mode préféré de la télé.
+- Démarrage mesuré : écran allumé à ~80 s, mais Wi-Fi connecté seulement vers 2 min 30 :
+  NetworkManager régénère la configuration netplan et recharge systemd 4 fois (20 s chacune).
 
 ## Admin web
 

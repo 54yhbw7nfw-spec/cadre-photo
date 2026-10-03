@@ -16,6 +16,7 @@ os.environ.setdefault("SDL_RENDER_DRIVER", "opengles2")
 os.environ.setdefault("PYGAME_HIDE_SUPPORT_PROMPT", "1")
 
 import pygame  # noqa: E402
+import qrcode  # noqa: E402
 from pygame._sdl2.video import Renderer, Texture, Window  # noqa: E402
 from PIL import Image, ImageOps  # noqa: E402
 
@@ -28,6 +29,11 @@ TRANSITION_TIME = 1.0  # secondes
 POLL_INTERVAL = 0.25   # pendant l'affichage fixe
 CHECK_INTERVAL = 2.0   # surveillance réglages / dossier photos
 BLEND = 1              # SDL_BLENDMODE_BLEND
+QR_TIME = 20           # secondes d'affichage du QR code une fois connecté
+BG = (18, 18, 20)
+TEXT = (235, 235, 235)
+MUTED = (160, 160, 165)
+ACCENT = (110, 170, 255)
 
 
 class Playlist:
@@ -95,7 +101,9 @@ class Display:
     def __init__(self):
         pygame.display.init()
         pygame.font.init()
-        self.window = Window("cadre", size=(W, H), fullscreen_desktop=True)
+        # Plein écran exclusif : SDL choisit le mode le plus proche de 1280x720. En « desktop »,
+        # il garderait le mode préféré de la télé (souvent 1080p) et mettrait à l'échelle.
+        self.window = Window("cadre", size=(W, H), fullscreen=True)
         self.renderer = Renderer(self.window, accelerated=1, vsync=True,
                                  target_texture=True)
         self.renderer.logical_size = (W, H)
@@ -103,6 +111,8 @@ class Display:
         pygame.mouse.set_visible(False)
         self.running = True
         self.due_at = 0.0
+        self.qr_ip = None     # adresse pour laquelle le QR code a déjà été montré
+        self.qr_until = 0.0
         signal.signal(signal.SIGTERM, self._stop)
         signal.signal(signal.SIGINT, self._stop)
         log.info("Affichage %s, sortie %sx%s, rendu logique %sx%s",
@@ -140,6 +150,58 @@ class Display:
             surf.blit(img, ((W - img.get_width()) // 2, y))
             y += 80
         return self.texture(surf)
+
+    def qr_texture(self, url, lines):
+        """QR code à gauche, texte à droite : lignes = [(texte, taille, couleur), ...]."""
+        surf = pygame.Surface((W, H))
+        surf.fill(BG)
+        qr = qrcode.QRCode(border=0)
+        qr.add_data(url)
+        qr.make(fit=True)
+        matrix = qr.get_matrix()
+        n = len(matrix)
+        box = 520
+        cell = (box - 48) // n
+        size = cell * n
+        x0, y0 = 90, (H - box) // 2
+        pygame.draw.rect(surf, (255, 255, 255), (x0, y0, box, box), border_radius=16)
+        ox, oy = x0 + (box - size) // 2, y0 + (box - size) // 2
+        for r, row in enumerate(matrix):
+            for c, dark in enumerate(row):
+                if dark:
+                    surf.fill((0, 0, 0), (ox + c * cell, oy + r * cell, cell, cell))
+        y = y0 + 30
+        for text, size_pt, color in lines:
+            if text:
+                img = pygame.font.Font(None, size_pt).render(text, True, color)
+                surf.blit(img, (x0 + box + 70, y))
+            y += int(size_pt * 1.15)
+        return self.texture(surf)
+
+    def network_screen(self, state):
+        """Écran réseau prioritaire sur le diaporama : (clé, fabrique de texture) ou None."""
+        mode = state.get("mode")
+        if mode == "connected" and state.get("ip"):
+            if state["ip"] != self.qr_ip:  # premier accès, ou nouvelle adresse
+                self.qr_ip = state["ip"]
+                self.qr_until = time.monotonic() + QR_TIME
+            if time.monotonic() < self.qr_until:
+                ip, host = self.qr_ip, socket.gethostname()
+                return ("qr", ip), lambda: self.qr_texture(f"http://{ip}/", [
+                    ("Cadre photo", 80, TEXT),
+                    ("", 30, TEXT),
+                    ("Ajoutez vos photos :", 46, MUTED),
+                    (f"http://{ip}", 64, ACCENT),
+                    (f"ou http://{host}.local", 46, MUTED),
+                    ("", 40, TEXT),
+                    ("Scannez le QR code", 40, MUTED),
+                    ("avec votre téléphone", 40, MUTED),
+                ])
+            return None
+        if mode == "connecting" and self.qr_ip is None:
+            # Seulement avant la première connexion : une coupure passagère ne masque pas les photos.
+            return ("connecting",), lambda: self.message_texture(["Connexion au Wi-Fi..."])
+        return None
 
     def transition(self, old, new, kind):
         if kind == "random":
@@ -203,6 +265,8 @@ class Display:
         upcoming = None  # (nom, texture) préchargée pendant l'affichage fixe
         placeholder = None
         next_check = 0.0
+        state, state_mtime = {}, None
+        screen_key = None  # écran réseau affiché (QR code, connexion...)
 
         while self.running:
             now = time.monotonic()
@@ -214,12 +278,31 @@ class Display:
                     settings = config.load_settings()
                     playlist.update(config.list_photos(), settings["shuffle"])
                     log.info("Réglages : %s", settings)
+                m = mtime(config.STATE_FILE)
+                if m != state_mtime:
+                    state_mtime = m
+                    state = config.load_state()
                 m = mtime(config.PHOTOS_DIR)
                 if m != photos_mtime:
                     photos_mtime = m
                     playlist.update(config.list_photos(), settings["shuffle"])
                     if upcoming and upcoming[0] not in playlist.known:
                         upcoming = None
+
+            screen = self.network_screen(state)
+            if screen:
+                key, build = screen
+                if key != screen_key:
+                    screen_key = key
+                    tex = build()
+                    self.transition(current, tex, "fade")
+                    current = tex
+                    placeholder = None
+                self.idle(POLL_INTERVAL)
+                continue
+            if screen_key:
+                screen_key = None
+                self.due_at = 0.0  # photo suivante dès la fin de l'écran réseau
 
             if upcoming is None:
                 name = playlist.next()

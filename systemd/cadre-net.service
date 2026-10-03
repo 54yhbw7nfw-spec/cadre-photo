@@ -1,0 +1,21 @@
+[Unit]
+Description=Cadre photo - surveillance réseau / hotspot
+# Pas d'After=NetworkManager : l'IP est lue dans le noyau, l'état « connecting » est publié
+# dès le début du boot (NetworkManager met plus d'une minute à démarrer sur le Pi Zero).
+Wants=NetworkManager.service
+
+[Service]
+Type=simple
+# root : l'étape 4 pilotera le hotspot via nmcli.
+Environment=CADRE_DATA=/var/lib/cadre
+Environment=PYTHONUNBUFFERED=1
+WorkingDirectory=/opt/cadre
+ExecStart=/usr/bin/python3 -m cadre.net
+# /run/cadre : état lu par le diaporama ; conservé si le service redémarre.
+RuntimeDirectory=cadre
+RuntimeDirectoryPreserve=yes
+Restart=always
+RestartSec=3
+
+[Install]
+WantedBy=multi-user.target
