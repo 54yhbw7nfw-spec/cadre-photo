@@ -1,0 +1,347 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Cadre photo</title>
+<style>
+  :root {
+    --bg: #f4f4f2; --card: #fff; --text: #1d1d1f; --muted: #6b6b70; --line: #deded9;
+    --accent: #2f6fdf; --accent-text: #fff; --danger: #c93a32; --ok: #2e8b57;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #161617; --card: #222224; --text: #ececec; --muted: #9a9aa0; --line: #38383b;
+      --accent: #5b8ff0; --danger: #e5675f; --ok: #4fbf7f;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--text);
+    font: 15px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  }
+  main { max-width: 1100px; margin: 0 auto; padding: 16px; }
+  header { display: flex; align-items: baseline; gap: 12px; margin: 4px 0 16px; }
+  h1 { font-size: 22px; margin: 0; }
+  h2 { font-size: 16px; margin: 0 0 12px; }
+  .muted { color: var(--muted); }
+  section {
+    background: var(--card); border: 1px solid var(--line); border-radius: 10px;
+    padding: 16px; margin-bottom: 16px;
+  }
+  .settings { display: flex; flex-wrap: wrap; gap: 12px 24px; align-items: center; }
+  .settings label { display: flex; align-items: center; gap: 8px; }
+  select, input[type=number] {
+    font: inherit; color: inherit; background: var(--bg); border: 1px solid var(--line);
+    border-radius: 6px; padding: 5px 8px;
+  }
+  input[type=number] { width: 80px; }
+  #saved { color: var(--ok); opacity: 0; transition: opacity .3s; }
+  #saved.show { opacity: 1; }
+  button {
+    font: inherit; border: 1px solid var(--line); background: var(--bg); color: var(--text);
+    border-radius: 6px; padding: 6px 12px; cursor: pointer;
+  }
+  button:disabled { opacity: .45; cursor: default; }
+  button.danger { background: var(--danger); border-color: var(--danger); color: #fff; }
+  #drop {
+    border: 2px dashed var(--line); border-radius: 10px; padding: 28px 16px; text-align: center;
+    cursor: pointer; transition: border-color .15s, background .15s;
+  }
+  #drop.over { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 8%, transparent); }
+  #drop strong { color: var(--accent); }
+  #progress { display: none; margin-top: 14px; }
+  .bar-label { display: flex; justify-content: space-between; font-size: 13px; margin-top: 8px; }
+  .bar { height: 8px; background: var(--line); border-radius: 4px; overflow: hidden; }
+  .bar > div { height: 100%; width: 0; background: var(--accent); transition: width .2s; }
+  #errors { color: var(--danger); font-size: 13px; margin: 10px 0 0; padding-left: 18px; }
+  .toolbar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 12px; }
+  .toolbar .spacer { flex: 1; }
+  #grid {
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px;
+  }
+  .tile {
+    position: relative; aspect-ratio: 16 / 9; background: #000; border-radius: 6px;
+    overflow: hidden; cursor: pointer; outline: 3px solid transparent; outline-offset: -3px;
+  }
+  .tile img { width: 100%; height: 100%; object-fit: contain; display: block; }
+  .tile.sel { outline-color: var(--accent); }
+  .tile .check {
+    position: absolute; top: 6px; left: 6px; width: 20px; height: 20px; border-radius: 50%;
+    border: 2px solid #fff; background: rgba(0,0,0,.35);
+  }
+  .tile.sel .check { background: var(--accent); border-color: var(--accent); }
+  .tile.sel .check::after {
+    content: ""; position: absolute; left: 5px; top: 1px; width: 5px; height: 10px;
+    border: solid #fff; border-width: 0 2px 2px 0; transform: rotate(45deg);
+  }
+  .tile .actions { position: absolute; top: 4px; right: 4px; display: flex; gap: 4px; opacity: 0; }
+  .tile:hover .actions, .tile:focus-within .actions { opacity: 1; }
+  @media (hover: none) { .tile .actions { opacity: 1; } }
+  .tile .actions a, .tile .actions button {
+    width: 28px; height: 28px; padding: 0; border: 0; border-radius: 6px; display: grid;
+    place-items: center; background: rgba(0,0,0,.6); color: #fff; text-decoration: none;
+    font-size: 15px;
+  }
+  .tile .actions button:hover { background: var(--danger); }
+  #empty { text-align: center; padding: 24px; }
+  .pager { display: flex; justify-content: center; align-items: center; gap: 12px; margin-top: 12px; }
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <h1>Cadre photo</h1>
+    <span class="muted" id="count"></span>
+  </header>
+
+  <section>
+    <h2>Réglages du diaporama</h2>
+    <form class="settings" id="settings" onsubmit="return false">
+      <label>Transition
+        <select name="transition">
+          <option value="random">Aléatoire</option>
+          <option value="fade">Fondu</option>
+          <option value="slide_left">Glissement vers la gauche</option>
+          <option value="slide_right">Glissement vers la droite</option>
+          <option value="slide_up">Glissement vers le haut</option>
+          <option value="slide_down">Glissement vers le bas</option>
+          <option value="wipe">Volet</option>
+          <option value="none">Aucune</option>
+        </select>
+      </label>
+      <label>Délai <input type="number" name="delay" min="2" max="3600" step="1"> s</label>
+      <label><input type="checkbox" name="shuffle"> Ordre aléatoire</label>
+      <label><input type="checkbox" name="keep_originals"> Conserver les originaux</label>
+      <span id="saved">Enregistré ✓</span>
+    </form>
+  </section>
+
+  <section>
+    <h2>Ajouter des photos</h2>
+    <div id="drop" tabindex="0" role="button">
+      <strong>Glissez vos photos ici</strong> ou cliquez pour les choisir<br>
+      <span class="muted">JPEG, PNG, WebP — elles sont adaptées à l'écran automatiquement</span>
+    </div>
+    <input type="file" id="picker" accept="image/*" multiple hidden>
+    <div id="progress">
+      <div class="bar-label"><span>Envoi</span><span id="up-text"></span></div>
+      <div class="bar"><div id="up-bar"></div></div>
+      <div class="bar-label"><span>Traitement sur le cadre</span><span id="proc-text"></span></div>
+      <div class="bar"><div id="proc-bar"></div></div>
+      <ul id="errors"></ul>
+    </div>
+  </section>
+
+  <section>
+    <div class="toolbar">
+      <h2 style="margin:0">Photos</h2>
+      <span class="spacer"></span>
+      <button id="select-page">Tout sélectionner (page)</button>
+      <button id="select-none" disabled>Désélectionner</button>
+      <button id="delete-sel" class="danger" disabled>Supprimer la sélection</button>
+    </div>
+    <div id="grid"></div>
+    <p id="empty" class="muted" hidden>Aucune photo pour l'instant.</p>
+    <div class="pager">
+      <button id="prev">‹ Précédente</button>
+      <span id="page-info" class="muted"></span>
+      <button id="next">Suivante ›</button>
+    </div>
+  </section>
+</main>
+
+<script>
+const $ = (s) => document.querySelector(s);
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+const api = async (url, body) => {
+  const r = await fetch(url, body === undefined ? {} : {
+    method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify(body),
+  });
+  if (!r.ok) throw new Error(r.status);
+  return r.json();
+};
+
+/* ---- Réglages : enregistrés à chaque modification ---- */
+const form = $("#settings");
+async function loadSettings() {
+  const s = await api("/api/settings");
+  form.transition.value = s.transition;
+  form.delay.value = s.delay;
+  form.shuffle.checked = s.shuffle;
+  form.keep_originals.checked = s.keep_originals;
+}
+form.addEventListener("change", async () => {
+  const s = await api("/api/settings", {
+    transition: form.transition.value,
+    delay: parseInt(form.delay.value, 10) || 10,
+    shuffle: form.shuffle.checked,
+    keep_originals: form.keep_originals.checked,
+  });
+  form.delay.value = s.delay;
+  $("#saved").classList.add("show");
+  setTimeout(() => $("#saved").classList.remove("show"), 1500);
+});
+
+/* ---- Galerie paginée ---- */
+const PER_PAGE = 48;
+let page = 1, pages = 1, items = [];
+const selected = new Set();
+
+async function loadPage(p = page) {
+  const data = await api(`/api/photos?page=${p}&per=${PER_PAGE}`);
+  page = data.page; pages = data.pages; items = data.items;
+  $("#count").textContent = `${data.total} photo${data.total > 1 ? "s" : ""}`;
+  $("#empty").hidden = data.total > 0;
+  $("#page-info").textContent = `Page ${page} / ${pages}`;
+  $("#prev").disabled = page <= 1;
+  $("#next").disabled = page >= pages;
+  const grid = $("#grid");
+  grid.replaceChildren(...items.map(tile));
+  updateSelection();
+}
+
+function tile(name) {
+  const el = document.createElement("div");
+  el.className = "tile" + (selected.has(name) ? " sel" : "");
+  el.dataset.name = name;
+  el.innerHTML = `<img loading="lazy" alt="" src="/thumbs/${name}"><span class="check"></span>
+    <span class="actions"><a href="/photos/${name}" target="_blank" title="Voir">⤢</a>
+    <button title="Supprimer">🗑</button></span>`;
+  el.addEventListener("click", (e) => {
+    if (e.target.closest("a")) return;
+    if (e.target.closest("button")) { removePhotos([name]); return; }
+    selected.has(name) ? selected.delete(name) : selected.add(name);
+    el.classList.toggle("sel");
+    updateSelection();
+  });
+  return el;
+}
+
+function updateSelection() {
+  const n = selected.size;
+  $("#delete-sel").disabled = n === 0;
+  $("#select-none").disabled = n === 0;
+  $("#delete-sel").textContent = n ? `Supprimer la sélection (${n})` : "Supprimer la sélection";
+}
+
+async function removePhotos(names) {
+  const msg = names.length === 1 ? "Supprimer cette photo ?" : `Supprimer ${names.length} photos ?`;
+  if (!confirm(msg)) return;
+  await api("/api/delete", {names});
+  names.forEach((n) => selected.delete(n));
+  loadPage();
+}
+
+$("#prev").onclick = () => loadPage(page - 1);
+$("#next").onclick = () => loadPage(page + 1);
+$("#select-page").onclick = () => { items.forEach((n) => selected.add(n)); loadPage(); };
+$("#select-none").onclick = () => { selected.clear(); loadPage(); };
+$("#delete-sel").onclick = () => removePhotos([...selected]);
+
+/* ---- Upload : un fichier à la fois, le serveur dit quand sa file est pleine ---- */
+const drop = $("#drop"), picker = $("#picker");
+drop.onclick = () => picker.click();
+drop.onkeydown = (e) => { if (e.key === "Enter" || e.key === " ") picker.click(); };
+picker.onchange = () => { enqueue(picker.files); picker.value = ""; };
+["dragenter", "dragover"].forEach((t) => drop.addEventListener(t, (e) => {
+  e.preventDefault(); drop.classList.add("over");
+}));
+["dragleave", "drop"].forEach((t) => drop.addEventListener(t, (e) => {
+  e.preventDefault(); drop.classList.remove("over");
+}));
+drop.addEventListener("drop", (e) => enqueue(e.dataTransfer.files));
+// Un fichier lâché à côté de la zone ne doit pas ouvrir l'image dans l'onglet.
+window.addEventListener("dragover", (e) => e.preventDefault());
+window.addEventListener("drop", (e) => e.preventDefault());
+
+const batch = {files: [], sent: 0, bytesTotal: 0, bytesDone: 0, baseline: null, running: false};
+
+function enqueue(fileList) {
+  const files = [...fileList].filter((f) => f.type.startsWith("image/") || /\.(jpe?g|png|webp)$/i.test(f.name));
+  if (!files.length) return;
+  if (!batch.running) {
+    Object.assign(batch, {files: [], sent: 0, bytesTotal: 0, bytesDone: 0, baseline: null});
+    $("#errors").replaceChildren();
+  }
+  batch.files.push(...files);
+  batch.bytesTotal += files.reduce((s, f) => s + f.size, 0);
+  $("#progress").style.display = "block";
+  if (!batch.running) runBatch();
+}
+
+function send(file, onProgress) {
+  return new Promise((resolve) => {
+    const xhr = new XMLHttpRequest();
+    xhr.open("POST", "/api/upload");
+    xhr.upload.onprogress = (e) => onProgress(e.loaded);
+    xhr.onload = () => resolve(xhr.status);
+    xhr.onerror = () => resolve(0);
+    const fd = new FormData();
+    fd.append("file", file, file.name);
+    xhr.send(fd);
+  });
+}
+
+async function runBatch() {
+  batch.running = true;
+  const st = await api("/api/status");
+  batch.baseline = st.queue.done + st.queue.failed;
+  batch.lastError = st.queue.failed;
+  const poll = pollStatus();
+  while (batch.sent < batch.files.length) {
+    const file = batch.files[batch.sent];
+    let tries = 0;
+    for (;;) {
+      const status = await send(file, (loaded) => drawUpload(loaded));
+      if (status === 200) break;
+      if (status === 503) { await sleep(1500); continue; }       // file du cadre pleine
+      if (status === 413) { addError(file.name, "fichier trop volumineux"); break; }
+      if (++tries >= 3) { addError(file.name, `échec de l'envoi (${status || "réseau"})`); break; }
+      await sleep(2000);
+    }
+    batch.bytesDone += file.size;
+    batch.sent++;
+    drawUpload(0);
+  }
+  batch.running = false;
+  await poll;
+}
+
+function drawUpload(loaded) {
+  const pct = batch.bytesTotal ? (batch.bytesDone + loaded) / batch.bytesTotal * 100 : 0;
+  $("#up-bar").style.width = Math.min(100, pct) + "%";
+  $("#up-text").textContent = `${batch.sent} / ${batch.files.length}`;
+}
+
+async function pollStatus() {
+  let lastRefresh = 0;
+  for (;;) {
+    await sleep(1000);
+    let st;
+    try { st = await api("/api/status"); } catch { continue; }
+    const processed = st.queue.done + st.queue.failed - batch.baseline;
+    const total = batch.files.length;
+    $("#proc-bar").style.width = Math.min(100, processed / total * 100) + "%";
+    $("#proc-text").textContent = `${Math.min(processed, total)} / ${total}`;
+    st.queue.errors.filter((e) => e.id > batch.lastError).forEach((e) => addError(e.file, e.error));
+    batch.lastError = st.queue.failed;
+    if (Date.now() - lastRefresh > 4000 || (!batch.running && st.queue.pending === 0)) {
+      lastRefresh = Date.now();
+      if (page === 1) loadPage(1); else $("#count").textContent = `${st.count} photos`;
+    }
+    if (!batch.running && st.queue.pending === 0) return;
+  }
+}
+
+function addError(file, error) {
+  const li = document.createElement("li");
+  li.textContent = `${file} : ${error}`;
+  $("#errors").append(li);
+}
+
+loadSettings();
+loadPage(1);
+</script>
+</body>
+</html>

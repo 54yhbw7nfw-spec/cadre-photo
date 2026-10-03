@@ -5,14 +5,20 @@ import tempfile
 
 DATA_DIR = os.environ.get("CADRE_DATA", "/var/lib/cadre")
 PHOTOS_DIR = os.path.join(DATA_DIR, "photos")
+THUMBS_DIR = os.path.join(DATA_DIR, "thumbs")
+ORIGINALS_DIR = os.path.join(DATA_DIR, "originals")
 SETTINGS_FILE = os.path.join(DATA_DIR, "settings.json")
+AUTH_FILE = os.path.join(DATA_DIR, "auth.json")
 RUN_DIR = os.environ.get("CADRE_RUN", "/run/cadre")
+# Fichiers reçus en attente de traitement : en RAM (tmpfs) pour épargner la carte SD.
+INCOMING_DIR = os.environ.get("CADRE_INCOMING", "/run/cadre-web/incoming")
 
 SCREEN_SIZE = (1280, 720)
+THUMB_SIZE = (320, 180)
 PHOTO_EXT = ".jpg"
 
 TRANSITIONS = ("fade", "slide_left", "slide_right", "slide_up", "slide_down", "wipe", "none")
-DEFAULTS = {"transition": "random", "delay": 10, "shuffle": True}
+DEFAULTS = {"transition": "random", "delay": 10, "shuffle": True, "keep_originals": False}
 
 
 def atomic_write_json(path, data):
@@ -35,8 +41,9 @@ def validate_settings(raw):
         s["delay"] = max(2, min(3600, int(raw.get("delay", s["delay"]))))
     except (TypeError, ValueError):
         pass
-    if isinstance(raw.get("shuffle"), bool):
-        s["shuffle"] = raw["shuffle"]
+    for key in ("shuffle", "keep_originals"):
+        if isinstance(raw.get(key), bool):
+            s[key] = raw[key]
     return s
 
 
