@@ -1,0 +1,20 @@
+#!/bin/sh
+# Filet de sécurité après la sortie de netplan : si la passerelle ne répond pas dans les
+# 5 minutes qui suivent le démarrage, la configuration netplan sauvegardée est restaurée
+# et le Pi redémarre. Dans tous les cas le service se désactive (usage unique).
+BACKUP=/root/netplan-backup
+for i in $(seq 60); do
+    GW=$(ip route show default 2>/dev/null | awk '{print $3; exit}')
+    if [ -n "$GW" ] && ping -c1 -W2 "$GW" >/dev/null 2>&1; then
+        logger -t cadre-rollback "réseau OK (passerelle $GW) : filet de sécurité retiré"
+        systemctl disable cadre-net-rollback.service
+        exit 0
+    fi
+    sleep 5
+done
+logger -t cadre-rollback "aucun réseau après 5 min : restauration de la configuration netplan"
+cp -a "$BACKUP"/*.yaml /etc/netplan/
+rm -f /etc/NetworkManager/system-connections/cadre-*.nmconnection
+systemctl disable cadre-net-rollback.service
+sync
+systemctl reboot

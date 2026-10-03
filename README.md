@@ -9,7 +9,7 @@ Cahier des charges : [docs/cahier-des-charges.md](docs/cahier-des-charges.md).
 |---|---|
 | 1. Diaporama seul | ✅ testé sur le Pi (sans télé : rendu vérifié par les logs) |
 | 2. Admin web Flask | ✅ testé par API (20 photos 12 Mpx) — test navigateur à faire |
-| 3. QR code au boot | ✅ testé sur la télé (démarrage encore lent : netplan, voir ci-dessous) |
+| 3. QR code au boot | ✅ testé sur la télé ; Wi-Fi connecté à ~100 s après la mise sous tension |
 | 4. Hotspot / portail captif | à faire |
 | 5. install.sh | à faire |
 
@@ -72,6 +72,10 @@ pour déployer) :
   refuse KMSDRM (« kmsdrm not available »).
 - Paquet `python3-qrcode`.
 - Services `cadre-display` (remplace getty sur tty1), `cadre-web` (port 80) et `cadre-net` activés.
+- Connexion Wi-Fi sortie de netplan : `/etc/NetworkManager/system-connections/cadre-<ssid>.nmconnection`
+  (fichier NetworkManager natif, 0600), sauvegarde netplan dans `/root/netplan-backup/`.
+  Script : `system/netplan/migrate-from-netplan.sh`, protégé au redémarrage suivant par
+  `cadre-net-rollback` (restaure netplan si pas de passerelle en 5 min, puis se désactive).
 - cloud-init désactivé (`/etc/cloud/cloud-init.disabled`) : il ne servait qu'à la première
   configuration par Raspberry Pi Imager et bloquait chaque démarrage ~1 min.
 - Économie d'énergie Wi-Fi désactivée : `system/NetworkManager/99-cadre-wifi.conf` copié dans
@@ -86,8 +90,12 @@ pour déployer) :
   première connexion), puis QR code `http://<ip>/` + `cadre.local` pendant 20 s, de nouveau si
   l'adresse change.
 - Sortie forcée en 1280x720 (plein écran exclusif) : sinon SDL garde le mode préféré de la télé.
-- Démarrage mesuré : écran allumé à ~80 s, mais Wi-Fi connecté seulement vers 2 min 30 :
-  NetworkManager régénère la configuration netplan et recharge systemd 4 fois (20 s chacune).
+- Démarrage mesuré (secondes depuis la mise sous tension) : `cadre-net` 63 s, écran 80 s,
+  Wi-Fi connecté et QR code 103 s. Avant : 158 s / 177 s / 160 s. Gains : cloud-init désactivé,
+  services cadre lancés sans attendre le réseau, et surtout sortie de netplan (NetworkManager
+  régénérait netplan et rechargeait systemd 4 fois, 20 s chacune : 1 min 33 → 35 s).
+- À corriger à l'étape 4 : le délai de 30 s avant « offline » part du lancement de `cadre-net`,
+  pas de celui de NetworkManager (offline à 93 s, Wi-Fi à 103 s) : le hotspot partirait à tort.
 
 ## Admin web
 

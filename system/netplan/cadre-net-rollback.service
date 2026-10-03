@@ -1,0 +1,9 @@
+[Unit]
+Description=Cadre photo - retour à netplan si le Wi-Fi ne revient pas (usage unique)
+
+[Service]
+Type=simple
+ExecStart=/usr/local/sbin/cadre-net-rollback
+
+[Install]
+WantedBy=multi-user.target
