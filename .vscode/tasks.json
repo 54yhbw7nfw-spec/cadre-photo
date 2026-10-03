@@ -1,0 +1,58 @@
+{
+    // Tâches : Ctrl+Maj+P > "Tasks: Run Task". Toutes passent par Git Bash et l'hôte ssh "cadre".
+    "version": "2.0.0",
+    "options": {
+        "shell": {
+            "executable": "C:\\Program Files\\Git\\bin\\bash.exe",
+            "args": ["-c"]
+        }
+    },
+    "tasks": [
+        {
+            "label": "Déployer (services actifs redémarrés)",
+            "type": "shell",
+            "command": "./deploy.sh",
+            "group": { "kind": "build", "isDefault": true },
+            "problemMatcher": []
+        },
+        {
+            "label": "Déployer + redémarrer le diaporama",
+            "type": "shell",
+            "command": "./deploy.sh cadre-display",
+            "problemMatcher": []
+        },
+        {
+            "label": "Logs : diaporama (suivi)",
+            "type": "shell",
+            "command": "ssh cadre journalctl -u cadre-display -f -n 50",
+            "isBackground": true,
+            "problemMatcher": []
+        },
+        {
+            "label": "Logs : tous les services cadre (suivi)",
+            "type": "shell",
+            "command": "ssh cadre \"journalctl -u 'cadre-*' -f -n 50\"",
+            "isBackground": true,
+            "problemMatcher": []
+        },
+        {
+            "label": "État du Pi (services, RAM, CPU, température)",
+            "type": "shell",
+            "command": "ssh cadre \"systemctl --no-pager status 'cadre-*' | grep -E '●|Active|Memory|CPU'; echo; free -m; uptime; vcgencmd measure_temp\"",
+            "problemMatcher": []
+        },
+        {
+            "label": "Envoyer les photos de test",
+            "type": "shell",
+            "command": "python tools/make_test_photos.py build/testphotos && tar -C build/testphotos -cf - . | ssh cadre 'tar -xf - -C /var/lib/cadre/photos' && echo OK",
+            "problemMatcher": []
+        },
+        {
+            "label": "Ouvrir un terminal SSH sur le Pi",
+            "type": "shell",
+            "command": "ssh cadre",
+            "presentation": { "focus": true, "panel": "dedicated" },
+            "problemMatcher": []
+        }
+    ]
+}

@@ -1,0 +1,10 @@
+{
+    "files.eol": "\n",
+    "files.encoding": "utf8",
+    "files.exclude": { "**/__pycache__": true },
+    "terminal.integrated.defaultProfile.windows": "Git Bash",
+    "python.analysis.extraPaths": ["."],
+    // Le code tourne sur le Pi (pygame/KMSDRM) : pas d'exécution locale attendue.
+    "python.analysis.diagnosticSeverityOverrides": { "reportMissingImports": "information" },
+    "[python]": { "editor.rulers": [100] }
+}
