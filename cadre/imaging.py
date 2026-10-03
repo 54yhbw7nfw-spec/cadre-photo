@@ -48,12 +48,16 @@ def find_by_digest(digest):
     return None
 
 
-def shot_date(exif):
-    raw = exif.get_ifd(EXIF_IFD).get(EXIF_DATETIME_ORIGINAL) or exif.get(EXIF_DATETIME)
+def parse_exif_date(raw):
     try:
         return datetime.strptime(str(raw).strip("\x00 "), "%Y:%m:%d %H:%M:%S")
     except ValueError:
         return None
+
+
+def shot_date(exif):
+    return parse_exif_date(exif.get_ifd(EXIF_IFD).get(EXIF_DATETIME_ORIGINAL)
+                           or exif.get(EXIF_DATETIME))
 
 
 def save_jpeg_atomic(img, path, quality):
@@ -77,7 +81,9 @@ def load_for_screen(src):
         fit = min(W / ow, H / oh)
         if im.format == "JPEG" and fit < 1:
             # Décodage JPEG à 1/2, 1/4 ou 1/8 directement : de loin le plus gros gain sur le Pi.
-            im.draft("RGB", (int(w * fit) + 1, int(h * fit) + 1))
+            # Taille arrondie vers le bas : un pixel de trop et draft() renonce à la réduction
+            # (1920x1440 -> décodage complet 1,6 s au lieu de 0,28 s).
+            im.draft("RGB", (max(1, int(w * fit)), max(1, int(h * fit))))
         img = ImageOps.exif_transpose(im)
         if img.mode != "RGB":
             img = img.convert("RGB")
@@ -85,9 +91,13 @@ def load_for_screen(src):
         return img, shot_date(exif)
 
 
-def process(src, keep_original=False, original_name=""):
-    """Traite un fichier reçu ; renvoie (nom, nouveau). Lève Rejected si illisible."""
-    digest = file_digest(src)
+def process(src, keep_original=False, original_name="", taken="", sig=""):
+    """Traite un fichier reçu ; renvoie (nom, nouveau). Lève Rejected si illisible.
+
+    taken / sig : fournis par le navigateur quand il a réduit la photo avant l'envoi
+    (date EXIF de l'original, signature nom|taille|date du fichier pour les doublons).
+    """
+    digest = hashlib.sha1(sig.encode()).hexdigest()[:10] if sig else file_digest(src)
     existing = find_by_digest(digest)
     if existing:
         return existing, False
@@ -95,7 +105,8 @@ def process(src, keep_original=False, original_name=""):
         img, date = load_for_screen(src)
     except (OSError, ValueError, SyntaxError, Image.DecompressionBombError) as exc:
         raise Rejected(f"image illisible ou format non pris en charge ({exc})") from None
-    name = f"{(date or datetime.now()):%Y%m%d-%H%M%S}_{digest}.jpg"
+    date = date or parse_exif_date(taken) or datetime.now()
+    name = f"{date:%Y%m%d-%H%M%S}_{digest}.jpg"
 
     thumb = img.copy()
     thumb.thumbnail((TW, TH), Image.BICUBIC, reducing_gap=2.0)

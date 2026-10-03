@@ -51,9 +51,9 @@ class ProcessingQueue:
     def full(self):
         return self.pending_bytes > QUEUE_MAX_BYTES
 
-    def put(self, path, original_name, size):
+    def put(self, path, original_name, size, taken="", sig=""):
         with self.cond:
-            self.items.append((path, original_name, size))
+            self.items.append((path, original_name, size, taken, sig))
             self.pending_bytes += size
             self.cond.notify()
 
@@ -67,13 +67,13 @@ class ProcessingQueue:
             with self.cond:
                 while not self.items:
                     self.cond.wait()
-                path, original_name, size = self.items.popleft()
+                path, original_name, size, taken, sig = self.items.popleft()
                 self.busy = True
             t0 = time.monotonic()
             error = None
             try:
                 name, new = imaging.process(path, config.load_settings()["keep_originals"],
-                                            original_name)
+                                            original_name, taken, sig)
                 log.info("%s -> %s%s en %d ms", original_name, name,
                          "" if new else " (doublon)", (time.monotonic() - t0) * 1000)
             except imaging.Rejected as exc:
@@ -155,7 +155,9 @@ def upload():
         return jsonify(busy=True), 503
     dest = os.path.join(config.INCOMING_DIR, uuid.uuid4().hex)
     f.save(dest)
-    queue.put(dest, os.path.basename(f.filename), os.path.getsize(dest))
+    # Photo réduite par le navigateur : EXIF perdu, d'où la date et la signature transmises à part.
+    queue.put(dest, os.path.basename(f.filename), os.path.getsize(dest),
+              request.form.get("taken", "")[:19], request.form.get("sig", "")[:300])
     return jsonify(ok=True)
 
 

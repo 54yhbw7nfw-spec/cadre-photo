@@ -75,7 +75,11 @@ pour déployer) :
 
 ## Admin web
 
-- Upload séquentiel depuis le navigateur ; le serveur range chaque fichier en RAM et répond
+- Le navigateur réduit chaque photo à 2560x1440 max (orientation EXIF appliquée, JPEG 0,9) avant
+  l'envoi, sauf si « Conserver les originaux » est coché. L'EXIF étant perdu, il envoie à part la
+  date de prise de vue (`taken`) et une signature nom|taille|date du fichier (`sig`) qui sert à
+  détecter les doublons. La photo suivante est préparée pendant l'envoi de la courante.
+- Envoi séquentiel, 6 essais avec pauses croissantes (Wi-Fi faible) ; le serveur range chaque fichier en RAM et répond
   503 quand la file dépasse 40 Mo (le navigateur réessaie). Un thread traite un fichier à la fois,
   avec `Nice=10` et E/S en priorité basse pour ne pas saccader le diaporama.
 - Nom des photos `AAAAMMJJ-HHMMSS_<empreinte>.jpg` : date de prise de vue EXIF (sinon date de
@@ -85,7 +89,9 @@ pour déployer) :
 
 | Mesure (Pi Zero W) | Valeur |
 |---|---|
-| Traitement d'une photo 12 Mpx | 1,4 à 2,1 s (médiane), 5 s max |
+| Traitement d'une photo réduite par le navigateur | 0,3 à 0,7 s |
+| Traitement d'une photo 12 Mpx (originaux conservés) | 1,4 à 2,1 s (médiane), 5 s max |
+| 20 photos 12 Mpx de bout en bout | 85 s / 12 Mo réduites, contre 308 s / 60 Mo en originaux |
 | Diaporama pendant le traitement | 59,5 i/s médiane, 52 i/s au pire |
 | Mémoire de l'admin | 31 Mo (pic 44 Mo) |
 | Débit d'upload actuel | ~200 à 500 Ko/s : signal Wi-Fi faible (-80 dBm) à l'emplacement du Pi |

@@ -121,7 +121,7 @@
     <h2>Ajouter des photos</h2>
     <div id="drop" tabindex="0" role="button">
       <strong>Glissez vos photos ici</strong> ou cliquez pour les choisir<br>
-      <span class="muted">JPEG, PNG, WebP — elles sont adaptées à l'écran automatiquement</span>
+      <span class="muted">JPEG, PNG, WebP — réduites par le navigateur avant l'envoi, puis adaptées à l'écran par le cadre</span>
     </div>
     <input type="file" id="picker" accept="image/*" multiple hidden>
     <div id="progress">
@@ -255,30 +255,89 @@ drop.addEventListener("drop", (e) => enqueue(e.dataTransfer.files));
 window.addEventListener("dragover", (e) => e.preventDefault());
 window.addEventListener("drop", (e) => e.preventDefault());
 
-const batch = {files: [], sent: 0, bytesTotal: 0, bytesDone: 0, baseline: null, running: false};
+const batch = {files: [], sent: 0, baseline: null, running: false};
 
 function enqueue(fileList) {
   const files = [...fileList].filter((f) => f.type.startsWith("image/") || /\.(jpe?g|png|webp)$/i.test(f.name));
   if (!files.length) return;
   if (!batch.running) {
-    Object.assign(batch, {files: [], sent: 0, bytesTotal: 0, bytesDone: 0, baseline: null});
+    Object.assign(batch, {files: [], sent: 0, baseline: null});
     $("#errors").replaceChildren();
   }
   batch.files.push(...files);
-  batch.bytesTotal += files.reduce((s, f) => s + f.size, 0);
   $("#progress").style.display = "block";
+  drawUpload(0);
   if (!batch.running) runBatch();
 }
 
-function send(file, onProgress) {
+/* Date de prise de vue (EXIF DateTimeOriginal) lue dans l'en-tête JPEG : la réduction par le
+   navigateur supprime l'EXIF, la date est donc envoyée à part. */
+async function exifDate(file) {
+  const v = new DataView(await file.slice(0, 256 * 1024).arrayBuffer());
+  if (v.byteLength < 4 || v.getUint16(0) !== 0xFFD8) return "";
+  let p = 2;
+  while (p + 4 <= v.byteLength) {
+    const marker = v.getUint16(p), len = v.getUint16(p + 2);
+    if (marker === 0xFFE1 && v.getUint32(p + 4) === 0x45786966) {  // "Exif"
+      const t = p + 10, le = v.getUint16(t) === 0x4949;
+      const u16 = (o) => v.getUint16(t + o, le), u32 = (o) => v.getUint32(t + o, le);
+      const find = (ifd, tag) => {
+        for (let i = 0, n = u16(ifd); i < n; i++) {
+          const e = ifd + 2 + i * 12;
+          if (u16(e) === tag) return u32(e + 8);
+        }
+        return null;
+      };
+      const str = (o) => String.fromCharCode(...new Uint8Array(v.buffer, t + o, 19));
+      const ifd0 = u32(4), exifIfd = find(ifd0, 0x8769);
+      const off = (exifIfd !== null && find(exifIfd, 0x9003)) || find(ifd0, 0x0132);
+      const d = off ? str(off) : "";
+      return /^\d{4}:\d\d:\d\d \d\d:\d\d:\d\d$/.test(d) ? d : "";
+    }
+    if ((marker & 0xFF00) !== 0xFF00 || marker === 0xFFDA) break;
+    p += 2 + len;
+  }
+  return "";
+}
+
+/* Réduction dans le navigateur à 2x l'écran : ~10x moins de données sur un Wi-Fi faible.
+   Le cadre fait ensuite le traitement final (Pillow). */
+const MAX_W = 2560, MAX_H = 1440;
+async function prepare(file, keepOriginal) {
+  const taken = await exifDate(file).catch(() => "");
+  const original = {blob: file, taken, sig: ""};
+  if (keepOriginal) return original;
+  try {
+    const bmp = await createImageBitmap(file, {imageOrientation: "from-image"});
+    const scale = Math.min(MAX_W / bmp.width, MAX_H / bmp.height);
+    if (scale >= 1) { bmp.close(); return original; }
+    const canvas = document.createElement("canvas");
+    canvas.width = Math.round(bmp.width * scale);
+    canvas.height = Math.round(bmp.height * scale);
+    const ctx = canvas.getContext("2d");
+    ctx.imageSmoothingQuality = "high";
+    ctx.drawImage(bmp, 0, 0, canvas.width, canvas.height);
+    bmp.close();
+    const blob = await new Promise((r) => canvas.toBlob(r, "image/jpeg", 0.9));
+    canvas.width = canvas.height = 0;  // libère la mémoire tout de suite (mobiles)
+    if (!blob || blob.size >= file.size) return original;
+    return {blob, taken, sig: `${file.name}|${file.size}|${file.lastModified}`};
+  } catch {
+    return original;  // format non décodable par le navigateur : le cadre tranchera
+  }
+}
+
+function send(file, prep, onProgress) {
   return new Promise((resolve) => {
     const xhr = new XMLHttpRequest();
     xhr.open("POST", "/api/upload");
-    xhr.upload.onprogress = (e) => onProgress(e.loaded);
+    xhr.upload.onprogress = (e) => onProgress(e.total ? e.loaded / e.total : 0);
     xhr.onload = () => resolve(xhr.status);
     xhr.onerror = () => resolve(0);
     const fd = new FormData();
-    fd.append("file", file, file.name);
+    fd.append("taken", prep.taken);
+    fd.append("sig", prep.sig);
+    fd.append("file", prep.blob, file.name);
     xhr.send(fd);
   });
 }
@@ -289,18 +348,23 @@ async function runBatch() {
   batch.baseline = st.queue.done + st.queue.failed;
   batch.lastError = st.queue.failed;
   const poll = pollStatus();
+  const keep = form.keep_originals.checked;
+  let next = null;  // préparation de la photo suivante pendant l'envoi de la courante
   while (batch.sent < batch.files.length) {
     const file = batch.files[batch.sent];
+    const prep = await (next && next.file === file ? next.promise : prepare(file, keep));
+    const following = batch.files[batch.sent + 1];
+    next = following ? {file: following, promise: prepare(following, keep)} : null;
     let tries = 0;
     for (;;) {
-      const status = await send(file, (loaded) => drawUpload(loaded));
+      const status = await send(file, prep, drawUpload);
       if (status === 200) break;
       if (status === 503) { await sleep(1500); continue; }       // file du cadre pleine
       if (status === 413) { addError(file.name, "fichier trop volumineux"); break; }
-      if (++tries >= 3) { addError(file.name, `échec de l'envoi (${status || "réseau"})`); break; }
-      await sleep(2000);
+      // Wi-Fi faible : coupures passagères fréquentes, on insiste avec des pauses croissantes.
+      if (++tries >= 6) { addError(file.name, `échec de l'envoi (${status || "réseau"})`); break; }
+      await sleep(Math.min(15000, 1000 * 2 ** tries));
     }
-    batch.bytesDone += file.size;
     batch.sent++;
     drawUpload(0);
   }
@@ -308,10 +372,10 @@ async function runBatch() {
   await poll;
 }
 
-function drawUpload(loaded) {
-  const pct = batch.bytesTotal ? (batch.bytesDone + loaded) / batch.bytesTotal * 100 : 0;
-  $("#up-bar").style.width = Math.min(100, pct) + "%";
-  $("#up-text").textContent = `${batch.sent} / ${batch.files.length}`;
+function drawUpload(fraction) {
+  const n = batch.files.length;
+  $("#up-bar").style.width = (n ? Math.min(100, (batch.sent + fraction) / n * 100) : 0) + "%";
+  $("#up-text").textContent = `${batch.sent} / ${n}`;
 }
 
 async function pollStatus() {
