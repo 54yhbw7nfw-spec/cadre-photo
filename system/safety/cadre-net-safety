@@ -3,7 +3,7 @@
 # $MINUTES minutes qui suivent le démarrage, les connexions sauvegardées dans
 # /root/nm-backup sont restaurées et le Pi redémarre. Le service se désactive toujours
 # (usage unique).
-MINUTES=15
+MINUTES=5
 BACKUP=/root/nm-backup
 DIR=/etc/NetworkManager/system-connections
 end=$(( $(cut -d. -f1 /proc/uptime) + MINUTES * 60 ))
