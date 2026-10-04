@@ -97,6 +97,8 @@ pour déployer) :
   (fichier NetworkManager natif, 0600), sauvegarde netplan dans `/root/netplan-backup/`.
   Script : `system/netplan/migrate-from-netplan.sh`, protégé au redémarrage suivant par
   `cadre-net-rollback` (restaure netplan si pas de passerelle en 5 min, puis se désactive).
+- Watchdog matériel : `system/systemd/cadre-watchdog.conf` dans `/etc/systemd/system.conf.d/`
+  (`RuntimeWatchdogSec=15s`) : le Pi redémarre seul s'il se fige.
 - cloud-init désactivé (`/etc/cloud/cloud-init.disabled`) : il ne servait qu'à la première
   configuration par Raspberry Pi Imager et bloquait chaque démarrage ~1 min.
 - Économie d'énergie Wi-Fi désactivée : `system/NetworkManager/99-cadre-wifi.conf` copié dans

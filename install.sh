@@ -103,6 +103,11 @@ if [ -d /etc/cloud ] && [ ! -e /etc/cloud/cloud-init.disabled ]; then
     echo "   désactivé"
 fi
 
+step "Watchdog matériel : redémarrage automatique si le système se fige"
+if put system/systemd/cadre-watchdog.conf /etc/systemd/system.conf.d/cadre-watchdog.conf 644; then
+    systemctl daemon-reexec
+fi
+
 step "NetworkManager : Wi-Fi sans économie d'énergie, portail captif"
 put system/NetworkManager/99-cadre-wifi.conf /etc/NetworkManager/conf.d/99-cadre-wifi.conf 644 \
     && REBOOT=1 || true
