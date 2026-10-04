@@ -299,6 +299,12 @@ def require_password():
     pw_hash = load_auth()
     if not pw_hash:
         return None
+    # Portail du hotspot : seul qui voit l'écran (mot de passe du hotspot) peut s'y connecter,
+    # et la page doit s'ouvrir seule sur le téléphone, sans fenêtre d'authentification.
+    path = request.path
+    if config.load_state().get("mode") == "hotspot" and (
+            path in ("/wifi", "/api/wifi") or path.startswith(("/api/wifi/", "/static/"))):
+        return None
     header = request.headers.get("Authorization", "")
     key = hashlib.sha256((pw_hash + header).encode()).hexdigest()
     if key in _auth_ok:
