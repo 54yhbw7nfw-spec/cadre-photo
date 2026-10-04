@@ -11,6 +11,7 @@ Cahier des charges : [docs/cahier-des-charges.md](docs/cahier-des-charges.md).
 | 2. Admin web Flask | ✅ testé par API (20 photos 12 Mpx) et depuis un navigateur |
 | 3. QR code au boot | ✅ testé sur la télé ; Wi-Fi connecté à ~100 s après la mise sous tension |
 | 4. Hotspot / portail captif | ✅ testé avec un iPhone : portail ouvert tout seul, Wi-Fi de la maison reconnecté en 5 s |
+| 6. Album iCloud partagé | ✅ testé (album récent, 10 photos dont 3 HEIC) — ancien format de lien non testé |
 | 5. install.sh | écrit — à tester : relance sur le Pi actuel, puis carte SD vierge |
 
 ## Arborescence
@@ -21,6 +22,8 @@ cadre/               paquet Python déployé dans /opt/cadre/cadre
   display.py         diaporama (service cadre-display)
   imaging.py         traitement des photos reçues (draft JPEG, EXIF, miniature)
   web.py             admin web Flask servi par waitress (service cadre-web)
+  icloud.py          lecture d'un album partagé iCloud public (API non officielles)
+  splash.py          écran de démarrage dans /dev/fb0 (service cadre-splash)
   net.py             surveillance réseau, état dans /run/cadre/state.json (service cadre-net)
   templates/         page unique de l'admin (HTML/CSS/JS sans framework)
 system/              fichiers de configuration système (repris par install.sh)
@@ -39,6 +42,7 @@ Sur le Pi :
 | `/var/lib/cadre/thumbs/` | miniatures 320x180 de l'admin |
 | `/var/lib/cadre/originals/` | originaux, si l'option est cochée |
 | `/var/lib/cadre/settings.json` | réglages, relus à chaud toutes les 2 s |
+| `/var/lib/cadre/icloud.json` | album iCloud suivi : lien, titre, identifiant iCloud → photo du cadre |
 | `/var/lib/cadre/auth.json` | empreinte du mot de passe admin (absent = pas d'authentification) |
 | `/run/cadre-web/incoming/` | fichiers reçus en attente de traitement (RAM) |
 
@@ -178,6 +182,26 @@ pour déployer) :
 | Diaporama pendant le traitement | 59,5 i/s médiane, 52 i/s au pire |
 | Mémoire de l'admin | 31 Mo (pic 44 Mo) |
 | Débit d'upload actuel | ~200 à 500 Ko/s : signal Wi-Fi faible (-80 dBm) à l'emplacement du Pi |
+
+## Album iCloud partagé
+
+- Lien collé dans l'admin ; l'album doit avoir « Site web public » activé. Synchronisation par un
+  thread de `cadre-web` 2 min après le lancement puis toutes les 30 min (bouton pour forcer),
+  sauf en mode hotspot.
+- Album récent (`photos.icloud.com/shared/album/<code>`) : CloudKit sans compte.
+  `public/records/resolve` (code) → zone + jeton anonyme 20 min ; `shared/records/query`
+  (`CPLAssetAndMasterByAssetDateWithoutHiddenOrDeleted`, paramètres `sharing_url_key` et
+  `publicAccessAuthToken`) → `CPLAsset` (date, retouche) et `CPLMaster` (fichiers). Fichier
+  choisi : retouche (`resJPEGFullRes`), sinon JPEG 2048 px d'Apple (`resJPEGMedRes`, fourni pour
+  les HEIC, déjà redressé), sinon original JPEG/PNG. Vidéos ignorées.
+- Ancien album (`www.icloud.com/sharedalbum/#<jeton>`) : `sharedstreams` webstream +
+  webasseturls (réponse 330 = autre serveur) ; plus grande version ≤ 2560 px. Non testé faute
+  d'album de ce type.
+- Photos traitées comme un envoi (`imaging.process`, signature `icloud:<id>`), un seul traitement
+  à la fois avec la file de l'admin. Photo retirée de l'album → supprimée du cadre ; changement
+  d'album → photos de l'ancien retirées ; photo de l'album supprimée dans l'admin → pas
+  retéléchargée. Photos de l'admin jamais touchées (pas de détection de doublon entre les deux).
+- Mesuré : 10 photos ajoutées en 28 s, synchronisation sans nouveauté en 2 s.
 
 ## Choix techniques du diaporama
 

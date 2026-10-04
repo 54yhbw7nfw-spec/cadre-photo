@@ -41,6 +41,22 @@
   </section>
 
   <section>
+    <h2>Album iCloud partagé</h2>
+    <form id="icloud-form" class="wifi-form" autocomplete="off">
+      <label style="flex:1">Lien de l'album
+        <input type="text" name="url" placeholder="https://photos.icloud.com/shared/album/…">
+      </label>
+      <button type="submit" class="primary">Enregistrer</button>
+      <button type="button" id="icloud-sync">Synchroniser maintenant</button>
+    </form>
+    <p id="icloud-state" class="muted small"></p>
+    <p class="muted small">Sur l'iPhone, dans Photos : ouvrir l'album partagé, toucher l'icône des
+      personnes, activer « Site web public » puis copier le lien. Le cadre se synchronise toutes
+      les 30 minutes : les photos ajoutées à l'album arrivent, celles retirées disparaissent.
+      Laisser vide pour ne plus suivre d'album.</p>
+  </section>
+
+  <section>
     <h2>Ajouter des photos</h2>
     <div id="drop" tabindex="0" role="button">
       <strong>Glissez vos photos ici</strong> ou cliquez pour les choisir<br>
@@ -344,6 +360,56 @@ function addError(file, error) {
   $("#errors").append(li);
 }
 
+/* ---- Album iCloud partagé ---- */
+const icloudForm = $("#icloud-form");
+async function loadIcloud(fillInput) {
+  const s = await api("/api/icloud");
+  if (fillInput) icloudForm.url.value = s.url;
+  const when = s.last_sync && new Date(s.last_sync * 1000)
+    .toLocaleString("fr-FR", {dateStyle: "short", timeStyle: "short"});
+  const box = $("#icloud-state");
+  box.className = "small " + (s.error && !s.running ? "msg error" : "muted");
+  box.textContent = !s.url ? "Aucun album suivi."
+    : s.running ? `Synchronisation en cours${s.progress ? ` (${s.progress})` : ""}…`
+    : [`${s.title ? `« ${s.title} » : ` : ""}${s.count} photo${s.count > 1 ? "s" : ""} sur le cadre`,
+       when ? `dernière synchronisation ${when}` : "première synchronisation dans un instant",
+       s.error].filter(Boolean).join(" · ");
+  return s;
+}
+async function pollIcloud(previous) {
+  // Jusqu'à la fin de la synchronisation demandée (last_sync change).
+  for (let i = 0; i < 450; i++) {
+    await sleep(2000);
+    let s;
+    try { s = await loadIcloud(false); } catch { continue; }
+    if (!s.running && s.last_sync !== previous) { loadPage(page); return; }
+    if (s.running) loadPage(page);
+  }
+}
+icloudForm.onsubmit = async (e) => {
+  e.preventDefault();
+  const url = icloudForm.url.value.trim();
+  const cur = await api("/api/icloud");
+  if (url === cur.url) return;
+  if (cur.url && cur.count &&
+      !confirm(`Les ${cur.count} photos de l'album actuel seront retirées du cadre.`)) return;
+  const r = await fetch("/api/icloud", {
+    method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify({url}),
+  });
+  const s = await r.json();
+  if (!r.ok) { alert(s.error); return; }
+  loadPage(1);
+  loadIcloud(true);
+  if (url) pollIcloud(s.last_sync);
+};
+$("#icloud-sync").onclick = async () => {
+  const s = await api("/api/icloud");
+  if (!s.url) return;
+  await api("/api/icloud/sync", {});
+  pollIcloud(s.last_sync);
+};
+
+loadIcloud(true).then((s) => { if (s.running) pollIcloud(s.last_sync); });
 loadSettings();
 loadPage(1);
 </script>

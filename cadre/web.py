@@ -18,13 +18,14 @@ import os
 import socket
 import threading
 import time
+import urllib.request
 import uuid
 
 from flask import (Flask, Response, jsonify, redirect, render_template, request,
                    send_from_directory)
 from werkzeug.security import check_password_hash, generate_password_hash
 
-from . import config, imaging
+from . import config, icloud, imaging
 
 log = logging.getLogger("cadre.web")
 
@@ -78,8 +79,9 @@ class ProcessingQueue:
             t0 = time.monotonic()
             error = None
             try:
-                name, new = imaging.process(path, config.load_settings()["keep_originals"],
-                                            original_name, taken, sig)
+                with process_lock:
+                    name, new = imaging.process(path, config.load_settings()["keep_originals"],
+                                                original_name, taken, sig)
                 log.info("%s -> %s%s en %d ms", original_name, name,
                          "" if new else " (doublon)", (time.monotonic() - t0) * 1000)
             except imaging.Rejected as exc:
@@ -104,6 +106,7 @@ class ProcessingQueue:
 
 
 queue = ProcessingQueue()
+process_lock = threading.Lock()  # un seul traitement d'image à la fois (1 cœur) : file + iCloud
 
 
 def disk_status():
@@ -114,6 +117,148 @@ def disk_status():
     return {"total": total, "free": free, "reserve": reserve,
             "free_pct": round(100 * free / total, 1) if total else 0.0,
             "full": free - queue.pending_bytes < reserve}
+
+
+# --- Album iCloud partagé ------------------------------------------------------------------
+
+ICLOUD_EVERY = 30 * 60
+ICLOUD_FIRST_DELAY = 120  # s après le lancement : le diaporama et le Wi-Fi d'abord
+ICLOUD_MAX_BYTES = 40 * 1024 * 1024
+
+
+class IcloudSync:
+    """Garde le cadre aligné sur un album partagé iCloud : nouvelles photos téléchargées et
+    traitées comme un envoi, photos retirées de l'album supprimées. icloud.json associe
+    l'identifiant iCloud de chaque photo à son nom sur le cadre ; les photos envoyées par
+    l'admin n'y figurent pas et ne sont jamais touchées. Une photo de l'album supprimée dans
+    l'admin n'est pas retéléchargée."""
+
+    def __init__(self):
+        self.wake = threading.Event()
+        self.lock = threading.Lock()  # lecture-modification-écriture de icloud.json
+        self.running = False
+        self.progress = ""
+
+    def load(self):
+        try:
+            with open(config.ICLOUD_FILE) as f:
+                return json.load(f)
+        except (OSError, ValueError):
+            return {}
+
+    def update(self, url, fn):
+        """Applique fn à l'état si l'album n'a pas changé entre-temps ; renvoie True si fait."""
+        with self.lock:
+            st = self.load()
+            if st.get("url", "") != url:
+                return False
+            st.setdefault("photos", {})
+            fn(st)
+            config.atomic_write_json(config.ICLOUD_FILE, st)
+            return True
+
+    def status(self):
+        st = self.load()
+        return {"url": st.get("url", ""), "title": st.get("title", ""),
+                "count": len(st.get("photos", {})), "last_sync": st.get("last_sync"),
+                "error": st.get("error", ""), "running": self.running, "progress": self.progress}
+
+    def set_url(self, url):
+        """Change d'album (ou l'arrête si url est vide) ; les photos de l'ancien sont retirées."""
+        url = url.strip()
+        if url:
+            icloud.parse_link(url)  # AlbumError si le lien n'est pas reconnu
+        with self.lock:
+            st = self.load()
+            if url == st.get("url", ""):
+                return
+            for name in st.get("photos", {}).values():
+                imaging.delete(name)
+            config.atomic_write_json(config.ICLOUD_FILE, {"url": url, "photos": {}})
+        log.info("Album iCloud : %s", url or "aucun")
+        self.wake.set()
+
+    def start(self):
+        threading.Thread(target=self._run, name="icloud", daemon=True).start()
+
+    def _run(self):
+        self.wake.wait(ICLOUD_FIRST_DELAY)
+        while True:
+            self.wake.clear()
+            try:
+                self.sync()
+            except Exception:  # ne jamais arrêter le thread
+                log.exception("Synchronisation iCloud")
+            finally:
+                self.running, self.progress = False, ""
+            self.wake.wait(ICLOUD_EVERY)
+
+    def sync(self):
+        url = self.load().get("url", "")
+        if not url or config.load_state().get("mode") == "hotspot":
+            return
+        self.running = True
+        t0 = time.monotonic()
+        try:
+            title, photos = icloud.fetch_album(url)
+        except icloud.AlbumError as exc:
+            log.warning("Album iCloud : %s", exc)
+            self.update(url, lambda st: st.update(error=str(exc), last_sync=time.time()))
+            return
+        self.update(url, lambda st: st.update(title=title))
+
+        album = {p["id"] for p in photos}
+        known = self.load().get("photos", {})
+        gone = {pid: name for pid, name in known.items() if pid not in album}
+        for name in gone.values():
+            imaging.delete(name)
+        self.update(url, lambda st: [st["photos"].pop(pid, None) for pid in gone])
+
+        new = [p for p in photos if p["id"] not in known]
+        error = ""
+        for i, p in enumerate(new, 1):
+            self.progress = f"{i} / {len(new)}"
+            if disk_status()["full"]:
+                error = "carte SD pleine : synchronisation arrêtée"
+                break
+            try:
+                name = self.add(p)
+            except (OSError, imaging.Rejected) as exc:
+                log.warning("Photo iCloud %s : %s", p["id"], exc)
+                error = f"une photo n'a pas pu être ajoutée ({exc})"
+                continue
+            if not self.update(url, lambda st: st["photos"].__setitem__(p["id"], name)):
+                imaging.delete(name)  # album changé pendant le téléchargement
+                return
+        self.update(url, lambda st: st.update(error=error, last_sync=time.time()))
+        log.info("Album iCloud « %s » : %d photos, %d ajoutées, %d retirées en %d s",
+                 title, len(photos), len(new), len(gone), time.monotonic() - t0)
+
+    def add(self, photo):
+        path = os.path.join(config.INCOMING_DIR, "icloud-" + uuid.uuid4().hex)
+        try:
+            req = urllib.request.Request(photo["url"],
+                                         headers={"User-Agent": icloud.HEADERS["User-Agent"]})
+            with urllib.request.urlopen(req, timeout=60) as r, open(path, "wb") as f:
+                size = 0
+                while chunk := r.read(1 << 16):
+                    size += len(chunk)
+                    if size > ICLOUD_MAX_BYTES:
+                        raise OSError("fichier trop volumineux")
+                    f.write(chunk)
+            taken = photo["taken"].strftime("%Y:%m:%d %H:%M:%S") if photo["taken"] else ""
+            with process_lock:
+                name, _ = imaging.process(path, False, "icloud.jpg", taken,
+                                          "icloud:" + photo["id"])
+            return name
+        finally:
+            try:
+                os.unlink(path)
+            except FileNotFoundError:
+                pass
+
+
+icloud_sync = IcloudSync()
 
 
 # --- Portail captif -------------------------------------------------------------------------
@@ -227,6 +372,26 @@ def delete():
     return jsonify(deleted=deleted)
 
 
+@app.get("/api/icloud")
+def icloud_status():
+    return jsonify(icloud_sync.status())
+
+
+@app.post("/api/icloud")
+def icloud_set():
+    try:
+        icloud_sync.set_url((request.get_json(silent=True) or {}).get("url", ""))
+    except icloud.AlbumError as exc:
+        return jsonify(error=str(exc)), 400
+    return jsonify(icloud_sync.status())
+
+
+@app.post("/api/icloud/sync")
+def icloud_sync_now():
+    icloud_sync.wake.set()
+    return jsonify(ok=True)
+
+
 @app.get("/api/settings")
 def get_settings():
     return jsonify(config.load_settings())
@@ -310,6 +475,7 @@ def main():
     for leftover in os.listdir(config.INCOMING_DIR):
         os.unlink(os.path.join(config.INCOMING_DIR, leftover))
     queue.start()
+    icloud_sync.start()
 
     from waitress import serve
     log.info("Admin web sur le port %d", args.port)

@@ -9,6 +9,7 @@ THUMBS_DIR = os.path.join(DATA_DIR, "thumbs")
 ORIGINALS_DIR = os.path.join(DATA_DIR, "originals")
 SETTINGS_FILE = os.path.join(DATA_DIR, "settings.json")
 AUTH_FILE = os.path.join(DATA_DIR, "auth.json")
+ICLOUD_FILE = os.path.join(DATA_DIR, "icloud.json")  # album iCloud suivi et ses photos
 RUN_DIR = os.environ.get("CADRE_RUN", "/run/cadre")
 STATE_FILE = os.path.join(RUN_DIR, "state.json")  # état réseau publié par cadre-net
 NET_SOCKET = os.path.join(RUN_DIR, "net.sock")     # commandes Wi-Fi envoyées à cadre-net
