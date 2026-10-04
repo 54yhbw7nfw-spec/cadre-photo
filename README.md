@@ -11,7 +11,7 @@ Cahier des charges : [docs/cahier-des-charges.md](docs/cahier-des-charges.md).
 | 2. Admin web Flask | ✅ testé par API (20 photos 12 Mpx) — test navigateur à faire |
 | 3. QR code au boot | ✅ testé sur la télé ; Wi-Fi connecté à ~100 s après la mise sous tension |
 | 4. Hotspot / portail captif | ✅ testé avec un iPhone : portail ouvert tout seul, Wi-Fi de la maison reconnecté en 5 s |
-| 5. install.sh | à faire |
+| 5. install.sh | écrit — à tester : relance sur le Pi actuel, puis carte SD vierge |
 
 ## Arborescence
 
@@ -27,6 +27,7 @@ system/              fichiers de configuration système (repris par install.sh)
 systemd/             unités copiées dans /etc/systemd/system par deploy.sh
 tools/               outils côté PC (photos de test)
 deploy.sh            envoi du code vers le Pi + redémarrage des services
+install.sh           installation complète sur une Raspberry Pi OS Lite vierge (idempotent)
 ```
 
 Sur le Pi :
@@ -43,6 +44,17 @@ Sur le Pi :
 
 Mot de passe de l'admin (optionnel, authentification HTTP Basic) : sur le Pi,
 `cd /opt/cadre && python3 -m cadre.web --set-password` (ou `--clear-password`).
+
+## Installation sur un Pi neuf
+
+1. Raspberry Pi Imager : Raspberry Pi OS Lite (trixie), nom d'hôte `cadre`, utilisateur `cadre`,
+   Wi-Fi de la maison, ssh par clé.
+2. Hôte `cadre` dans `~/.ssh/config` (voir « Accès au Pi »).
+3. Depuis Git Bash : `./install.sh` (ou `./install.sh <hôte>`), puis `ssh cadre sudo reboot`.
+
+Le script reprend toute la « Configuration déjà appliquée au Pi » ; relancé, il ne refait que ce
+qui manque ou a changé. Il ne touche jamais à une connexion active : la sortie de netplan prend
+effet au redémarrage, protégée par `cadre-net-rollback`.
 
 ## Travailler depuis VS Code
 
