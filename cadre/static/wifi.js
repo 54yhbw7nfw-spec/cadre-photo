@@ -49,6 +49,8 @@
       s.mode === "connected" ? `Connecté à « ${s.ssid} » — adresse ${s.ip}`
       : s.mode === "hotspot" ? "Mode configuration : le cadre n'est connecté à aucun réseau."
       : "Connexion en cours…";
+    const banner = el("wifi-banner");  // admin seulement (absent du portail captif)
+    if (banner) banner.hidden = s.mode === "connected";
 
     el("wifi-saved").replaceChildren(...(st.saved.length ? st.saved.map((n) => {
       const btn = document.createElement("button");
@@ -111,8 +113,11 @@
     if (password && (password.length < 8 || password.length > 63)) {
       alert("Le mot de passe Wi-Fi doit faire de 8 à 63 caractères."); return;
     }
+    // État relu juste avant : une page restée ouverte peut dater d'un autre réseau.
+    if (action === "connect" && !(await refresh())) return;
     if (action === "connect" && mode === "connected" &&
-        !confirm(`Le cadre va quitter « ${current} » pour « ${ssid} ».\n` +
+        !confirm((ssid === current ? `Le cadre va se reconnecter à « ${ssid} ».\n`
+                                   : `Le cadre va quitter « ${current} » pour « ${ssid} ».\n`) +
                  "En cas d'échec, il revient automatiquement sur le réseau actuel.")) return;
     const r = await call(`/api/wifi/${action}`, {ssid, password, hidden: false});
     if (!r.ok) { alert(r.error); return; }

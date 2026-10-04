@@ -113,6 +113,9 @@ def captive_portal():
     if state.get("mode") != "hotspot":
         return None
     host = request.host.split(":")[0].lower()
+    # Peu de requêtes en hotspot : on les garde pour comprendre les tests des téléphones.
+    log.info("Portail : %s %s%s (%s)", request.method, host, request.path,
+             request.headers.get("User-Agent", "")[:60])
     hostname = socket.gethostname().lower()
     if host in (state.get("ip"), hostname, hostname + ".local"):
         return None

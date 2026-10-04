@@ -97,6 +97,9 @@ input[type=text], input[type=password] {
   border-radius: 6px; padding: 6px 8px; min-width: 200px;
 }
 button.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-text); }
+.banner { margin: 0 0 16px; padding: 12px 14px; border-radius: 10px; font-size: 15px;
+  background: var(--card); border: 2px solid var(--danger); }
+.banner[hidden] { display: none; }
 .msg { margin: 8px 0 0; font-size: 14px; }
 .msg.ok { color: var(--ok); }
 .msg.error { color: var(--danger); }

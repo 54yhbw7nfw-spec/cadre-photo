@@ -9,7 +9,7 @@ cd "$(dirname "$0")"
 tar --exclude=__pycache__ -czf - cadre systemd | ssh "$HOST" "
 set -e
 sudo install -d -o cadre -g cadre /opt/cadre /var/lib/cadre /var/lib/cadre/photos
-rm -rf /opt/cadre/cadre /opt/cadre/systemd
+sudo rm -rf /opt/cadre/cadre /opt/cadre/systemd  # sudo : __pycache__ de cadre-net (root)
 tar -xzf - -C /opt/cadre
 changed=0
 for f in /opt/cadre/systemd/*.service; do
