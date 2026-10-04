@@ -2,21 +2,35 @@
 # Installation complète du cadre photo sur une Raspberry Pi OS Lite (trixie) vierge, préparée
 # avec Raspberry Pi Imager (utilisateur, Wi-Fi, ssh). Idempotent : peut être relancé.
 #
-# Depuis le PC (Git Bash) :  ./install.sh [hôte ssh]      (défaut : cadre)
+# Depuis le PC (Git Bash) :  ./install.sh [--journal-sd] [hôte ssh]      (défaut : cadre)
 #   envoie le dépôt dans /tmp/cadre-install sur le Pi, puis y lance « sudo sh install.sh --local ».
-# Sur le Pi, en root :       sh install.sh --local        (depuis une copie du dépôt)
+# Sur le Pi, en root :       sh install.sh --local [--journal-sd]   (depuis une copie du dépôt)
+#
+# --journal-sd : journal conservé sur la carte SD (50 Mo max) pour diagnostiquer un démarrage
+#   raté. Sans l'option, journal en RAM (réglage de Raspberry Pi OS, moins d'écritures sur la SD).
 #
 # Après une première installation : redémarrer le Pi (cmdline.txt, sortie de netplan).
 set -eu
 
-if [ "${1:-}" != "--local" ]; then
-    HOST=${1:-${CADRE_HOST:-cadre}}
+LOCAL=0 JOURNAL_SD=0 HOST=${CADRE_HOST:-cadre}
+for arg; do
+    case $arg in
+        --local) LOCAL=1 ;;
+        --journal-sd) JOURNAL_SD=1 ;;
+        -*) echo "Option inconnue : $arg" >&2; exit 1 ;;
+        *) HOST=$arg ;;
+    esac
+done
+OPTS=""
+[ $JOURNAL_SD = 1 ] && OPTS="--journal-sd"
+
+if [ $LOCAL = 0 ]; then
     cd "$(dirname "$0")"
     tar --exclude=__pycache__ -czf - install.sh cadre systemd system | ssh "$HOST" "
         set -e
         rm -rf /tmp/cadre-install && mkdir /tmp/cadre-install
         tar -xzf - -C /tmp/cadre-install
-        sudo sh /tmp/cadre-install/install.sh --local
+        sudo sh /tmp/cadre-install/install.sh --local $OPTS
         rm -rf /tmp/cadre-install"
     exit 0
 fi
@@ -103,16 +117,26 @@ else
     echo "   rien à faire"
 fi
 
-step "Journal conservé sur la carte SD (50 Mo max)"
-# Raspberry Pi OS le force en RAM (/usr/lib/systemd/journald.conf.d/40-rpi-volatile-storage.conf) :
-# les traces d'un démarrage raté (hotspot, Wi-Fi) seraient perdues.
-mkdir -p /var/log/journal
-TMP=$(mktemp)
-printf '[Journal]\nStorage=persistent\nSystemMaxUse=50M\n' > "$TMP"
-if put "$TMP" /etc/systemd/journald.conf.d/50-cadre-persistent.conf 644; then
-    systemctl restart systemd-journald
+# Raspberry Pi OS le force en RAM (/usr/lib/systemd/journald.conf.d/40-rpi-volatile-storage.conf).
+JOURNAL_CONF=/etc/systemd/journald.conf.d/50-cadre-persistent.conf
+if [ $JOURNAL_SD = 1 ]; then
+    step "Journal conservé sur la carte SD (50 Mo max)"
+    mkdir -p /var/log/journal
+    TMP=$(mktemp)
+    printf '[Journal]\nStorage=persistent\nSystemMaxUse=50M\n' > "$TMP"
+    if put "$TMP" "$JOURNAL_CONF" 644; then
+        systemctl restart systemd-journald
+    fi
+    rm -f "$TMP"
+else
+    step "Journal en RAM (option --journal-sd pour le garder sur la carte SD)"
+    if [ -e "$JOURNAL_CONF" ]; then
+        rm -f "$JOURNAL_CONF"
+        rm -rf /var/log/journal
+        systemctl restart systemd-journald
+        echo "   journal sur la carte SD retiré"
+    fi
 fi
-rm -f "$TMP"
 
 step "Services"
 changed=0

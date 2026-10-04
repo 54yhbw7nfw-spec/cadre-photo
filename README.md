@@ -51,6 +51,9 @@ Mot de passe de l'admin (optionnel, authentification HTTP Basic) : sur le Pi,
    Wi-Fi de la maison, ssh par clé.
 2. Hôte `cadre` dans `~/.ssh/config` (voir « Accès au Pi »).
 3. Depuis Git Bash : `./install.sh` (ou `./install.sh <hôte>`), puis `ssh cadre sudo reboot`.
+   `--journal-sd` garde le journal sur la carte SD (50 Mo max) pour diagnostiquer un démarrage
+   raté ; sans l'option il reste en RAM (moins d'écritures sur la SD), et l'option est retirée
+   si elle avait été appliquée.
 
 Le script reprend toute la « Configuration déjà appliquée au Pi » ; relancé, il ne refait que ce
 qui manque ou a changé. Il ne touche jamais à une connexion active : la sortie de netplan prend
@@ -94,7 +97,8 @@ pour déployer) :
   `/etc/NetworkManager/conf.d/` (débit d'upload ×2, plus de coupures).
 - Portail captif : `system/NetworkManager/dnsmasq-shared.d/cadre-captive.conf` copié dans
   `/etc/NetworkManager/dnsmasq-shared.d/` (le dnsmasq du hotspot répond 10.42.0.1 à tous les noms).
-- Journal conservé sur la carte SD (Raspberry Pi OS le force en RAM via
+- Journal conservé sur la carte SD (option `--journal-sd` d'install.sh ; sinon journal en RAM,
+  réglage de Raspberry Pi OS via
   `/usr/lib/systemd/journald.conf.d/40-rpi-volatile-storage.conf`) :
   `/etc/systemd/journald.conf.d/50-cadre-persistent.conf` = `[Journal]` `Storage=persistent`
   `SystemMaxUse=50M`, et dossier `/var/log/journal`.
