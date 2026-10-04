@@ -112,6 +112,9 @@ pour déployer) :
   première connexion), puis QR code `http://<ip>/` + `cadre.local` pendant 20 s, de nouveau si
   l'adresse change.
 - Sortie forcée en 1280x720 (plein écran exclusif) : sinon SDL garde le mode préféré de la télé.
+- Écarté : l'image de démarrage du noyau (`rpi-splash-screen-support`, `fullscreen_logo=1`).
+  L'image s'affiche dès la mise sous tension, mais le Pi Zero W se bloque ensuite (2 démarrages
+  sur 2, sans trace dans le journal) ; retour à l'état antérieur par la carte SD.
 - Démarrage mesuré (secondes depuis la mise sous tension) : `cadre-net` 63 s, écran 80 s,
   Wi-Fi connecté et QR code 103 s. Avant : 158 s / 177 s / 160 s. Gains : cloud-init désactivé,
   services cadre lancés sans attendre le réseau, et surtout sortie de netplan (NetworkManager
