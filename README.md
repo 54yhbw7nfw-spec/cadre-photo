@@ -207,6 +207,13 @@ pour déployer) :
 
 ## Choix techniques du diaporama
 
+- Date de prise de vue (tirée du nom du fichier) en bas à droite de chaque photo, sur un
+  cartouche sombre ; réglage « Afficher la date ».
+- Veille (réglage « Veille de … à … », plage pouvant passer minuit) : fondu au noir, plus aucune
+  photo décodée, et la télé est mise en veille par HDMI-CEC (`cec-ctl --standby`) puis rallumée
+  (`--image-view-on`) ; sans CEC (écran d'ordinateur), l'écran reste simplement noir. Le Pi se
+  déclare à la télé au lancement (`cec-ctl --playback --osd-name "Cadre photo"`).
+
 - Rendu GPU via `pygame._sdl2.video` (Renderer/Texture), pilote forcé `opengles2` : le
   pilote `opengl` par défaut ne gère pas les textures cibles sur VC4.
 - Chaque photo est décodée une fois puis envoyée au GPU ; le letterbox est composé sur le GPU

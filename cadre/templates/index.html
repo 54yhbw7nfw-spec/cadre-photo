@@ -36,6 +36,10 @@
       <label>Délai <input type="number" name="delay" min="2" max="3600" step="1"> s</label>
       <label><input type="checkbox" name="shuffle"> Ordre aléatoire</label>
       <label><input type="checkbox" name="keep_originals"> Conserver les originaux</label>
+      <label><input type="checkbox" name="show_date"> Afficher la date</label>
+      <label><input type="checkbox" name="sleep"> Veille de
+        <input type="time" name="sleep_start" required> à
+        <input type="time" name="sleep_end" required></label>
       <span id="saved">Enregistré ✓</span>
     </form>
   </section>
@@ -111,6 +115,10 @@ async function loadSettings() {
   form.delay.value = s.delay;
   form.shuffle.checked = s.shuffle;
   form.keep_originals.checked = s.keep_originals;
+  form.show_date.checked = s.show_date;
+  form.sleep.checked = s.sleep;
+  form.sleep_start.value = s.sleep_start;
+  form.sleep_end.value = s.sleep_end;
 }
 form.addEventListener("change", async () => {
   const s = await api("/api/settings", {
@@ -118,7 +126,13 @@ form.addEventListener("change", async () => {
     delay: parseInt(form.delay.value, 10) || 10,
     shuffle: form.shuffle.checked,
     keep_originals: form.keep_originals.checked,
+    show_date: form.show_date.checked,
+    sleep: form.sleep.checked,
+    sleep_start: form.sleep_start.value,
+    sleep_end: form.sleep_end.value,
   });
+  form.sleep_start.value = s.sleep_start;
+  form.sleep_end.value = s.sleep_end;
   form.delay.value = s.delay;
   $("#saved").classList.add("show");
   setTimeout(() => $("#saved").classList.remove("show"), 1500);

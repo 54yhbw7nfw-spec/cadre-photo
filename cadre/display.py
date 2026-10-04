@@ -9,7 +9,10 @@ import os
 import random
 import signal
 import socket
+import subprocess
+import threading
 import time
+from datetime import datetime
 
 os.environ.setdefault("SDL_VIDEODRIVER", "kmsdrm")
 os.environ.setdefault("SDL_RENDER_DRIVER", "opengles2")
@@ -34,6 +37,39 @@ BG = (18, 18, 20)
 TEXT = (235, 235, 235)
 MUTED = (160, 160, 165)
 ACCENT = (110, 170, 255)
+MONTHS = ("janvier", "février", "mars", "avril", "mai", "juin", "juillet", "août", "septembre",
+          "octobre", "novembre", "décembre")
+SLEEP_CHECK = 5.0  # secondes entre deux vérifications pendant la veille
+
+
+def photo_date(name):
+    """« 26 septembre 2026 » d'après le nom AAAAMMJJ-HHMMSS_… (date de prise de vue)."""
+    try:
+        d = datetime.strptime(name[:15], "%Y%m%d-%H%M%S")
+    except ValueError:
+        return None
+    return f"{d.day} {MONTHS[d.month - 1]} {d.year}"
+
+
+def in_sleep_window(settings, now=None):
+    if not settings["sleep"]:
+        return False
+    now = (now or datetime.now()).strftime("%H:%M")
+    start, end = settings["sleep_start"], settings["sleep_end"]
+    if start == end:
+        return False
+    return start <= now < end if start < end else now >= start or now < end
+
+
+def cec(*args):
+    """Commande HDMI-CEC vers la télé, en tâche de fond (sans effet sur un écran sans CEC)."""
+    def run():
+        try:
+            subprocess.run(["cec-ctl", "-d0", *args], stdout=subprocess.DEVNULL,
+                           stderr=subprocess.DEVNULL, timeout=15)
+        except (OSError, subprocess.TimeoutExpired):
+            pass
+    threading.Thread(target=run, daemon=True).start()
 
 
 class Playlist:
@@ -113,6 +149,9 @@ class Display:
         self.due_at = 0.0
         self.qr_key = None    # QR code déjà montré (mode + adresse) : pas de répétition
         self.qr_until = 0.0
+        self.date_font = pygame.font.Font(None, 34)
+        # Le Pi se présente à la télé (CEC) : nécessaire pour l'éteindre / la rallumer la nuit.
+        cec("--playback", "--osd-name", "Cadre photo")
         signal.signal(signal.SIGTERM, self._stop)
         signal.signal(signal.SIGINT, self._stop)
         log.info("Affichage %s, sortie %sx%s, rendu logique %sx%s",
@@ -272,7 +311,20 @@ class Display:
         log.info("Transition %s : %d images en %.2f s (%.1f i/s)",
                  kind, frames, elapsed, frames / elapsed)
 
-    def prepare(self, name):
+    def draw_date(self, surf, name):
+        """Date de prise de vue en bas à droite de la photo, sur un cartouche sombre."""
+        text = photo_date(name)
+        if not text:
+            return
+        img = self.date_font.render(text, True, TEXT)
+        pad = 10
+        box = pygame.Surface((img.get_width() + 2 * pad, img.get_height() + pad), pygame.SRCALPHA)
+        box.fill((0, 0, 0, 140))
+        box.blit(img, (pad, pad // 2))
+        surf.blit(box, (surf.get_width() - box.get_width() - 16,
+                        surf.get_height() - box.get_height() - 16))
+
+    def prepare(self, name, show_date=False):
         """Charge une photo et crée sa texture ; None si le fichier est illisible."""
         path = os.path.join(config.PHOTOS_DIR, name)
         t0 = time.monotonic()
@@ -281,6 +333,8 @@ class Display:
         except (OSError, ValueError, Image.DecompressionBombError) as exc:
             log.warning("Photo ignorée %s : %s", name, exc)
             return None
+        if show_date:
+            self.draw_date(surf, name)
         t1 = time.monotonic()
         tex = self.texture(surf)
         log.info("Photo %s : décodage %d ms, envoi GPU %d ms",
@@ -298,6 +352,7 @@ class Display:
         next_check = 0.0
         state, state_mtime = {}, None
         screen_key = None  # écran réseau affiché (QR code, connexion...)
+        asleep = False
 
         while self.running:
             now = time.monotonic()
@@ -319,6 +374,26 @@ class Display:
                     playlist.update(config.list_photos(), settings["shuffle"])
                     if upcoming and upcoming[0] not in playlist.known:
                         upcoming = None
+
+            if in_sleep_window(settings):
+                if not asleep:
+                    asleep = True
+                    log.info("Veille jusqu'à %s", settings["sleep_end"])
+                    black = Texture(self.renderer, (W, H), target=True)
+                    self.renderer.target = black
+                    self.renderer.clear()
+                    self.renderer.target = None
+                    self.transition(current, black, "fade")
+                    current, upcoming, screen_key = black, None, None
+                    cec("--to", "0", "--standby")
+                self.idle(SLEEP_CHECK)
+                next_check = 0.0  # réglages relus : la veille peut être désactivée
+                continue
+            if asleep:
+                asleep = False
+                log.info("Fin de la veille")
+                cec("--to", "0", "--image-view-on")
+                self.due_at = 0.0
 
             screen = self.network_screen(state)
             if screen:
@@ -346,7 +421,7 @@ class Display:
                         current = placeholder
                     self.idle(POLL_INTERVAL)
                     continue
-                tex = self.prepare(name)
+                tex = self.prepare(name, settings["show_date"])
                 if tex is None:
                     playlist.forget(name)
                     next_check = 0.0  # fichier supprimé ? relire le dossier tout de suite
