@@ -1,0 +1,9 @@
+[Unit]
+Description=Cadre photo - filet de sécurité des essais réseau (usage unique)
+
+[Service]
+Type=simple
+ExecStart=/usr/local/sbin/cadre-net-safety
+
+[Install]
+WantedBy=multi-user.target

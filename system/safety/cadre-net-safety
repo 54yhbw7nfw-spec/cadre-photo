@@ -1,0 +1,24 @@
+#!/bin/sh
+# Filet de sécurité pour les essais réseau : si aucune passerelle ne répond dans les
+# $MINUTES minutes qui suivent le démarrage, les connexions sauvegardées dans
+# /root/nm-backup sont restaurées et le Pi redémarre. Le service se désactive toujours
+# (usage unique).
+MINUTES=15
+BACKUP=/root/nm-backup
+DIR=/etc/NetworkManager/system-connections
+end=$(( $(cut -d. -f1 /proc/uptime) + MINUTES * 60 ))
+while [ "$(cut -d. -f1 /proc/uptime)" -lt "$end" ]; do
+    GW=$(ip route show default dev wlan0 2>/dev/null | awk '{print $3; exit}')
+    if [ -n "$GW" ] && [ "$GW" != "10.42.0.1" ] && ping -c1 -W2 "$GW" >/dev/null 2>&1; then
+        logger -t cadre-safety "réseau OK (passerelle $GW) : filet de sécurité retiré"
+        systemctl disable cadre-net-safety.service
+        exit 0
+    fi
+    sleep 10
+done
+logger -t cadre-safety "aucun réseau après $MINUTES min : restauration des connexions sauvegardées"
+rm -f "$DIR"/*.nmconnection
+cp -a "$BACKUP"/*.nmconnection "$DIR"/
+systemctl disable cadre-net-safety.service
+sync
+systemctl reboot
