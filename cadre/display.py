@@ -200,8 +200,9 @@ class Display:
     def network_screen(self, state):
         """Écran réseau prioritaire sur le diaporama : (clé, fabrique de texture) ou None.
 
-        Un QR code s'affiche QR_TIME secondes à chaque nouvelle situation (connecté à une
-        adresse, ou hotspot), puis le diaporama reprend même si rien n'a été fait.
+        Le QR code de l'adresse s'affiche QR_TIME secondes à chaque nouvelle adresse, puis le
+        diaporama reprend. L'écran du hotspot reste affiché tant que le hotspot est actif : c'est
+        le seul endroit où figure son mot de passe.
         """
         mode = state.get("mode")
         key = None
@@ -213,10 +214,10 @@ class Display:
             if key != self.qr_key:
                 self.qr_key = key
                 self.qr_until = time.monotonic() + QR_TIME
-            if time.monotonic() >= self.qr_until:
-                return None
             if mode == "hotspot":
                 return key, lambda: self.hotspot_texture(state)
+            if time.monotonic() >= self.qr_until:
+                return None
             ip, host = state["ip"], socket.gethostname()
             return key, lambda: self.qr_texture(f"http://{ip}/", [
                 ("Cadre photo", 80, TEXT),
