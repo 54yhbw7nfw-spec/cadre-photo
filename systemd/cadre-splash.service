@@ -1,0 +1,19 @@
+[Unit]
+Description=Cadre photo - écran de démarrage
+# Le plus tôt possible : dès que le journal tourne (messages affichés en bas de l'image).
+# Pas d'attente de local-fs.target (~55 s sur le Pi Zero) : seule la racine est lue.
+DefaultDependencies=no
+After=systemd-journald.socket
+Conflicts=shutdown.target
+Before=shutdown.target
+
+[Service]
+Type=simple
+User=cadre
+Group=cadre
+SupplementaryGroups=video systemd-journal
+WorkingDirectory=/opt/cadre
+ExecStart=/usr/bin/python3 -m cadre.splash
+
+[Install]
+WantedBy=sysinit.target

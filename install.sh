@@ -85,13 +85,13 @@ cp -r "$SRC/cadre" "$SRC/systemd" /opt/cadre/
 find /opt/cadre -name __pycache__ -prune -exec rm -rf {} +
 chown -R cadre:cadre /opt/cadre
 
-step "Démarrage : sortie HDMI 720p forcée, console masquée"
+step "Démarrage : sortie HDMI 720p forcée, console masquée (quiet : rien par-dessus l'écran de démarrage)"
 CMDLINE=/boot/firmware/cmdline.txt
 [ -e "$CMDLINE.orig" ] || cp -a "$CMDLINE" "$CMDLINE.orig"
 line=$(cat "$CMDLINE")
-for opt in video=HDMI-A-1:1280x720@60D vt.global_cursor_default=0 consoleblank=0; do
+for opt in video=HDMI-A-1:1280x720@60D vt.global_cursor_default=0 consoleblank=0 quiet; do
     case " $line " in
-        *" ${opt%%=*}="*) ;;  # option déjà présente (valeur conservée)
+        *" $opt "*|*" ${opt%%=*}="*) ;;  # option déjà présente (valeur conservée)
         *) line="$line $opt"; REBOOT=1; echo "   ajouté : $opt" ;;
     esac
 done
@@ -144,7 +144,11 @@ for f in systemd/*.service; do
     put "$f" "/etc/systemd/system/$(basename "$f")" 644 && changed=1 || true
 done
 [ $changed = 1 ] && systemctl daemon-reload
-systemctl enable cadre-display.service cadre-web.service cadre-net.service 2>&1 | sed 's/^/   /'
+systemctl enable cadre-splash.service cadre-display.service cadre-web.service cadre-net.service     2>&1 | sed 's/^/   /'
+# tty1 appartient à l'écran de démarrage puis au diaporama : pas d'invite de connexion dessus.
+if systemctl is-enabled --quiet getty@tty1.service; then
+    systemctl disable getty@tty1.service 2>&1 | sed 's/^/   /'
+fi
 for s in cadre-display cadre-web cadre-net; do
     # Mise à jour : relance des services actifs ; première installation : ils partiront au
     # redémarrage (cadre-display a besoin de la sortie HDMI forcée).
