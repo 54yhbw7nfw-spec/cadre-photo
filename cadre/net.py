@@ -74,6 +74,32 @@ def nm_ready():
     return run("nmcli", "-t", "-f", "RUNNING", "general", timeout=10) == (0, "running")
 
 
+def ap_wpa2_psk_only():
+    """En point d'accès, NetworkManager impose « WPA-PSK WPA-PSK-SHA256 » (même avec pmf=1) ;
+    la puce du Pi Zero W n'annonce qu'une méthode dans ses balises, le téléphone voit alors
+    une différence au message 3/4 de l'échange de clés et abandonne (« mot de passe
+    incorrect »). On garde WPA-PSK seul, directement dans wpa_supplicant, et on relance."""
+    wpa = ("/usr/sbin/wpa_cli", "-i", IFACE)
+    code, out = run(*wpa, "list_networks", timeout=10)
+    ids = [line.split("\t")[0] for line in out.splitlines()[1:] if "[CURRENT]" in line]
+    if code != 0 or not ids:
+        log.warning("wpa_cli : réseau du point d'accès introuvable (%s)", out)
+        return False
+    nid = ids[0]
+    if run(*wpa, "get_network", nid, "key_mgmt", timeout=10)[1] == "WPA-PSK":
+        return True
+    for args in (("set_network", nid, "key_mgmt", "WPA-PSK"), ("disable_network", nid),
+                 ("enable_network", nid)):
+        code, out = run(*wpa, *args, timeout=10)
+        if code != 0 or out != "OK":
+            log.warning("wpa_cli %s : %s", args[0], out)
+            return False
+        if args[0] == "disable_network":
+            time.sleep(1)
+    log.info("Point d'accès limité à WPA-PSK")
+    return True
+
+
 def current_ssid():
     for line in run("/usr/sbin/iw", "dev", IFACE, "link", timeout=10)[1].splitlines():
         if line.strip().startswith("SSID:"):
@@ -234,6 +260,7 @@ class Controller:
         if code != 0:
             log.error("Échec du hotspot : %s", out)
             return False
+        ap_wpa2_psk_only()
         self.publish("hotspot", ip=AP_IP, ap_ssid=AP_SSID, ap_password=self.ap_password)
         return True
 
