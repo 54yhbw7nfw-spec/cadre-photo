@@ -3,6 +3,7 @@
 set -eu
 cd "$(dirname "$0")"
 mkdir -p /root/nm-backup
+rm -f /root/nm-backup/*.nmconnection  # sauvegarde de l'état actuel seulement
 cp -a /etc/NetworkManager/system-connections/*.nmconnection /root/nm-backup/
 install -m 755 cadre-net-safety /usr/local/sbin/cadre-net-safety
 install -m 644 cadre-net-safety.service /etc/systemd/system/cadre-net-safety.service
