@@ -29,6 +29,10 @@ from . import config, imaging
 log = logging.getLogger("cadre.web")
 
 QUEUE_MAX_BYTES = 40 * 1024 * 1024
+# Marge laissée au système (journal, mises à jour, fichiers temporaires) : les envois sont
+# refusés quand l'espace libre passerait en dessous.
+DISK_RESERVE_MIN = 1024 ** 3
+DISK_RESERVE_RATIO = 0.05
 PER_PAGE_MAX = 200
 
 app = Flask(__name__)
@@ -100,6 +104,16 @@ class ProcessingQueue:
 
 
 queue = ProcessingQueue()
+
+
+def disk_status():
+    st = os.statvfs(config.DATA_DIR)
+    total = st.f_blocks * st.f_frsize
+    free = st.f_bavail * st.f_frsize
+    reserve = max(DISK_RESERVE_MIN, int(total * DISK_RESERVE_RATIO))
+    return {"total": total, "free": free, "reserve": reserve,
+            "free_pct": round(100 * free / total, 1) if total else 0.0,
+            "full": free - queue.pending_bytes < reserve}
 
 
 # --- Portail captif -------------------------------------------------------------------------
@@ -180,6 +194,9 @@ def upload():
         return jsonify(error="aucun fichier"), 400
     if queue.full():
         return jsonify(busy=True), 503
+    disk = disk_status()
+    if disk["free"] - queue.pending_bytes - (request.content_length or 0) < disk["reserve"]:
+        return jsonify(error="carte SD pleine (marge du système atteinte)"), 507
     dest = os.path.join(config.INCOMING_DIR, uuid.uuid4().hex)
     f.save(dest)
     # Photo réduite par le navigateur : EXIF perdu, d'où la date et la signature transmises à part.
@@ -190,7 +207,7 @@ def upload():
 
 @app.get("/api/status")
 def status():
-    return jsonify(queue=queue.status(), count=len(config.list_photos()))
+    return jsonify(queue=queue.status(), count=len(config.list_photos()), disk=disk_status())
 
 
 @app.get("/api/photos")
@@ -199,7 +216,7 @@ def photos():
     per = max(1, min(PER_PAGE_MAX, request.args.get("per", 48, type=int)))
     pages = max(1, -(-len(names) // per))
     page = max(1, min(pages, request.args.get("page", 1, type=int)))
-    return jsonify(total=len(names), page=page, pages=pages,
+    return jsonify(total=len(names), page=page, pages=pages, disk=disk_status(),
                    items=names[(page - 1) * per:page * per])
 
 

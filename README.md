@@ -8,7 +8,7 @@ Cahier des charges : [docs/cahier-des-charges.md](docs/cahier-des-charges.md).
 | Étape | État |
 |---|---|
 | 1. Diaporama seul | ✅ testé sur le Pi (sans télé : rendu vérifié par les logs) |
-| 2. Admin web Flask | ✅ testé par API (20 photos 12 Mpx) — test navigateur à faire |
+| 2. Admin web Flask | ✅ testé par API (20 photos 12 Mpx) et depuis un navigateur |
 | 3. QR code au boot | ✅ testé sur la télé ; Wi-Fi connecté à ~100 s après la mise sous tension |
 | 4. Hotspot / portail captif | ✅ testé avec un iPhone : portail ouvert tout seul, Wi-Fi de la maison reconnecté en 5 s |
 | 5. install.sh | écrit — à tester : relance sur le Pi actuel, puis carte SD vierge |
@@ -145,6 +145,9 @@ pour déployer) :
 
 ## Admin web
 
+- Espace libre affiché en haut (pourcentage et Go). Marge gardée pour le système :
+  5 % de la carte, 1 Go minimum ; en dessous l'envoi répond 507, le navigateur arrête le lot et
+  un bandeau demande de supprimer des photos.
 - Le navigateur réduit chaque photo à 2560x1440 max (orientation EXIF appliquée, JPEG 0,9) avant
   l'envoi, sauf si « Conserver les originaux » est coché. L'EXIF étant perdu, il envoie à part la
   date de prise de vue (`taken`) et une signature nom|taille|date du fichier (`sig`) qui sert à

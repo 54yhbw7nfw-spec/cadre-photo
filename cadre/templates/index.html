@@ -11,7 +11,10 @@
   <header>
     <h1>Cadre photo</h1>
     <span class="muted" id="count"></span>
+    <span class="muted" id="disk"></span>
   </header>
+  <p id="disk-full" class="banner" hidden>La carte SD est presque pleine : supprimez des photos
+    pour pouvoir en ajouter (une marge est gardée pour le système).</p>
   <p id="wifi-banner" class="banner" hidden>Le cadre n'est connecté à aucun réseau Wi-Fi.
     Merci de <a href="#wifi">configurer un réseau Wi-Fi</a> pour une meilleure expérience.</p>
 
@@ -114,6 +117,7 @@ async function loadPage(p = page) {
   const data = await api(`/api/photos?page=${p}&per=${PER_PAGE}`);
   page = data.page; pages = data.pages; items = data.items;
   $("#count").textContent = `${data.total} photo${data.total > 1 ? "s" : ""}`;
+  showDisk(data.disk);
   $("#empty").hidden = data.total > 0;
   $("#page-info").textContent = `Page ${page} / ${pages}`;
   $("#prev").disabled = page <= 1;
@@ -222,6 +226,13 @@ async function exifDate(file) {
   return "";
 }
 
+function showDisk(d) {
+  if (!d) return;
+  const gb = (d.free / 1e9).toLocaleString("fr-FR", {maximumFractionDigits: 1});
+  $("#disk").textContent = `· ${Math.round(d.free_pct)} % libre (${gb} Go)`;
+  $("#disk-full").hidden = !d.full;
+}
+
 /* Réduction dans le navigateur à 2x l'écran : ~10x moins de données sur un Wi-Fi faible.
    Le cadre fait ensuite le traitement final (Pillow). */
 const MAX_W = 2560, MAX_H = 1440;
@@ -272,7 +283,8 @@ async function runBatch() {
   const poll = pollStatus();
   const keep = form.keep_originals.checked;
   let next = null;  // préparation de la photo suivante pendant l'envoi de la courante
-  while (batch.sent < batch.files.length) {
+  let diskFull = false;
+  while (batch.sent < batch.files.length && !diskFull) {
     const file = batch.files[batch.sent];
     const prep = await (next && next.file === file ? next.promise : prepare(file, keep));
     const following = batch.files[batch.sent + 1];
@@ -283,6 +295,11 @@ async function runBatch() {
       if (status === 200) break;
       if (status === 503) { await sleep(1500); continue; }       // file du cadre pleine
       if (status === 413) { addError(file.name, "fichier trop volumineux"); break; }
+      if (status === 507) {  // inutile d'envoyer la suite
+        addError(file.name, "carte SD pleine : envoi arrêté");
+        diskFull = true;
+        break;
+      }
       // Wi-Fi faible : coupures passagères fréquentes, on insiste avec des pauses croissantes.
       if (++tries >= 6) { addError(file.name, `échec de l'envoi (${status || "réseau"})`); break; }
       await sleep(Math.min(15000, 1000 * 2 ** tries));
@@ -315,6 +332,7 @@ async function pollStatus() {
     if (Date.now() - lastRefresh > 4000 || (!batch.running && st.queue.pending === 0)) {
       lastRefresh = Date.now();
       if (page === 1) loadPage(1); else $("#count").textContent = `${st.count} photos`;
+      showDisk(st.disk);
     }
     if (!batch.running && st.queue.pending === 0) return;
   }
