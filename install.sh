@@ -56,7 +56,8 @@ put() {  # put <source> <destination> <mode>
 step "Paquets"
 PKGS="python3-pygame python3-pil libegl1 libegl-mesa0 libgles2 libgl1-mesa-dri
       python3-flask python3-waitress python3-qrcode iw
-      network-manager dnsmasq-base wpasupplicant avahi-daemon"
+      network-manager dnsmasq-base wpasupplicant avahi-daemon
+      rpi-splash-screen-support file"
 MISSING=""
 for p in $PKGS; do
     dpkg-query -W -f='${Status}' "$p" 2>/dev/null | grep -q "ok installed" || MISSING="$MISSING $p"
@@ -96,6 +97,20 @@ for opt in video=HDMI-A-1:1280x720@60D vt.global_cursor_default=0 consoleblank=0
     esac
 done
 [ "$line" = "$(cat "$CMDLINE")" ] || printf '%s\n' "$line" > "$CMDLINE"
+
+step "Image de démarrage (affichée par le noyau dès les premières secondes)"
+TMP=$(mktemp --suffix .tga)
+python3 system/splash/make-splash.py "$TMP"
+if cmp -s "$TMP" /lib/firmware/logo.tga; then
+    echo "   déjà en place"
+else
+    # Copie l'image, régénère l'initramfs (plusieurs minutes sur le Pi Zero) et adapte
+    # cmdline.txt (retire console=tty1, ajoute fullscreen_logo=1).
+    [ -e "$CMDLINE.avant-splash" ] || cp -a "$CMDLINE" "$CMDLINE.avant-splash"
+    configure-splash "$TMP"
+    REBOOT=1
+fi
+rm -f "$TMP"
 
 step "cloud-init désactivé (ne sert qu'à la première configuration d'Imager)"
 if [ -d /etc/cloud ] && [ ! -e /etc/cloud/cloud-init.disabled ]; then
