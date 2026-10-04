@@ -82,11 +82,13 @@ pour déployer) :
 - Paquets : `python3-pygame python3-pil libegl1 libegl-mesa0 libgles2 libgl1-mesa-dri
   python3-flask python3-waitress iw` (`--no-install-recommends`).
 - `/boot/firmware/cmdline.txt` (sauvegarde `cmdline.txt.orig`) :
-  `video=HDMI-A-1:1280x720@60D vt.global_cursor_default=0 consoleblank=0`.
+  `video=HDMI-A-1:1280x720@60D vt.global_cursor_default=0 consoleblank=0 quiet`
+  (`quiet` : rien par-dessus l'écran de démarrage ; sauvegarde `cmdline.txt.avant-quiet`).
   Le `D` force la sortie HDMI même sans télé branchée ou éteinte au boot ; sans cela SDL
   refuse KMSDRM (« kmsdrm not available »).
 - Paquet `python3-qrcode`.
-- Services `cadre-display` (remplace getty sur tty1), `cadre-web` (port 80) et `cadre-net` activés.
+- Services `cadre-splash`, `cadre-display`, `cadre-web` (port 80) et `cadre-net` activés ;
+  `getty@tty1` désactivé (tty1 appartient à l'écran de démarrage puis au diaporama).
 - Connexion Wi-Fi sortie de netplan : `/etc/NetworkManager/system-connections/cadre-<ssid>.nmconnection`
   (fichier NetworkManager natif, 0600), sauvegarde netplan dans `/root/netplan-backup/`.
   Script : `system/netplan/migrate-from-netplan.sh`, protégé au redémarrage suivant par
@@ -112,6 +114,11 @@ pour déployer) :
   première connexion), puis QR code `http://<ip>/` + `cadre.local` pendant 20 s, de nouveau si
   l'adresse change.
 - Sortie forcée en 1280x720 (plein écran exclusif) : sinon SDL garde le mode préféré de la télé.
+- Écran de démarrage `cadre-splash` (root, lancé dès que le journal tourne) : image « Cadre
+  photo » et 4 derniers messages de systemd dessinés dans `/dev/fb0`, redessinés quand vc4
+  remplace le framebuffer du firmware ; arrêt quand le diaporama a pris l'écran (message
+  « Affichage KMSDRM »). Mesuré : image à 31 s, diaporama à 86 s, Wi-Fi à 108 s, sans écran noir ;
+  6 s de CPU pendant le démarrage. Sans getty sur tty1, le diaporama démarre ~25 s plus tôt.
 - Écarté : l'image de démarrage du noyau (`rpi-splash-screen-support`, `fullscreen_logo=1`).
   L'image s'affiche dès la mise sous tension, mais le Pi Zero W se bloque ensuite (2 démarrages
   sur 2, sans trace dans le journal) ; retour à l'état antérieur par la carte SD.
