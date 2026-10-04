@@ -2,8 +2,8 @@
 messages de systemd, dessinés directement dans /dev/fb0 dès que l'écran existe.
 
 Vers 60 s, le pilote vc4 remplace le framebuffer provisoire du firmware (simplefb) : l'image
-est alors redessinée. Le service s'arrête de lui-même une fois le diaporama lancé (il occupe
-alors l'écran via DRM, nos écritures dans fb0 ne sont plus visibles).
+est alors redessinée. Le service s'arrête de lui-même quand le diaporama a pris l'écran (via
+DRM : nos écritures dans fb0 ne sont alors plus visibles), sans trou noir entre les deux.
 """
 import mmap
 import os
@@ -15,8 +15,10 @@ from PIL import Image, ImageChops, ImageDraw, ImageFont
 
 FB = "/dev/fb0"
 FB_SYS = "/sys/class/graphics/fb0"
-DISPLAY_ACTIVE = "/run/systemd/units/invocation:cadre-display.service"
-STOP_AFTER_DISPLAY = 20  # s : le diaporama met quelques secondes à afficher sa première image
+DISPLAY_READY = b"Affichage KMSDRM"  # message du diaporama une fois l'écran pris
+STOP_AFTER_READY = 3     # s : le temps de dessiner son premier écran
+GIVE_UP = 240            # s : arrêt de toute façon (diaporama en échec)
+REDRAW_EVERY = 1.0       # s : les messages arrivent par rafales, le CPU sert au démarrage
 
 BG = (18, 18, 20)
 TEXT = (235, 235, 235)
@@ -116,14 +118,20 @@ def main():
     while not os.path.exists(FB):
         time.sleep(0.2)
     screen = Screen()
-    # Messages de systemd (PID 1) : « Starting… », « Started… », « Reached target… ».
+    # Messages de systemd (PID 1) : « Starting… », « Started… », « Reached target… » ;
+    # et ceux du diaporama, pour savoir quand il a pris l'écran (non affichés).
     journal = subprocess.Popen(
-        ["journalctl", "-b", "-f", "-n", str(LINES), "-o", "cat", "_PID=1"],
+        ["journalctl", "-b", "-f", "-n", str(LINES), "-o", "cat",
+         "_PID=1", "+", "_SYSTEMD_UNIT=cadre-display.service"],
         stdout=subprocess.PIPE)
     fd = journal.stdout.fileno()
-    pending, lines, dirty, display_since = b"", [], False, None
+    pending, lines, dirty = b"", [], False
+    start, last_draw, ready_at = time.monotonic(), 0.0, None
     try:
         while True:
+            now = time.monotonic()
+            if ready_at and now - ready_at > STOP_AFTER_READY or now - start > GIVE_UP:
+                break
             # Lecture brute (pas de tampon Python) : select() voit tout ce qui reste à lire.
             if select.select([fd], [], [], 0.5)[0]:
                 chunk = os.read(fd, 4096)
@@ -131,6 +139,10 @@ def main():
                     break
                 *complete, pending = (pending + chunk).split(b"\n")
                 for raw in complete:
+                    if DISPLAY_READY in raw:
+                        ready_at = ready_at or time.monotonic()
+                    if raw.startswith((b"INFO ", b"WARNING ", b"ERROR ")):
+                        continue  # message du diaporama
                     lines = (lines + [short(raw.decode(errors="replace").strip())])[-LINES:]
                     dirty = True
             try:
@@ -140,13 +152,10 @@ def main():
                     dirty = True
             except OSError:
                 continue  # fb0 en cours de remplacement
-            if dirty:
+            if dirty and time.monotonic() - last_draw >= REDRAW_EVERY:
                 screen.show_lines(lines)
+                last_draw = time.monotonic()
                 dirty = False
-            if os.path.lexists(DISPLAY_ACTIVE):
-                display_since = display_since or time.monotonic()
-                if time.monotonic() - display_since > STOP_AFTER_DISPLAY:
-                    break
     finally:
         journal.terminate()
         screen.close()
