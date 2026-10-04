@@ -9,9 +9,7 @@ Before=shutdown.target
 
 [Service]
 Type=simple
-User=cadre
-Group=cadre
-SupplementaryGroups=video systemd-journal
+# root : si tôt, udev n'a pas encore donné /dev/fb0 au groupe video.
 WorkingDirectory=/opt/cadre
 ExecStart=/usr/bin/python3 -m cadre.splash
 
