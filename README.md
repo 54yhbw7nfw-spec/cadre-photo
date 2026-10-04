@@ -10,7 +10,7 @@ Cahier des charges : [docs/cahier-des-charges.md](docs/cahier-des-charges.md).
 | 1. Diaporama seul | ✅ testé sur le Pi (sans télé : rendu vérifié par les logs) |
 | 2. Admin web Flask | ✅ testé par API (20 photos 12 Mpx) — test navigateur à faire |
 | 3. QR code au boot | ✅ testé sur la télé ; Wi-Fi connecté à ~100 s après la mise sous tension |
-| 4. Hotspot / portail captif | à faire |
+| 4. Hotspot / portail captif | ✅ testé avec un iPhone : portail ouvert tout seul, Wi-Fi de la maison reconnecté en 5 s |
 | 5. install.sh | à faire |
 
 ## Arborescence
@@ -80,6 +80,12 @@ pour déployer) :
   configuration par Raspberry Pi Imager et bloquait chaque démarrage ~1 min.
 - Économie d'énergie Wi-Fi désactivée : `system/NetworkManager/99-cadre-wifi.conf` copié dans
   `/etc/NetworkManager/conf.d/` (débit d'upload ×2, plus de coupures).
+- Portail captif : `system/NetworkManager/dnsmasq-shared.d/cadre-captive.conf` copié dans
+  `/etc/NetworkManager/dnsmasq-shared.d/` (le dnsmasq du hotspot répond 10.42.0.1 à tous les noms).
+- Journal conservé sur la carte SD (Raspberry Pi OS le force en RAM via
+  `/usr/lib/systemd/journald.conf.d/40-rpi-volatile-storage.conf`) :
+  `/etc/systemd/journald.conf.d/50-cadre-persistent.conf` = `[Journal]` `Storage=persistent`
+  `SystemMaxUse=50M`, et dossier `/var/log/journal`.
 
 ## Démarrage et QR code
 
@@ -94,8 +100,32 @@ pour déployer) :
   Wi-Fi connecté et QR code 103 s. Avant : 158 s / 177 s / 160 s. Gains : cloud-init désactivé,
   services cadre lancés sans attendre le réseau, et surtout sortie de netplan (NetworkManager
   régénérait netplan et rechargeait systemd 4 fois, 20 s chacune : 1 min 33 → 35 s).
-- À corriger à l'étape 4 : le délai de 30 s avant « offline » part du lancement de `cadre-net`,
-  pas de celui de NetworkManager (offline à 93 s, Wi-Fi à 103 s) : le hotspot partirait à tort.
+- Le délai de 30 s avant le hotspot part du moment où NetworkManager est prêt (et non plus du
+  lancement de `cadre-net`, qui le faisait partir à tort).
+
+## Hotspot et portail captif
+
+- Sans réseau connu 30 s après NetworkManager : scan des réseaux, puis point d'accès
+  `CadrePhoto-Setup` (10.42.0.1, WPA2, mot de passe aléatoire à chaque démarrage). La télé affiche
+  QR code Wi-Fi + mot de passe tant que le hotspot est actif. Mesuré : hotspot à 140 s après la
+  mise sous tension.
+- Pi Zero W (puce BCM43430, micrologiciel 7.45.98) : NetworkManager 1.52 configure le point
+  d'accès en `WPA-PSK WPA-PSK-SHA256`, même avec `pmf=disable` ; le téléphone abandonne alors au
+  message 3/4 de l'échange de clés et affiche « mot de passe incorrect ». `cadre-net` remet
+  `WPA-PSK` seul par `wpa_cli` juste après le démarrage du hotspot (`ap_wpa2_psk_only`).
+- Portail : tous les noms pointent vers le Pi ; toute page d'un autre hôte est redirigée vers
+  `/wifi`. L'iPhone ouvre la page tout seul (test `captive.apple.com/hotspot-detect.html`). Les
+  pages demandées en mode hotspot sont journalisées (`Portail : ...` dans `cadre-web`).
+- « Se connecter » coupe le hotspot, essaie le réseau (45 s), remplace l'ancien profil du même
+  nom si ça marche, sinon relance le hotspot. Sans client, nouvel essai des réseaux connus toutes
+  les 5 min.
+- L'admin affiche un bandeau tant que le cadre n'est connecté à aucun Wi-Fi.
+- Essais réseau : `system/safety/arm.sh` sauvegarde les connexions et arme `cadre-net-safety`
+  (usage unique) : sans passerelle 10 min après le démarrage, il restaure la sauvegarde et
+  redémarre. Pour simuler l'absence de réseau connu :
+  `sudo nmcli connection modify <réseau> connection.autoconnect no && sudo reboot`.
+- Mesures (connecté, diaporama en cours) : RAM utilisée 186 Mo / 427 (241 Mo disponibles) ;
+  RSS `cadre-display` 78 Mo, `cadre-web` 28 Mo, `cadre-net` 15 Mo.
 
 ## Admin web
 
