@@ -29,7 +29,7 @@ TRANSITION_TIME = 1.0  # secondes
 POLL_INTERVAL = 0.25   # pendant l'affichage fixe
 CHECK_INTERVAL = 2.0   # surveillance réglages / dossier photos
 BLEND = 1              # SDL_BLENDMODE_BLEND
-QR_TIME = 20           # secondes d'affichage du QR code une fois connecté
+QR_TIME = 30           # secondes d'affichage d'un QR code, puis diaporama dans tous les cas
 BG = (18, 18, 20)
 TEXT = (235, 235, 235)
 MUTED = (160, 160, 165)
@@ -111,7 +111,7 @@ class Display:
         pygame.mouse.set_visible(False)
         self.running = True
         self.due_at = 0.0
-        self.qr_ip = None     # adresse pour laquelle le QR code a déjà été montré
+        self.qr_key = None    # QR code déjà montré (mode + adresse) : pas de répétition
         self.qr_until = 0.0
         signal.signal(signal.SIGTERM, self._stop)
         signal.signal(signal.SIGINT, self._stop)
@@ -178,27 +178,57 @@ class Display:
             y += int(size_pt * 1.15)
         return self.texture(surf)
 
+    def hotspot_texture(self, state):
+        ssid, password, ip = state.get("ap_ssid", ""), state.get("ap_password", ""), state.get("ip")
+
+        def esc(v):  # caractères réservés du format WIFI: des QR codes
+            for ch in '\\;,:"':
+                v = v.replace(ch, "\\" + ch)
+            return v
+        return self.qr_texture(f"WIFI:T:WPA;S:{esc(ssid)};P:{esc(password)};;", [
+            ("Configuration du Wi-Fi", 66, TEXT),
+            ("", 20, TEXT),
+            ("1. Scannez le QR code pour rejoindre", 40, MUTED),
+            (f"le réseau {ssid}", 40, MUTED),
+            (f"mot de passe : {password}", 46, ACCENT),
+            ("", 20, TEXT),
+            ("2. La page de configuration s'ouvre.", 40, MUTED),
+            ("Sinon, allez sur", 40, MUTED),
+            (f"http://{ip}", 52, ACCENT),
+        ])
+
     def network_screen(self, state):
-        """Écran réseau prioritaire sur le diaporama : (clé, fabrique de texture) ou None."""
+        """Écran réseau prioritaire sur le diaporama : (clé, fabrique de texture) ou None.
+
+        Un QR code s'affiche QR_TIME secondes à chaque nouvelle situation (connecté à une
+        adresse, ou hotspot), puis le diaporama reprend même si rien n'a été fait.
+        """
         mode = state.get("mode")
+        key = None
         if mode == "connected" and state.get("ip"):
-            if state["ip"] != self.qr_ip:  # premier accès, ou nouvelle adresse
-                self.qr_ip = state["ip"]
+            key = ("qr", state["ip"])
+        elif mode == "hotspot":
+            key = ("hotspot", state.get("ap_ssid"), state.get("ap_password"))
+        if key:
+            if key != self.qr_key:
+                self.qr_key = key
                 self.qr_until = time.monotonic() + QR_TIME
-            if time.monotonic() < self.qr_until:
-                ip, host = self.qr_ip, socket.gethostname()
-                return ("qr", ip), lambda: self.qr_texture(f"http://{ip}/", [
-                    ("Cadre photo", 80, TEXT),
-                    ("", 30, TEXT),
-                    ("Ajoutez vos photos :", 46, MUTED),
-                    (f"http://{ip}", 64, ACCENT),
-                    (f"ou http://{host}.local", 46, MUTED),
-                    ("", 40, TEXT),
-                    ("Scannez le QR code", 40, MUTED),
-                    ("avec votre téléphone", 40, MUTED),
-                ])
-            return None
-        if mode == "connecting" and self.qr_ip is None:
+            if time.monotonic() >= self.qr_until:
+                return None
+            if mode == "hotspot":
+                return key, lambda: self.hotspot_texture(state)
+            ip, host = state["ip"], socket.gethostname()
+            return key, lambda: self.qr_texture(f"http://{ip}/", [
+                ("Cadre photo", 80, TEXT),
+                ("", 30, TEXT),
+                ("Ajoutez vos photos :", 46, MUTED),
+                (f"http://{ip}", 64, ACCENT),
+                (f"ou http://{host}.local", 46, MUTED),
+                ("", 40, TEXT),
+                ("Scannez le QR code", 40, MUTED),
+                ("avec votre téléphone", 40, MUTED),
+            ])
+        if mode == "connecting" and self.qr_key is None:
             # Seulement avant la première connexion : une coupure passagère ne masque pas les photos.
             return ("connecting",), lambda: self.message_texture(["Connexion au Wi-Fi..."])
         return None

@@ -11,6 +11,7 @@ SETTINGS_FILE = os.path.join(DATA_DIR, "settings.json")
 AUTH_FILE = os.path.join(DATA_DIR, "auth.json")
 RUN_DIR = os.environ.get("CADRE_RUN", "/run/cadre")
 STATE_FILE = os.path.join(RUN_DIR, "state.json")  # état réseau publié par cadre-net
+NET_SOCKET = os.path.join(RUN_DIR, "net.sock")     # commandes Wi-Fi envoyées à cadre-net
 # Fichiers reçus en attente de traitement : en RAM (tmpfs) pour épargner la carte SD.
 INCOMING_DIR = os.environ.get("CADRE_INCOMING", "/run/cadre-web/incoming")
 

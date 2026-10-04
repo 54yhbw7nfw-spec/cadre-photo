@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Cadre photo — Wi-Fi</title>
+<link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+<main>
+  <header>
+    <h1>Cadre photo</h1>
+    <span class="muted">configuration du Wi-Fi</span>
+  </header>
+  <p class="muted">Choisissez le réseau de la maison et saisissez son mot de passe.
+    Le cadre quitte alors ce réseau de configuration : si la connexion réussit, l'adresse de
+    gestion des photos s'affiche sur la télévision.</p>
+  {% include "wifi_panel.html" %}
+  <p><a href="/">Gérer les photos et les réglages</a></p>
+</main>
+<script src="/static/wifi.js"></script>
+</body>
+</html>

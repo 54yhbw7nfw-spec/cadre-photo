@@ -1,0 +1,27 @@
+<section id="wifi">
+  <h2>Wi-Fi</h2>
+  <p id="wifi-state" class="muted">Chargement…</p>
+  <p id="wifi-result" class="msg"></p>
+
+  <h3>Réseaux enregistrés</h3>
+  <ul id="wifi-saved" class="list"></ul>
+
+  <h3>Réseaux visibles <button id="wifi-scan" type="button">Actualiser</button></h3>
+  <ul id="wifi-visible" class="list"></ul>
+
+  <form id="wifi-form" class="wifi-form" autocomplete="off">
+    <label>Nom du réseau
+      <input type="text" name="ssid" maxlength="32" required>
+    </label>
+    <label>Mot de passe
+      <input type="password" name="password" maxlength="63">
+    </label>
+    <label class="small" style="flex-direction:row;align-items:center">
+      <input type="checkbox" id="wifi-show"> afficher
+    </label>
+    <button type="submit" name="connect" class="primary">Se connecter</button>
+    <button type="submit" name="save">Enregistrer seulement</button>
+  </form>
+  <p class="muted small">« Enregistrer seulement » garde le réseau pour plus tard, par exemple pour
+    préparer le cadre avant de l'installer chez quelqu'un d'autre.</p>
+</section>

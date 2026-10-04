@@ -15,11 +15,13 @@ import hashlib
 import json
 import logging
 import os
+import socket
 import threading
 import time
 import uuid
 
-from flask import Flask, Response, jsonify, render_template, request, send_from_directory
+from flask import (Flask, Response, jsonify, redirect, render_template, request,
+                   send_from_directory)
 from werkzeug.security import check_password_hash, generate_password_hash
 
 from . import config, imaging
@@ -100,6 +102,23 @@ class ProcessingQueue:
 queue = ProcessingQueue()
 
 
+# --- Portail captif -------------------------------------------------------------------------
+
+@app.before_request
+def captive_portal():
+    """En mode hotspot, le DNS du Pi répond 10.42.0.1 pour tous les noms : toute page demandée
+    par le téléphone (test de connectivité compris) est renvoyée vers la configuration Wi-Fi,
+    ce qui fait apparaître le portail automatiquement."""
+    state = config.load_state()
+    if state.get("mode") != "hotspot":
+        return None
+    host = request.host.split(":")[0].lower()
+    hostname = socket.gethostname().lower()
+    if host in (state.get("ip"), hostname, hostname + ".local"):
+        return None
+    return redirect(f"http://{state.get('ip')}/wifi", 302)
+
+
 # --- Authentification optionnelle -------------------------------------------------------
 
 _auth_ok = set()  # empreintes d'en-têtes déjà vérifiés : le hachage coûte cher sur le Pi
@@ -134,6 +153,11 @@ def require_password():
 @app.get("/")
 def index():
     return render_template("index.html", transitions=config.TRANSITIONS)
+
+
+@app.get("/wifi")
+def wifi_page():
+    return render_template("wifi.html")
 
 
 @app.get("/thumbs/<name>")
@@ -194,6 +218,39 @@ def set_settings():
     settings.update(request.get_json(silent=True) or {})
     config.save_settings(settings)
     return jsonify(config.load_settings())
+
+
+# --- Wi-Fi : relais vers cadre-net (seul service autorisé à modifier le réseau) ----------
+
+def net_command(cmd, **args):
+    try:
+        with socket.socket(socket.AF_UNIX, socket.SOCK_STREAM) as s:
+            s.settimeout(60)
+            s.connect(config.NET_SOCKET)
+            s.sendall(json.dumps({"cmd": cmd, **args}).encode() + b"\n")
+            data = b""
+            while not data.endswith(b"\n"):
+                chunk = s.recv(65536)
+                if not chunk:
+                    break
+                data += chunk
+        return json.loads(data)
+    except (OSError, ValueError) as exc:
+        return {"ok": False, "error": f"service réseau indisponible ({exc})"}
+
+
+@app.get("/api/wifi")
+def wifi_status():
+    return jsonify(net_command("status"))
+
+
+@app.post("/api/wifi/<action>")
+def wifi_action(action):
+    if action not in ("scan", "save", "connect", "forget"):
+        return jsonify(ok=False, error="action inconnue"), 404
+    body = request.get_json(silent=True) or {}
+    args = {k: body[k] for k in ("ssid", "password", "hidden", "uuid") if k in body}
+    return jsonify(net_command(action, **args))
 
 
 # --- Lancement ---------------------------------------------------------------------------

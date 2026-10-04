@@ -4,89 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Cadre photo</title>
-<style>
-  :root {
-    --bg: #f4f4f2; --card: #fff; --text: #1d1d1f; --muted: #6b6b70; --line: #deded9;
-    --accent: #2f6fdf; --accent-text: #fff; --danger: #c93a32; --ok: #2e8b57;
-  }
-  @media (prefers-color-scheme: dark) {
-    :root {
-      --bg: #161617; --card: #222224; --text: #ececec; --muted: #9a9aa0; --line: #38383b;
-      --accent: #5b8ff0; --danger: #e5675f; --ok: #4fbf7f;
-    }
-  }
-  * { box-sizing: border-box; }
-  body {
-    margin: 0; background: var(--bg); color: var(--text);
-    font: 15px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
-  }
-  main { max-width: 1100px; margin: 0 auto; padding: 16px; }
-  header { display: flex; align-items: baseline; gap: 12px; margin: 4px 0 16px; }
-  h1 { font-size: 22px; margin: 0; }
-  h2 { font-size: 16px; margin: 0 0 12px; }
-  .muted { color: var(--muted); }
-  section {
-    background: var(--card); border: 1px solid var(--line); border-radius: 10px;
-    padding: 16px; margin-bottom: 16px;
-  }
-  .settings { display: flex; flex-wrap: wrap; gap: 12px 24px; align-items: center; }
-  .settings label { display: flex; align-items: center; gap: 8px; }
-  select, input[type=number] {
-    font: inherit; color: inherit; background: var(--bg); border: 1px solid var(--line);
-    border-radius: 6px; padding: 5px 8px;
-  }
-  input[type=number] { width: 80px; }
-  #saved { color: var(--ok); opacity: 0; transition: opacity .3s; }
-  #saved.show { opacity: 1; }
-  button {
-    font: inherit; border: 1px solid var(--line); background: var(--bg); color: var(--text);
-    border-radius: 6px; padding: 6px 12px; cursor: pointer;
-  }
-  button:disabled { opacity: .45; cursor: default; }
-  button.danger { background: var(--danger); border-color: var(--danger); color: #fff; }
-  #drop {
-    border: 2px dashed var(--line); border-radius: 10px; padding: 28px 16px; text-align: center;
-    cursor: pointer; transition: border-color .15s, background .15s;
-  }
-  #drop.over { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 8%, transparent); }
-  #drop strong { color: var(--accent); }
-  #progress { display: none; margin-top: 14px; }
-  .bar-label { display: flex; justify-content: space-between; font-size: 13px; margin-top: 8px; }
-  .bar { height: 8px; background: var(--line); border-radius: 4px; overflow: hidden; }
-  .bar > div { height: 100%; width: 0; background: var(--accent); transition: width .2s; }
-  #errors { color: var(--danger); font-size: 13px; margin: 10px 0 0; padding-left: 18px; }
-  .toolbar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 12px; }
-  .toolbar .spacer { flex: 1; }
-  #grid {
-    display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px;
-  }
-  .tile {
-    position: relative; aspect-ratio: 16 / 9; background: #000; border-radius: 6px;
-    overflow: hidden; cursor: pointer; outline: 3px solid transparent; outline-offset: -3px;
-  }
-  .tile img { width: 100%; height: 100%; object-fit: contain; display: block; }
-  .tile.sel { outline-color: var(--accent); }
-  .tile .check {
-    position: absolute; top: 6px; left: 6px; width: 20px; height: 20px; border-radius: 50%;
-    border: 2px solid #fff; background: rgba(0,0,0,.35);
-  }
-  .tile.sel .check { background: var(--accent); border-color: var(--accent); }
-  .tile.sel .check::after {
-    content: ""; position: absolute; left: 5px; top: 1px; width: 5px; height: 10px;
-    border: solid #fff; border-width: 0 2px 2px 0; transform: rotate(45deg);
-  }
-  .tile .actions { position: absolute; top: 4px; right: 4px; display: flex; gap: 4px; opacity: 0; }
-  .tile:hover .actions, .tile:focus-within .actions { opacity: 1; }
-  @media (hover: none) { .tile .actions { opacity: 1; } }
-  .tile .actions a, .tile .actions button {
-    width: 28px; height: 28px; padding: 0; border: 0; border-radius: 6px; display: grid;
-    place-items: center; background: rgba(0,0,0,.6); color: #fff; text-decoration: none;
-    font-size: 15px;
-  }
-  .tile .actions button:hover { background: var(--danger); }
-  #empty { text-align: center; padding: 24px; }
-  .pager { display: flex; justify-content: center; align-items: center; gap: 12px; margin-top: 12px; }
-</style>
+<link rel="stylesheet" href="/static/style.css">
 </head>
 <body>
 <main>
@@ -149,6 +67,8 @@
       <button id="next">Suivante ›</button>
     </div>
   </section>
+
+  {% include "wifi_panel.html" %}
 </main>
 
 <script>
@@ -407,5 +327,6 @@ function addError(file, error) {
 loadSettings();
 loadPage(1);
 </script>
+<script src="/static/wifi.js"></script>
 </body>
 </html>
