@@ -79,6 +79,7 @@
   <section>
     <div class="toolbar">
       <h2 style="margin:0">Photos</h2>
+      <span class="legend small muted"><span class="swatch"></span> album iCloud</span>
       <span class="spacer"></span>
       <button id="select-page">Tout sélectionner (page)</button>
       <button id="select-none" disabled>Désélectionner</button>
@@ -94,6 +95,27 @@
   </section>
 
   {% include "wifi_panel.html" %}
+
+  <section id="password">
+    <h2>Mot de passe de l'admin</h2>
+    <p id="pw-state" class="muted small"></p>
+    <form id="pw-form" class="wifi-form" autocomplete="off">
+      <input type="text" name="username" value="admin" autocomplete="username" hidden>
+      <label id="pw-current-label">Mot de passe actuel
+        <input type="password" name="current" autocomplete="current-password">
+      </label>
+      <label>Nouveau mot de passe
+        <input type="password" name="new" autocomplete="new-password" minlength="6">
+      </label>
+      <label>Confirmation
+        <input type="password" name="confirm" autocomplete="new-password">
+      </label>
+      <button type="submit" class="primary">Enregistrer</button>
+    </form>
+    <p class="muted small">Utilisateur : admin. Laisser le nouveau mot de passe vide pour supprimer
+      la protection. Le portail Wi-Fi du hotspot reste toujours accessible.</p>
+    <p id="pw-logout" hidden><a href="/logout">Se déconnecter</a></p>
+  </section>
 </main>
 
 <script>
@@ -141,11 +163,12 @@ form.addEventListener("change", async () => {
 /* ---- Galerie paginée ---- */
 const PER_PAGE = 48;
 let page = 1, pages = 1, items = [];
+let cloud = new Set();  // photos venant de l'album iCloud (liseré)
 const selected = new Set();
 
 async function loadPage(p = page) {
   const data = await api(`/api/photos?page=${p}&per=${PER_PAGE}`);
-  page = data.page; pages = data.pages; items = data.items;
+  page = data.page; pages = data.pages; items = data.items; cloud = new Set(data.cloud);
   $("#count").textContent = `${data.total} photo${data.total > 1 ? "s" : ""}`;
   showDisk(data.disk);
   $("#empty").hidden = data.total > 0;
@@ -159,7 +182,7 @@ async function loadPage(p = page) {
 
 function tile(name) {
   const el = document.createElement("div");
-  el.className = "tile" + (selected.has(name) ? " sel" : "");
+  el.className = "tile" + (selected.has(name) ? " sel" : "") + (cloud.has(name) ? " cloud" : "");
   el.dataset.name = name;
   el.innerHTML = `<img loading="lazy" alt="" src="/thumbs/${name}"><span class="check"></span>
     <span class="actions"><a href="/photos/${name}" target="_blank" title="Voir">⤢</a>
@@ -423,6 +446,31 @@ $("#icloud-sync").onclick = async () => {
   pollIcloud(s.last_sync);
 };
 
+/* ---- Mot de passe de l'admin ---- */
+const pwForm = $("#pw-form");
+async function loadPassword() {
+  const s = await api("/api/password");
+  $("#pw-state").textContent = s.enabled ? "L'admin est protégé par un mot de passe."
+    : "L'admin n'est pas protégé : toute personne sur le réseau peut gérer les photos.";
+  $("#pw-current-label").hidden = !s.enabled;
+  $("#pw-logout").hidden = !s.enabled;
+}
+pwForm.onsubmit = async (e) => {
+  e.preventDefault();
+  if (pwForm.new.value !== pwForm.confirm.value) { alert("La confirmation ne correspond pas."); return; }
+  if (!pwForm.new.value && !confirm("Supprimer le mot de passe de l'admin ?")) return;
+  const r = await fetch("/api/password", {
+    method: "POST", headers: {"Content-Type": "application/json"},
+    body: JSON.stringify({current: pwForm.current.value, new: pwForm.new.value}),
+  });
+  const s = await r.json();
+  if (!r.ok) { alert(s.error); return; }
+  pwForm.reset();
+  alert(s.enabled ? "Mot de passe enregistré." : "Mot de passe supprimé.");
+  loadPassword();
+};
+
+loadPassword();
 loadIcloud(true).then((s) => { if (s.running) pollIcloud(s.last_sync); });
 loadSettings();
 loadPage(1);

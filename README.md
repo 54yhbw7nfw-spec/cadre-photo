@@ -46,8 +46,11 @@ Sur le Pi :
 | `/var/lib/cadre/auth.json` | empreinte du mot de passe admin (absent = pas d'authentification) |
 | `/run/cadre-web/incoming/` | fichiers reçus en attente de traitement (RAM) |
 
-Mot de passe de l'admin (optionnel, authentification HTTP Basic) : sur le Pi,
-`cd /opt/cadre && python3 -m cadre.web --set-password` (ou `--clear-password`).
+Mot de passe de l'admin (optionnel) : dans l'admin (section « Mot de passe de l'admin ») ou sur le
+Pi `cd /opt/cadre && python3 -m cadre.web --set-password` (ou `--clear-password`). Page de
+connexion (utilisateur « admin » prérempli), cookie de session signé valable 30 jours
+(clé `/var/lib/cadre/secret_key`) ; changer le mot de passe déconnecte les autres navigateurs.
+Le portail Wi-Fi du hotspot reste accessible sans mot de passe.
 
 ## Installation sur un Pi neuf
 
@@ -202,7 +205,8 @@ pour déployer) :
 - Photos traitées comme un envoi (`imaging.process`, signature `icloud:<id>`), un seul traitement
   à la fois avec la file de l'admin. Photo retirée de l'album → supprimée du cadre ; changement
   d'album → photos de l'ancien retirées ; photo de l'album supprimée dans l'admin → pas
-  retéléchargée. Photos de l'admin jamais touchées (pas de détection de doublon entre les deux).
+  retéléchargée, sauf synchronisation demandée dans l'admin (bouton) : l'album revient en
+  entier. Liseré orange dans la galerie de l'admin. Photos de l'admin jamais touchées (pas de détection de doublon entre les deux).
 - Mesuré : 10 photos ajoutées en 28 s, synchronisation sans nouveauté en 2 s.
 
 ## Choix techniques du diaporama

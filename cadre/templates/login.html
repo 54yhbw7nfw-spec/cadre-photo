@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Cadre photo — Connexion</title>
+<link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+<main class="login">
+  <header>
+    <h1>Cadre photo</h1>
+  </header>
+  <form method="post" action="/login" class="wifi-form">
+    <input type="hidden" name="next" value="{{ next }}">
+    <label>Utilisateur
+      <input type="text" name="username" value="admin" autocomplete="username" readonly>
+    </label>
+    <label>Mot de passe
+      <input type="password" name="password" autocomplete="current-password" required autofocus>
+    </label>
+    <button type="submit" class="primary">Se connecter</button>
+  </form>
+  {% if error %}<p class="msg error">{{ error }}</p>{% endif %}
+</main>
+</body>
+</html>

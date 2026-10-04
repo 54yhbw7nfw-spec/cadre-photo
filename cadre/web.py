@@ -4,7 +4,7 @@ Les fichiers reçus sont posés en RAM (INCOMING_DIR) puis traités un par un pa
 de fond ; quand la file dépasse QUEUE_MAX_BYTES, l'upload répond 503 et le navigateur
 réessaie un peu plus tard.
 
-Mot de passe optionnel (authentification HTTP Basic) :
+Mot de passe optionnel (page de connexion, aussi modifiable dans l'admin) :
     python3 -m cadre.web --set-password     # demande le mot de passe
     python3 -m cadre.web --clear-password
 """
@@ -12,16 +12,18 @@ import argparse
 import collections
 import getpass
 import hashlib
+import secrets
 import json
 import logging
 import os
 import socket
 import threading
 import time
+import urllib.parse
 import urllib.request
 import uuid
 
-from flask import (Flask, Response, jsonify, redirect, render_template, request,
+from flask import (Flask, jsonify, redirect, render_template, request, session,
                    send_from_directory)
 from werkzeug.security import check_password_hash, generate_password_hash
 
@@ -38,6 +40,8 @@ PER_PAGE_MAX = 200
 
 app = Flask(__name__)
 app.config["MAX_CONTENT_LENGTH"] = 60 * 1024 * 1024
+app.config["PERMANENT_SESSION_LIFETIME"] = 30 * 86400
+app.config["SESSION_COOKIE_SAMESITE"] = "Lax"
 
 
 class ProcessingQueue:
@@ -138,6 +142,7 @@ class IcloudSync:
         self.lock = threading.Lock()  # lecture-modification-écriture de icloud.json
         self.running = False
         self.progress = ""
+        self.force = False  # synchronisation demandée dans l'admin : tout l'album revient
 
     def load(self):
         try:
@@ -209,6 +214,12 @@ class IcloudSync:
 
         album = {p["id"] for p in photos}
         known = self.load().get("photos", {})
+        if self.force:
+            self.force = False
+            missing = {pid for pid, name in known.items()
+                       if not os.path.exists(os.path.join(config.PHOTOS_DIR, name))}
+            known = {pid: name for pid, name in known.items() if pid not in missing}
+            self.update(url, lambda st: [st["photos"].pop(pid, None) for pid in missing])
         gone = {pid: name for pid, name in known.items() if pid not in album}
         for name in gone.values():
             imaging.delete(name)
@@ -282,8 +293,11 @@ def captive_portal():
 
 
 # --- Authentification optionnelle -------------------------------------------------------
+# Page de connexion et cookie de session signé (30 jours). Le cookie porte une empreinte du
+# mot de passe : le changer déconnecte les autres navigateurs. Le hachage pbkdf2 n'a lieu qu'à
+# la connexion (lent sur le Pi Zero).
 
-_auth_ok = set()  # empreintes d'en-têtes déjà vérifiés : le hachage coûte cher sur le Pi
+LOGIN_EXEMPT = ("/login", "/static/")
 
 
 def load_auth():
@@ -294,26 +308,108 @@ def load_auth():
         return None
 
 
+def auth_fingerprint(pw_hash):
+    return hashlib.sha256(pw_hash.encode()).hexdigest()[:16]
+
+
+def write_password(pw):
+    """Enregistre le mot de passe (vide : authentification désactivée) ; renvoie l'empreinte."""
+    if not pw:
+        try:
+            os.unlink(config.AUTH_FILE)
+        except FileNotFoundError:
+            pass
+        return None
+    # pbkdf2 allégé : supportable sur le Pi Zero, une seule fois par connexion.
+    pw_hash = generate_password_hash(pw, method="pbkdf2:sha256:50000")
+    config.atomic_write_json(config.AUTH_FILE, {"password_hash": pw_hash})
+    os.chmod(config.AUTH_FILE, 0o600)
+    return auth_fingerprint(pw_hash)
+
+
+def load_secret_key():
+    """Clé de signature des cookies, créée au premier lancement (0600)."""
+    path = os.path.join(config.DATA_DIR, "secret_key")
+    try:
+        with open(path) as f:
+            return f.read().strip()
+    except FileNotFoundError:
+        key = secrets.token_hex(32)
+        fd = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
+        with os.fdopen(fd, "w") as f:
+            f.write(key)
+        return key
+
+
 @app.before_request
 def require_password():
     pw_hash = load_auth()
     if not pw_hash:
         return None
-    # Portail du hotspot : seul qui voit l'écran (mot de passe du hotspot) peut s'y connecter,
-    # et la page doit s'ouvrir seule sur le téléphone, sans fenêtre d'authentification.
     path = request.path
+    if path.startswith(LOGIN_EXEMPT):
+        return None
+    # Portail du hotspot : seul qui voit l'écran (mot de passe du hotspot) peut s'y connecter,
+    # et la page doit s'ouvrir seule sur le téléphone, sans page de connexion.
     if config.load_state().get("mode") == "hotspot" and (
-            path in ("/wifi", "/api/wifi") or path.startswith(("/api/wifi/", "/static/"))):
+            path in ("/wifi", "/api/wifi") or path.startswith("/api/wifi/")):
         return None
-    header = request.headers.get("Authorization", "")
-    key = hashlib.sha256((pw_hash + header).encode()).hexdigest()
-    if key in _auth_ok:
+    if session.get("auth") == auth_fingerprint(pw_hash):
         return None
-    auth = request.authorization
-    if auth and auth.password and check_password_hash(pw_hash, auth.password):
-        _auth_ok.add(key)
-        return None
-    return Response("Mot de passe requis", 401, {"WWW-Authenticate": 'Basic realm="Cadre photo"'})
+    if path.startswith("/api/"):
+        return jsonify(error="connexion requise"), 401
+    return redirect("/login?next=" + urllib.parse.quote(path))
+
+
+@app.route("/login", methods=["GET", "POST"])
+def login():
+    pw_hash = load_auth()
+    target = request.values.get("next", "/")
+    if not target.startswith("/") or target.startswith("//"):
+        target = "/"
+    if not pw_hash:
+        return redirect(target)
+    error = ""
+    if request.method == "POST":
+        if check_password_hash(pw_hash, request.form.get("password", "")):
+            session.permanent = True
+            session["auth"] = auth_fingerprint(pw_hash)
+            return redirect(target)
+        time.sleep(1)  # freine les essais en rafale
+        error = "Mot de passe incorrect."
+        log.warning("Connexion refusée depuis %s", request.remote_addr)
+    return render_template("login.html", error=error, next=target)
+
+
+@app.get("/logout")
+def logout():
+    session.clear()
+    return redirect("/login")
+
+
+@app.get("/api/password")
+def password_status():
+    return jsonify(enabled=bool(load_auth()))
+
+
+@app.post("/api/password")
+def password_change():
+    data = request.get_json(silent=True) or {}
+    pw_hash = load_auth()
+    if pw_hash and not check_password_hash(pw_hash, str(data.get("current", ""))):
+        time.sleep(1)
+        return jsonify(error="mot de passe actuel incorrect"), 403
+    new = str(data.get("new", ""))
+    if new and len(new) < 6:
+        return jsonify(error="6 caractères minimum"), 400
+    fingerprint = write_password(new)
+    if fingerprint:
+        session.permanent = True
+        session["auth"] = fingerprint  # ce navigateur reste connecté
+    else:
+        session.clear()
+    log.info("Mot de passe de l'admin %s", "changé" if new else "supprimé")
+    return jsonify(enabled=bool(new))
 
 
 # --- Pages et API ------------------------------------------------------------------------
@@ -367,8 +463,10 @@ def photos():
     per = max(1, min(PER_PAGE_MAX, request.args.get("per", 48, type=int)))
     pages = max(1, -(-len(names) // per))
     page = max(1, min(pages, request.args.get("page", 1, type=int)))
+    items = names[(page - 1) * per:page * per]
+    cloud = set(icloud_sync.load().get("photos", {}).values())
     return jsonify(total=len(names), page=page, pages=pages, disk=disk_status(),
-                   items=names[(page - 1) * per:page * per])
+                   items=items, cloud=[n for n in items if n in cloud])
 
 
 @app.post("/api/delete")
@@ -394,6 +492,7 @@ def icloud_set():
 
 @app.post("/api/icloud/sync")
 def icloud_sync_now():
+    icloud_sync.force = True
     icloud_sync.wake.set()
     return jsonify(ok=True)
 
@@ -457,11 +556,8 @@ def set_password(clear):
     pw = getpass.getpass("Nouveau mot de passe : ")
     if not pw or pw != getpass.getpass("Confirmation : "):
         raise SystemExit("Mots de passe vides ou différents, rien n'est changé.")
-    # pbkdf2 allégé : chaque vérification reste supportable sur le Pi Zero (résultat mis en cache).
-    pw_hash = generate_password_hash(pw, method="pbkdf2:sha256:50000")
-    config.atomic_write_json(config.AUTH_FILE, {"password_hash": pw_hash})
-    os.chmod(config.AUTH_FILE, 0o600)
-    print("Mot de passe enregistré (utilisateur : n'importe lequel).")
+    write_password(pw)
+    print("Mot de passe enregistré.")
 
 
 def main():
@@ -480,6 +576,7 @@ def main():
         os.makedirs(d, exist_ok=True)
     for leftover in os.listdir(config.INCOMING_DIR):
         os.unlink(os.path.join(config.INCOMING_DIR, leftover))
+    app.secret_key = load_secret_key()
     queue.start()
     icloud_sync.start()
 
