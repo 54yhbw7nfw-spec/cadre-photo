@@ -4,11 +4,14 @@ Chaque photo est décodée une fois, composée en 1280x720 (letterbox) puis envo
 au GPU ; les transitions ne font que déplacer / mélanger des textures, ce qui
 laisse le CPU du Pi Zero quasiment libre.
 """
+import glob
 import logging
 import os
+import queue
 import random
 import signal
 import socket
+import struct
 import subprocess
 import threading
 import time
@@ -61,15 +64,63 @@ def in_sleep_window(settings, now=None):
     return start <= now < end if start < end else now >= start or now < end
 
 
+def cec_run(*args):
+    try:
+        return subprocess.run(["cec-ctl", "-d0", *args], capture_output=True, text=True,
+                              timeout=15).stdout
+    except (OSError, subprocess.TimeoutExpired):
+        return ""
+
+
 def cec(*args):
     """Commande HDMI-CEC vers la télé, en tâche de fond (sans effet sur un écran sans CEC)."""
+    threading.Thread(target=cec_run, args=args, daemon=True).start()
+
+
+def cec_active_source(wake=False):
+    """Se déclare source active (la télé envoie alors au cadre les touches de sa télécommande) ;
+    wake : rallume d'abord la télé. En tâche de fond."""
     def run():
-        try:
-            subprocess.run(["cec-ctl", "-d0", *args], stdout=subprocess.DEVNULL,
-                           stderr=subprocess.DEVNULL, timeout=15)
-        except (OSError, subprocess.TimeoutExpired):
-            pass
+        if wake:
+            cec_run("--to", "0", "--image-view-on")
+        out = cec_run("--playback", "--osd-name", "Cadre photo")
+        for line in out.splitlines():
+            if "Physical Address" in line:
+                addr = line.split(":", 1)[1].strip()
+                if addr != "f.f.f.f":  # pas de télé CEC
+                    cec_run("--to", "15", "--active-source", f"phys-addr={addr}")
     threading.Thread(target=run, daemon=True).start()
+
+
+# Télécommande de la télé : le noyau traduit les touches HDMI-CEC en événements clavier sur ce
+# périphérique. Testé sur une Samsung : OK, flèches et retour transmis, pas les couleurs.
+# Périphérique trouvé via le récepteur CEC (/sys/class/rc) : le lien by-path « hdmi-event »
+# désigne la prise audio HDMI, pas la télécommande.
+REMOTE_GLOB = "/sys/class/rc/rc*/input*/event*"
+INPUT_EVENT = struct.Struct("IIHHi")  # struct input_event 32 bits : sec, usec, type, code, value
+EV_KEY = 1
+KEY_UP, KEY_LEFT, KEY_RIGHT, KEY_DOWN = 103, 105, 106, 108
+KEY_PAUSE, KEY_BACK, KEY_PLAYPAUSE, KEY_EXIT, KEY_PLAY = 119, 158, 164, 174, 207
+KEY_OK, KEY_SELECT = 352, 353
+PAUSE_KEYS = (KEY_UP, KEY_DOWN, KEY_PAUSE, KEY_PLAYPAUSE, KEY_PLAY)
+
+
+def read_remote(keys):
+    """Thread : met dans la file keys le code de chaque touche appuyée (sans les répétitions)."""
+    while True:
+        paths = ["/dev/input/" + os.path.basename(p) for p in glob.glob(REMOTE_GLOB)]
+        if not paths:
+            time.sleep(30)  # pas de CEC (ou pas encore) : on réessaie de temps en temps
+            continue
+        try:
+            with open(paths[0], "rb", buffering=0) as f:
+                while data := f.read(INPUT_EVENT.size):
+                    _, _, kind, code, value = INPUT_EVENT.unpack(data)
+                    if kind == EV_KEY and value == 1:
+                        keys.put(code)
+        except OSError as exc:
+            log.warning("Télécommande : %s", exc)
+            time.sleep(5)
 
 
 class Playlist:
@@ -150,8 +201,12 @@ class Display:
         self.qr_key = None    # QR code déjà montré (mode + adresse) : pas de répétition
         self.qr_until = 0.0
         self.date_font = pygame.font.Font(None, 34)
-        # Le Pi se présente à la télé (CEC) : nécessaire pour l'éteindre / la rallumer la nuit.
-        cec("--playback", "--osd-name", "Cadre photo")
+        self.info_until = 0.0  # QR code de l'admin demandé par la touche OK
+        self.keys = queue.Queue()
+        threading.Thread(target=read_remote, args=(self.keys,), daemon=True).start()
+        # Le Pi se présente à la télé (CEC) et devient la source active : nécessaire pour la
+        # mettre en veille la nuit et pour recevoir les touches de sa télécommande.
+        cec_active_source()
         signal.signal(signal.SIGTERM, self._stop)
         signal.signal(signal.SIGINT, self._stop)
         log.info("Affichage %s, sortie %sx%s, rendu logique %sx%s",
@@ -175,9 +230,15 @@ class Display:
         tex.blend_mode = BLEND
         return tex
 
-    def show(self, tex):
+    def show(self, tex, badge=None):
         self.renderer.clear()
         tex.draw()
+        if badge:  # petit cartouche en haut à gauche (« Pause »)
+            img = self.date_font.render(badge, True, TEXT)
+            box = pygame.Surface((img.get_width() + 24, img.get_height() + 12), pygame.SRCALPHA)
+            box.fill((0, 0, 0, 160))
+            box.blit(img, (12, 6))
+            Texture.from_surface(self.renderer, box).draw(dstrect=(16, 16, *box.get_size()))
         self.renderer.present()
 
     def message_texture(self, lines):
@@ -255,7 +316,7 @@ class Display:
                 self.qr_until = time.monotonic() + QR_TIME
             if mode == "hotspot":
                 return key, lambda: self.hotspot_texture(state)
-            if time.monotonic() >= self.qr_until:
+            if time.monotonic() >= max(self.qr_until, self.info_until):
                 return None
             ip, host = state["ip"], socket.gethostname()
             return key, lambda: self.qr_texture(f"http://{ip}/", [
@@ -357,6 +418,8 @@ class Display:
         state, state_mtime = {}, None
         screen_key = None  # écran réseau affiché (QR code, connexion...)
         asleep = False
+        paused = False
+        history = []  # dernières photos affichées, pour la touche ←
 
         while self.running:
             now = time.monotonic()
@@ -396,8 +459,32 @@ class Display:
             if asleep:
                 asleep = False
                 log.info("Fin de la veille")
-                cec("--to", "0", "--image-view-on")
+                cec_active_source(wake=True)
                 self.due_at = 0.0
+
+            while not self.keys.empty():
+                code = self.keys.get()
+                now = time.monotonic()
+                if code in (KEY_OK, KEY_SELECT):
+                    self.info_until = 0.0 if self.info_until > now else now + QR_TIME
+                    paused = False
+                elif code in (KEY_BACK, KEY_EXIT):
+                    self.info_until = 0.0
+                elif code == KEY_RIGHT:
+                    self.info_until, paused, self.due_at = 0.0, False, 0.0
+                elif code == KEY_LEFT and len(history) >= 2:
+                    # Précédente, puis de nouveau l'actuelle et celle qui était préparée.
+                    back = [history[-2], history[-1]] + ([upcoming[0]] if upcoming else [])
+                    playlist.queue[:0] = back
+                    del history[-2:]
+                    upcoming = None
+                    self.info_until, paused, self.due_at = 0.0, False, 0.0
+                elif code in PAUSE_KEYS and current is not None and not screen_key:
+                    paused = not paused
+                    self.show(current, badge="Pause" if paused else None)
+                    if not paused:
+                        self.due_at = 0.0
+                log.info("Télécommande : touche %d", code)
 
             screen = self.network_screen(state)
             if screen:
@@ -432,9 +519,11 @@ class Display:
                     continue
                 upcoming = (name, tex)
 
-            if current is None or current is placeholder or time.monotonic() >= self.due_at:
+            if (current is None or current is placeholder
+                    or (not paused and time.monotonic() >= self.due_at)):
                 self.transition(current, upcoming[1], settings["transition"])
                 current = upcoming[1]
+                history = (history + [upcoming[0]])[-50:]
                 upcoming = None
                 placeholder = None
                 self.due_at = time.monotonic() + settings["delay"]

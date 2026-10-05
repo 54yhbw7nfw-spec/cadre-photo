@@ -220,6 +220,12 @@ pour déployer) :
 
 - Date de prise de vue (tirée du nom du fichier) en bas à droite de chaque photo, sur un
   cartouche sombre ; réglage « Afficher la date ».
+- Télécommande de la télé (HDMI-CEC) : le noyau traduit les touches en événements clavier sur le
+  périphérique du récepteur CEC (`/sys/class/rc/rc0/input*/event*` ; le lien by-path
+  « hdmi-event » est la prise audio HDMI). OK : QR code de l'admin 30 s (OK ou retour : masquer),
+  ← / → : photo précédente / suivante, ↑ / ↓ (ou lecture/pause) : pause avec cartouche « Pause ».
+  Le cadre se déclare source active au lancement et au réveil (sinon la télé garde les touches).
+  Testé sur une Samsung (Anynet+) : OK, flèches et retour transmis, ni couleurs ni lecture/pause.
 - Veille (réglage « Veille de … à … », plage pouvant passer minuit) : fondu au noir, plus aucune
   photo décodée, et la télé est mise en veille par HDMI-CEC (`cec-ctl --standby`) puis rallumée
   (`--image-view-on`) ; sans CEC (écran d'ordinateur), l'écran reste simplement noir. Le Pi se
