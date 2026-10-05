@@ -133,7 +133,8 @@ pour déployer) :
 - Arrêt : `cadre-shutdown` (ExecStop, après l'arrêt du diaporama) affiche la même image avec
   « Redémarrage... » ou « Extinction... » (+ attendre l'extinction de la diode verte), selon la
   cible en cours (`systemctl list-jobs`). Boutons « Redémarrer » / « Éteindre » dans l'admin :
-  `/api/power/<action>` → commande `reboot` / `poweroff` de `cadre-net` (root), différée de 2 s.
+  `/api/power/<action>` → commande `reboot` / `poweroff` de `cadre-net` (root) : état publié
+  (le diaporama affiche aussitôt le message), arrêt 3 s plus tard ; image d'arrêt gardée 3 s.
 - Écarté : l'image de démarrage du noyau (`rpi-splash-screen-support`, `fullscreen_logo=1`).
   L'image s'affiche dès la mise sous tension, mais le Pi Zero W se bloque ensuite (2 démarrages
   sur 2, sans trace dans le journal) ; retour à l'état antérieur par la carte SD.

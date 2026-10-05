@@ -19,7 +19,8 @@ FB_SYS = "/sys/class/graphics/fb0"
 DISPLAY_READY = b"Affichage KMSDRM"  # message du diaporama une fois l'écran pris
 STOP_AFTER_READY = 3     # s : le temps de dessiner son premier écran
 GIVE_UP = 240            # s : arrêt de toute façon (diaporama en échec)
-REDRAW_EVERY = 1.0       # s : les messages arrivent par rafales, le CPU sert au démarrage
+SHUTDOWN_HOLD = 3        # s : image d'arrêt laissée visible avant la suite de l'arrêt
+REDRAW_EVERY = 1.0      # s : les messages arrivent par rafales, le CPU sert au démarrage
 
 BG = (18, 18, 20)
 TEXT = (235, 235, 235)
@@ -128,6 +129,7 @@ def shutdown_screen():
         screen = Screen("Extinction...",
                         "Attendez que la diode verte du cadre s'éteigne avant de le débrancher.")
     screen.close()
+    time.sleep(SHUTDOWN_HOLD)  # sinon la fin de l'arrêt suit presque aussitôt
 
 
 def main():

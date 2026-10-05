@@ -443,7 +443,8 @@ class Handler(socketserver.StreamRequestHandler):
             elif cmd in ("reboot", "poweroff"):
                 # Différé : la réponse doit repartir vers l'admin avant l'arrêt des services.
                 log.info("Demande de l'admin : %s", cmd)
-                subprocess.Popen(["/bin/sh", "-c", f"sleep 2 && exec systemctl {cmd}"])
+                ctl.publish(cmd)  # le diaporama affiche « Redémarrage... » / « Extinction... »
+                subprocess.Popen(["/bin/sh", "-c", f"sleep 3 && exec systemctl {cmd}"])
                 resp = {"ok": True}
             else:
                 resp = {"ok": False, "error": "commande inconnue"}

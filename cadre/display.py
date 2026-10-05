@@ -268,6 +268,10 @@ class Display:
                 ("Scannez le QR code", 40, MUTED),
                 ("avec votre téléphone", 40, MUTED),
             ])
+        if mode in ("reboot", "poweroff"):  # demandé dans l'admin, l'arrêt suit dans 3 s
+            lines = ["Redémarrage..."] if mode == "reboot" else [
+                "Extinction...", "", "Débranchez le cadre quand", "sa diode verte est éteinte"]
+            return (mode,), lambda: self.message_texture(lines)
         if mode == "connecting" and self.qr_key is None:
             # Seulement avant la première connexion : une coupure passagère ne masque pas les photos.
             return ("connecting",), lambda: self.message_texture(["Connexion au Wi-Fi..."])
