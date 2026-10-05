@@ -226,6 +226,7 @@ pour déployer) :
   ← / → : photo précédente / suivante, ↑ / ↓ (ou lecture/pause) : pause avec cartouche « Pause ».
   Le cadre se déclare source active au lancement et au réveil (sinon la télé garde les touches).
   Testé sur une Samsung (Anynet+) : OK, flèches et retour transmis, ni couleurs ni lecture/pause.
+  Veille testée sur la même télé : mise en veille puis rallumage sur l'entrée du cadre.
 - Veille (réglage « Veille de … à … », plage pouvant passer minuit) : fondu au noir, plus aucune
   photo décodée, et la télé est mise en veille par HDMI-CEC (`cec-ctl --standby`) puis rallumée
   (`--image-view-on`) ; sans CEC (écran d'ordinateur), l'écran reste simplement noir. Le Pi se
