@@ -227,6 +227,8 @@ pour déployer) :
   Le cadre se déclare source active au lancement et au réveil (sinon la télé garde les touches).
   Testé sur une Samsung (Anynet+) : OK, flèches et retour transmis, ni couleurs ni lecture/pause.
   Veille testée sur la même télé : mise en veille puis rallumage sur l'entrée du cadre.
+  Aussi vérifié sur cette télé : démarrage du cadre télé éteinte (image présente au rallumage),
+  bascule automatique sur l'entrée du cadre à son démarrage, rien de rogné sur les bords.
 - Veille (réglage « Veille de … à … », plage pouvant passer minuit) : fondu au noir, plus aucune
   photo décodée, et la télé est mise en veille par HDMI-CEC (`cec-ctl --standby`) puis rallumée
   (`--image-view-on`) ; sans CEC (écran d'ordinateur), l'écran reste simplement noir. Le Pi se
