@@ -100,8 +100,10 @@ pour déployer) :
   (fichier NetworkManager natif, 0600), sauvegarde netplan dans `/root/netplan-backup/`.
   Script : `system/netplan/migrate-from-netplan.sh`, protégé au redémarrage suivant par
   `cadre-net-rollback` (restaure netplan si pas de passerelle en 5 min, puis se désactive).
-- Watchdog matériel : `system/systemd/cadre-watchdog.conf` dans `/etc/systemd/system.conf.d/`
-  (`RuntimeWatchdogSec=15s`) : le Pi redémarre seul s'il se fige.
+- Watchdog matériel : celui de Raspberry Pi OS suffit
+  (`/usr/lib/systemd/system.conf.d/40-rpi-enable-watchdog.conf`, 1 min). Écarté : 15 s, qui
+  redémarrait le Pi Zero en boucle vers 67 s (chargement des pilotes vc4 / brcmfmac). Dépannage
+  par la carte SD : ajouter `systemd.watchdog_sec=off` à `cmdline.txt`.
 - cloud-init désactivé (`/etc/cloud/cloud-init.disabled`) : il ne servait qu'à la première
   configuration par Raspberry Pi Imager et bloquait chaque démarrage ~1 min.
 - Économie d'énergie Wi-Fi désactivée : `system/NetworkManager/99-cadre-wifi.conf` copié dans

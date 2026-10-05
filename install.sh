@@ -103,8 +103,8 @@ if [ -d /etc/cloud ] && [ ! -e /etc/cloud/cloud-init.disabled ]; then
     echo "   désactivé"
 fi
 
-step "Watchdog matériel : armé par cadre-watchdog une fois le démarrage terminé"
-# Ancienne configuration (armé dès le boot) : redémarrages en boucle sur le Pi Zero.
+step "Watchdog matériel : réglage de Raspberry Pi OS (1 min) conservé"
+# Ancienne configuration du cadre (15 s) : redémarrages en boucle pendant le démarrage du Pi Zero.
 if [ -e /etc/systemd/system.conf.d/cadre-watchdog.conf ]; then
     rm -f /etc/systemd/system.conf.d/cadre-watchdog.conf
     echo "   ancienne configuration retirée"
@@ -153,7 +153,7 @@ for f in systemd/*.service; do
 done
 [ $changed = 1 ] && systemctl daemon-reload
 systemctl enable cadre-splash.service cadre-display.service cadre-web.service cadre-net.service \
-    cadre-watchdog.service 2>&1 | sed 's/^/   /'
+    2>&1 | sed 's/^/   /'
 # tty1 appartient à l'écran de démarrage puis au diaporama : pas d'invite de connexion dessus.
 if systemctl is-enabled --quiet getty@tty1.service; then
     systemctl disable getty@tty1.service 2>&1 | sed 's/^/   /'
