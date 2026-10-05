@@ -534,6 +534,13 @@ def wifi_status():
     return jsonify(net_command("status"))
 
 
+@app.post("/api/power/<action>")
+def power(action):
+    if action not in ("reboot", "poweroff"):
+        return jsonify(ok=False, error="action inconnue"), 404
+    return jsonify(net_command(action))
+
+
 @app.post("/api/wifi/<action>")
 def wifi_action(action):
     if action not in ("scan", "save", "connect", "forget"):

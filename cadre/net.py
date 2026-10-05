@@ -8,7 +8,8 @@
 "since" : horloge monotone (commune à tous les processus, insensible au réglage NTP).
 
 Seul ce service modifie le réseau. L'admin web lui envoie des commandes JSON (une ligne)
-sur la socket /run/cadre/net.sock (root:cadre 0660) : status, scan, save, connect, forget.
+sur la socket /run/cadre/net.sock (root:cadre 0660) : status, scan, save, connect, forget,
+reboot, poweroff.
 
 Les réseaux enregistrés sont des fichiers NetworkManager natifs (jamais netplan : sinon
 NetworkManager régénère netplan et recharge systemd à chaque démarrage, ~20 s par passe).
@@ -439,6 +440,11 @@ class Handler(socketserver.StreamRequestHandler):
                     resp = action(ssid, password, bool(req.get("hidden")))
             elif cmd == "forget":
                 resp = ctl.do_forget(str(req.get("uuid", "")))
+            elif cmd in ("reboot", "poweroff"):
+                # Différé : la réponse doit repartir vers l'admin avant l'arrêt des services.
+                log.info("Demande de l'admin : %s", cmd)
+                subprocess.Popen(["/bin/sh", "-c", f"sleep 2 && exec systemctl {cmd}"])
+                resp = {"ok": True}
             else:
                 resp = {"ok": False, "error": "commande inconnue"}
         except Exception as exc:

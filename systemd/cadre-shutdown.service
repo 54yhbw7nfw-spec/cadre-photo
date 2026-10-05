@@ -1,0 +1,16 @@
+[Unit]
+Description=Cadre photo - écran d'extinction / de redémarrage
+# Arrêté (donc ExecStop lancé) après cadre-display : l'arrêt se fait dans l'ordre inverse du
+# démarrage, et le diaporama doit avoir rendu l'écran pour que l'image soit visible.
+Before=cadre-display.service
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/bin/true
+ExecStop=/usr/bin/python3 -m cadre.splash --shutdown
+WorkingDirectory=/opt/cadre
+TimeoutStopSec=20
+
+[Install]
+WantedBy=multi-user.target

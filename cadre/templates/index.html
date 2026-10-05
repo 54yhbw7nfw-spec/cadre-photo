@@ -96,6 +96,15 @@
 
   {% include "wifi_panel.html" %}
 
+  <section id="power">
+    <h2>Cadre</h2>
+    <div class="toolbar">
+      <button type="button" id="reboot">Redémarrer</button>
+      <button type="button" id="poweroff" class="danger">Éteindre</button>
+    </div>
+    <p id="power-msg" class="msg"></p>
+  </section>
+
   <section id="password">
     <h2>Mot de passe de l'admin</h2>
     <p id="pw-state" class="muted small"></p>
@@ -469,6 +478,23 @@ pwForm.onsubmit = async (e) => {
   alert(s.enabled ? "Mot de passe enregistré." : "Mot de passe supprimé.");
   loadPassword();
 };
+
+/* ---- Redémarrer / éteindre ---- */
+async function power(action, question, message) {
+  if (!confirm(question)) return;
+  try {
+    const r = await api(`/api/power/${action}`, {});
+    if (!r.ok) { alert(r.error); return; }
+  } catch { alert("Le cadre ne répond pas."); return; }
+  $("#power-msg").className = "msg ok";
+  $("#power-msg").textContent = message;
+  document.querySelectorAll("#power button").forEach((b) => { b.disabled = true; });
+}
+$("#reboot").onclick = () => power("reboot", "Redémarrer le cadre ? Il revient dans 2 minutes environ.",
+  "Redémarrage en cours : rechargez cette page dans 2 minutes environ.");
+$("#poweroff").onclick = () => power("poweroff",
+  "Éteindre le cadre ? Il faudra le débrancher puis le rebrancher pour le rallumer.",
+  "Extinction en cours : débranchez le cadre quand sa diode verte est éteinte.");
 
 loadPassword();
 loadIcloud(true).then((s) => { if (s.running) pollIcloud(s.last_sync); });

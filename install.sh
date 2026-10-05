@@ -152,7 +152,8 @@ for f in systemd/*.service; do
     put "$f" "/etc/systemd/system/$(basename "$f")" 644 && changed=1 || true
 done
 [ $changed = 1 ] && systemctl daemon-reload
-systemctl enable cadre-splash.service cadre-display.service cadre-web.service cadre-net.service \
+systemctl enable cadre-splash.service cadre-shutdown.service cadre-display.service \
+    cadre-web.service cadre-net.service \
     2>&1 | sed 's/^/   /'
 # tty1 appartient à l'écran de démarrage puis au diaporama : pas d'invite de connexion dessus.
 if systemctl is-enabled --quiet getty@tty1.service; then

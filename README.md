@@ -94,7 +94,7 @@ pour déployer) :
   Le `D` force la sortie HDMI même sans télé branchée ou éteinte au boot ; sans cela SDL
   refuse KMSDRM (« kmsdrm not available »).
 - Paquet `python3-qrcode`.
-- Services `cadre-splash`, `cadre-display`, `cadre-web` (port 80) et `cadre-net` activés ;
+- Services `cadre-splash`, `cadre-shutdown`, `cadre-display`, `cadre-web` (port 80) et `cadre-net` activés ;
   `getty@tty1` désactivé (tty1 appartient à l'écran de démarrage puis au diaporama).
 - Connexion Wi-Fi sortie de netplan : `/etc/NetworkManager/system-connections/cadre-<ssid>.nmconnection`
   (fichier NetworkManager natif, 0600), sauvegarde netplan dans `/root/netplan-backup/`.
@@ -130,6 +130,10 @@ pour déployer) :
   remplace le framebuffer du firmware ; arrêt quand le diaporama a pris l'écran (message
   « Affichage KMSDRM »). Mesuré : image à 31 s, diaporama à 86 s, Wi-Fi à 108 s, sans écran noir ;
   6 s de CPU pendant le démarrage. Sans getty sur tty1, le diaporama démarre ~25 s plus tôt.
+- Arrêt : `cadre-shutdown` (ExecStop, après l'arrêt du diaporama) affiche la même image avec
+  « Redémarrage... » ou « Extinction... » (+ attendre l'extinction de la diode verte), selon la
+  cible en cours (`systemctl list-jobs`). Boutons « Redémarrer » / « Éteindre » dans l'admin :
+  `/api/power/<action>` → commande `reboot` / `poweroff` de `cadre-net` (root), différée de 2 s.
 - Écarté : l'image de démarrage du noyau (`rpi-splash-screen-support`, `fullscreen_logo=1`).
   L'image s'affiche dès la mise sous tension, mais le Pi Zero W se bloque ensuite (2 démarrages
   sur 2, sans trace dans le journal) ; retour à l'état antérieur par la carte SD.

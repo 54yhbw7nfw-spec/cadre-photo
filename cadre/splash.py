@@ -9,6 +9,7 @@ import mmap
 import os
 import select
 import subprocess
+import sys
 import time
 
 from PIL import Image, ImageChops, ImageDraw, ImageFont
@@ -53,7 +54,7 @@ def to_fb(img, bpp):
     return Image.merge("LA", (lo, hi)).tobytes()
 
 
-def background(w, h):
+def background(w, h, subtitle="Démarrage...", hint=""):
     img = Image.new("RGB", (w, h), BG)
     d = ImageDraw.Draw(img)
     fw, fh, cy = 180, 120, h // 2 - 130
@@ -65,13 +66,15 @@ def background(w, h):
     d.ellipse((x1 - 30, y0, x1 - 6, y0 + 24), fill=ACCENT)
     d.text((w // 2, h // 2 + 20), "Cadre photo", font=font("FreeSansBold.ttf", 72), fill=TEXT,
            anchor="mm")
-    d.text((w // 2, h // 2 + 95), "Démarrage...", font=font("FreeSansBold.ttf", 36), fill=MUTED,
+    d.text((w // 2, h // 2 + 95), subtitle, font=font("FreeSansBold.ttf", 36), fill=MUTED,
            anchor="mm")
+    if hint:
+        d.text((w // 2, h - 80), hint, font=font("FreeSans.ttf", 26), fill=DIM, anchor="mm")
     return img
 
 
 class Screen:
-    def __init__(self):
+    def __init__(self, subtitle="Démarrage...", hint=""):
         self.name = read_sys("name")
         self.w, self.h = (int(v) for v in read_sys("virtual_size").split(","))
         self.bpp = int(read_sys("bits_per_pixel"))
@@ -80,7 +83,7 @@ class Screen:
         self.mem = mmap.mmap(self.fd, self.stride * self.h)
         self.font = font("FreeSans.ttf", 22)
         self.strip_y = self.h - 40 - LINES * LINE_H
-        self.write(background(self.w, self.h), 0)
+        self.write(background(self.w, self.h, subtitle, hint), 0)
 
     def write(self, img, y):
         data = to_fb(img, self.bpp)
@@ -114,7 +117,23 @@ def short(message):
     return message.rstrip(".")
 
 
+def shutdown_screen():
+    """Appelé à l'arrêt (cadre-shutdown), une fois le diaporama arrêté : la console a repris
+    l'écran, l'image reste affichée jusqu'à la coupure."""
+    jobs = subprocess.run(["systemctl", "list-jobs", "--no-legend"], capture_output=True,
+                          text=True).stdout
+    if "reboot.target" in jobs:
+        screen = Screen("Redémarrage...")
+    else:
+        screen = Screen("Extinction...",
+                        "Attendez que la diode verte du cadre s'éteigne avant de le débrancher.")
+    screen.close()
+
+
 def main():
+    if "--shutdown" in sys.argv:
+        shutdown_screen()
+        return
     while not os.path.exists(FB):
         time.sleep(0.2)
     screen = Screen()
