@@ -79,21 +79,20 @@ done
 if [ -n "$MISSING" ]; then
     echo "   à installer :$MISSING"
     # Raspbian répartit les téléchargements entre des miroirs, parfois en retard (404) :
-    # nouvel essai, puis au 3e un miroir nommé (le répartiteur peut renvoyer toujours vers le
-    # même miroir défaillant depuis un réseau donné), le temps de l'installation seulement.
+    # au 2e essai, un miroir nommé (le répartiteur peut renvoyer toujours vers le même miroir
+    # défaillant depuis un réseau donné), le temps de l'installation seulement.
     FALLBACK=$(mktemp)
     printf 'deb [signed-by=/usr/share/keyrings/raspbian-archive-keyring.gpg] %s trixie main contrib non-free rpi\n' \
         http://ftp.halifax.rwth-aachen.de/raspbian/raspbian > "$FALLBACK"
-    for try in 1 2 3; do
+    for try in 1 2; do
         set --
-        [ $try = 3 ] && set -- -o Dir::Etc::SourceList="$FALLBACK" -o Dir::Etc::SourceParts=/nonexistent
+        [ $try = 2 ] && set -- -o Dir::Etc::SourceList="$FALLBACK" -o Dir::Etc::SourceParts=/nonexistent
         apt-get "$@" update
         # shellcheck disable=SC2086
         DEBIAN_FRONTEND=noninteractive apt-get "$@" install -y --no-install-recommends \
-            -o Acquire::Retries=3 $MISSING && break
-        [ $try = 3 ] && { echo "Paquets impossibles à télécharger : relancer plus tard." >&2; exit 1; }
-        echo "   miroir en défaut, nouvel essai dans 10 s ($try/3)"
-        sleep 10
+            $MISSING && break
+        [ $try = 2 ] && { echo "Paquets impossibles à télécharger : relancer plus tard." >&2; exit 1; }
+        echo "   miroir en défaut : nouvel essai par ftp.halifax.rwth-aachen.de"
     done
     rm -f "$FALLBACK"
 else
