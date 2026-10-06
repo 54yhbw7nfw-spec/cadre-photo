@@ -19,13 +19,13 @@ Cahier des charges : [docs/cahier-des-charges.md](docs/cahier-des-charges.md).
 | 10. Lieu des photos (OpenStreetMap, sinon hors ligne) | ✅ testé (album iCloud) |
 | 11. Rapport de diagnostic | ✅ testé (4 s, 360 Ko) |
 | 12. Mise à jour à distance (fichier signé, retour arrière) | ✅ 5 cas testés, dont une version cassée |
-| 19. Mise à jour depuis un lien (release GitHub), sur demande | ✅ cas d'erreur testés ; release à tester |
 | 13. Message sur le cadre (bandeau ou écran, jusqu'à une date) | ✅ livré par mise à jour signée |
 | 14. Souvenirs « ce jour-là » | ✅ testé (photos datées d'un 6 octobre passé) |
 | 15. Nouveautés à l'honneur (pictogramme « nouveau ») | ✅ testé |
 | 16. Favoris et photos masquées | livré par mise à jour signée, à tester |
 | 17. Choix des photos affichées (source, période) | livré par mise à jour signée, à tester |
 | 18. Heure et météo (Open-Meteo), icônes dessinées | livré par mise à jour signée, à tester |
+| 19. Mise à jour depuis un lien (release GitHub), sur demande | ✅ cas d'erreur testés ; release à tester |
 | Mode d'emploi vidéo | ✅ `build/video/cadre-photo-mode-d-emploi.mp4`, à refaire après une évolution visible |
 
 ## Reste à faire / idées
