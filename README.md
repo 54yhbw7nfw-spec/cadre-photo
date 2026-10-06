@@ -179,6 +179,10 @@ pour déployer) :
 
 ## Admin web
 
+- Réduction dans le navigateur testée une fois par page (couleur connue encodée puis relue au
+  pixel près) : Firefox avec anti-pistage rend un canvas noir et falsifie sa relecture. Canvas
+  peu fiable, image réduite trop légère (< 0,03 octet/pixel) ou vide → l'original part tel quel.
+  Le cadre refuse en dernier recours toute photo entièrement noire.
 - Espace libre affiché en haut (pourcentage et Go). Marge gardée pour le système :
   5 % de la carte, 1 Go minimum ; en dessous l'envoi répond 507, le navigateur arrête le lot et
   un bandeau demande de supprimer des photos.
