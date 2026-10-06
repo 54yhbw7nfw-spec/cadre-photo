@@ -90,8 +90,8 @@ def sync_units(root):
 
 def restart_later(delay=3):
     """Redémarre les services hors de cadre-net (qui en fait partie) : unité transitoire."""
-    run("systemd-run", f"--on-active={delay}", "--unit", f"cadre-restart-{int(time.time())}",
-        "systemctl", "restart", *SERVICES)
+    run("systemd-run", f"--on-active={delay}", "--timer-property=AccuracySec=1s",
+        "--unit", f"cadre-restart-{int(time.time())}", "systemctl", "restart", *SERVICES)
 
 
 def chown_cadre(path):
@@ -205,8 +205,9 @@ def install(bundle):
                 raise UpdateError("script de migration en échec : ancienne version remise")
         write_status(state="pending", message="services en redémarrage, vérification dans "
                      f"{GUARD_DELAY // 60} min {GUARD_DELAY % 60} s")
-        run("systemd-run", f"--on-active={GUARD_DELAY}", "--unit",
-            f"cadre-update-guard-{int(time.time())}", sys.executable, guard, "guard",
+        # Précision à la seconde : par défaut, une minuterie systemd peut partir 1 min en retard.
+        run("systemd-run", f"--on-active={GUARD_DELAY}", "--timer-property=AccuracySec=1s",
+            "--unit", f"cadre-update-guard-{int(time.time())}", sys.executable, guard, "guard",
             new_version)
         restart_later()
         return new_version
