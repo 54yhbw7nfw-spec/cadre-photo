@@ -276,7 +276,10 @@ def main(base):
         dur = duration(voice) + PAUSE
         subprocess.run([
             "ffmpeg", "-y", "-loglevel", "error", "-loop", "1", "-i", png, "-i", voice,
-            "-vf", f"fade=t=in:st=0:d=0.4,fade=t=out:st={dur - 0.4:.2f}:d=0.4,format=yuv420p",
+            # Pas de fondu d'ouverture sur la 1re : son image sert d'aperçu aux lecteurs
+            # (GitHub montre la première image de la vidéo).
+            "-vf", ("" if i == 1 else "fade=t=in:st=0:d=0.4,")
+            + f"fade=t=out:st={dur - 0.4:.2f}:d=0.4,format=yuv420p",
             "-af", f"apad=whole_dur={dur:.2f}", "-t", f"{dur:.2f}", "-r", "25",
             "-c:v", "libx264", "-tune", "stillimage", "-c:a", "aac", "-ar", "48000", mp4],
             check=True)
