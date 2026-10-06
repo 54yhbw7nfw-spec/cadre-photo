@@ -280,7 +280,8 @@ message change). Pris en compte par le diaporama en quelques secondes (`message.
 ## Souvenirs et nouveautés
 
 - « Souvenirs « ce jour-là » » (réglage, actif par défaut) : les photos prises le même jour une
-  année passée (date du nom de fichier) passent une fois sur 4, légende « Il y a N ans · … ».
+  année passée (date du nom de fichier) passent une fois sur 4, légende « Il y a N ans », suivie
+  du lieu s'il est connu (la date, implicite, n'est pas répétée).
   Les photos sans date de prise de vue (WhatsApp) portent leur date d'arrivée : jamais de faux
   souvenir. Photos de test : `build/test-souvenirs/` (EXIF du 6 octobre 2020 et 2023).
 - « Nouveautés à l'honneur » (réglage, actif par défaut) : photos arrivées depuis moins de 24 h

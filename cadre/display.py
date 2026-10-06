@@ -546,8 +546,9 @@ class Display:
 
     def draw_date(self, surf, name, place=None, show_date=True, prefix=None):
         """Lieu et/ou date de prise de vue en bas à droite de surf, sur un cartouche sombre ;
-        prefix : « Il y a 3 ans » pour un souvenir."""
-        text = " · ".join(t for t in (prefix, place, photo_date(name) if show_date else None)
+        prefix : « Il y a 3 ans » pour un souvenir, qui remplace la date (déjà dite)."""
+        text = " · ".join(t for t in (prefix, place,
+                                      photo_date(name) if show_date and not prefix else None)
                           if t)
         if not text:
             return
