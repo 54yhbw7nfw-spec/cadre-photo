@@ -3,7 +3,9 @@
 # avec Raspberry Pi Imager (utilisateur, Wi-Fi, ssh). Idempotent : peut être relancé.
 #
 # Depuis le PC (Git Bash) :  ./install.sh [--journal-sd] [hôte ssh]      (défaut : cadre)
-#   envoie le dépôt dans /tmp/cadre-install sur le Pi, puis y lance « sudo sh install.sh --local ».
+#   envoie le dépôt dans /tmp/cadre-install sur le Pi, puis y lance « sudo sh install.sh --local »
+#   (mot de passe de sudo demandé à la première installation).
+#   Autre hôte : CADRE_SSH_KEY=~/.ssh/id_ed25519_cadre ./install.sh cadre@<ip>
 # Sur le Pi, en root :       sh install.sh --local [--journal-sd]   (depuis une copie du dépôt)
 #
 # --journal-sd : journal conservé sur la carte SD (50 Mo max) pour diagnostiquer un démarrage
@@ -26,13 +28,15 @@ OPTS=""
 
 if [ $LOCAL = 0 ]; then
     cd "$(dirname "$0")"
-    tar --exclude=__pycache__ -czf - install.sh cadre systemd system | ssh "$HOST" "
-        set -e
-        rm -rf /tmp/cadre-install && mkdir /tmp/cadre-install
-        tar -xzf - -C /tmp/cadre-install
-        sudo sh /tmp/cadre-install/install.sh --local $OPTS
-        rm -rf /tmp/cadre-install"
-    exit 0
+    # CADRE_SSH_KEY : clé à utiliser quand l'hôte n'est pas l'alias « cadre » de ~/.ssh/config.
+    SSH="ssh${CADRE_SSH_KEY:+ -i $CADRE_SSH_KEY}"
+    tar --exclude=__pycache__ -czf - install.sh cadre systemd system | $SSH "$HOST" "
+        rm -rf /tmp/cadre-install && mkdir /tmp/cadre-install && tar -xzf - -C /tmp/cadre-install"
+    # Terminal interactif : sur un système neuf, sudo demande le mot de passe choisi dans Imager
+    # (une seule fois : l'installation configure ensuite sudo sans mot de passe).
+    $SSH -t "$HOST" "sudo sh /tmp/cadre-install/install.sh --local $OPTS; rc=\$?
+        rm -rf /tmp/cadre-install; exit \$rc"
+    exit $?
 fi
 
 # --- Sur le Pi --------------------------------------------------------------------------------
@@ -52,6 +56,17 @@ put() {  # put <source> <destination> <mode>
     install -D -m "$3" "$1" "$2"
     echo "   installé : $2"
 }
+
+step "sudo sans mot de passe pour ${SUDO_USER:-?} (deploy.sh, mises à jour par ssh)"
+if [ -n "${SUDO_USER:-}" ] && [ "$SUDO_USER" != root ]; then
+    SUDOERS="/etc/sudoers.d/010_${SUDO_USER}-nopasswd"
+    if [ ! -e "$SUDOERS" ]; then
+        printf '%s ALL=(ALL) NOPASSWD: ALL\n' "$SUDO_USER" > "$SUDOERS.tmp"
+        chmod 440 "$SUDOERS.tmp"
+        visudo -cf "$SUDOERS.tmp" >/dev/null && mv "$SUDOERS.tmp" "$SUDOERS"
+        echo "   configuré"
+    fi
+fi
 
 step "Paquets"
 PKGS="python3-pygame python3-pil libegl1 libegl-mesa0 libgles2 libgl1-mesa-dri
