@@ -8,9 +8,10 @@ partage dans un album iCloud que le cadre suit tout seul. Pensé pour être inst
 proches et oublié : il se configure au Wi-Fi par un QR code, se pilote avec la télécommande de
 la télé, et se met à jour à distance.
 
-[![Mode d'emploi en vidéo (5 min)](docs/images/video.jpg)](docs/video/cadre-photo-mode-d-emploi.mp4)
 
-*Mode d'emploi en vidéo, 5 min : [docs/video/cadre-photo-mode-d-emploi.mp4](docs/video/cadre-photo-mode-d-emploi.mp4)*
+https://github.com/user-attachments/assets/2b167433-4f0e-4ca1-a0dd-108d34d276e3
+
+
 
 ## Ce qu'il sait faire
 
