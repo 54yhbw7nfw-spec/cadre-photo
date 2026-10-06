@@ -7,10 +7,12 @@
   (nmcli, NetworkManager, hostapd, dnsmasq, avahi, pare-feu…) : risque de perdre l'accès SSH.
 - Ne jamais écrire de mot de passe dans le dépôt.
 - Fichiers en LF (`.gitattributes`), commentaires et messages en français.
-- Tenir à jour la section « Configuration déjà appliquée au Pi » du README : elle sert de base à install.sh.
+- Tenir à jour la section « Configuration déjà appliquée au Pi » de docs/technique.md : elle sert de
+  base à install.sh. Le README est la vitrine du projet (présentation, captures, matériel).
 - Aucune trace du nom réel de l'utilisateur dans le dépôt ni dans l'historique : commits signés
   `gtt` (configuré dans ce dépôt), archives envoyées avec `--owner=0`.
 - Hors de la maison, le Pi n'est pas à l'adresse de l'alias `cadre` : `ssh -i ~/.ssh/id_ed25519_cadre
   cadre@<ip>`, et pour deploy.sh `CADRE_HOST=cadre@<ip>` avec un `ssh` qui ajoute la clé.
-- Une évolution visible (écran, admin) : mettre à jour le README, le cahier des charges si besoin,
-  et refaire la vidéo (`tools/video/`, voir README).
+- Une évolution visible (écran, admin) : mettre à jour docs/technique.md, le cahier des charges si
+  besoin, le README si elle mérite d'être mise en avant, et refaire la vidéo (`tools/video/`, voir
+  docs/technique.md) puis la copier dans docs/video/.

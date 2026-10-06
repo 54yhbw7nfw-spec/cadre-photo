@@ -55,6 +55,25 @@ def main(out):
     d.draw_banner(banner, "Bon anniversaire Mamie ! Gros bisous de toute la famille")
     save("bandeau.png", banner)
     save("message.png", d.message_card("Bon anniversaire Mamie ! Gros bisous de toute la famille"))
+
+    # Écran complet : souvenir avec son lieu, pictogramme « nouveau », heure et météo
+    # (coin composé comme Display.update_corner, sans rendu GPU).
+    full = pygame.Surface((W, H))
+    full.blit(photo, ((W - photo.get_width()) // 2, (H - photo.get_height()) // 2))
+    d.draw_date(full, name, located.get(name), True, "Il y a 2 ans")
+    d.draw_badge(full)
+    parts = [d.date_font.render("16:08", True, display.TEXT), display.weather_icon("partly", True),
+             d.date_font.render("18 °C", True, display.TEXT)]
+    w = sum(p.get_width() for p in parts) + 10 * (len(parts) - 1) + 24
+    h = max(p.get_height() for p in parts) + 10
+    box = pygame.Surface((w, h), pygame.SRCALPHA)
+    box.fill((0, 0, 0, 140))
+    x = 12
+    for part in parts:
+        box.blit(part, (x, (h - part.get_height()) // 2))
+        x += part.get_width() + 10
+    full.blit(box, (16, H - h - 16))
+    save("ecran.png", full)
     img = d.date_font.render("Pause", True, display.TEXT)
     box = pygame.Surface((img.get_width() + 24, img.get_height() + 12), pygame.SRCALPHA)
     box.fill((0, 0, 0, 160))

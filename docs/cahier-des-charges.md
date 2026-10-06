@@ -61,4 +61,4 @@
 ## Méthode
 Avancer par étapes testées sur le Pi :
 1) diaporama seul, 2) admin web, 3) QR code au boot, 4) hotspot/portail captif, 5) install.sh,
-puis les évolutions ci-dessus (étapes 6 à 12 du README).
+puis les évolutions ci-dessus (étapes 6 et suivantes de [technique.md](technique.md)).

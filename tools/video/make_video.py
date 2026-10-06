@@ -21,8 +21,15 @@ FONTS = r"C:\Windows\Fonts"
 VOICE = "fr-FR-DeniseNeural"  # voix neuronale Microsoft (edge-tts)
 PAUSE = 0.9  # s de silence après chaque narration
 # Zones à masquer sur les captures : le lien réel de l'album iCloud (accès « contributeur »).
-MASKS = {"shots/admin-haut.png": [((124, 304, 836, 332),
-                                   "https://photos.icloud.com/shared/album/…")]}
+# Données personnelles masquées sur les captures (coordonnées dans la page entière) :
+# (zone, texte de remplacement, police, taille).
+_TOP = [((126, 814, 834, 842), "https://photos.icloud.com/shared/album/…", "segoeui.ttf", 15),
+        ((368, 361, 558, 387), "Niort", "segoeui.ttf", 15),
+        ((636, 362, 835, 388), "Niort, France · 18 °C, nuageux", "segoeui.ttf", 13)]
+MASKS = {"shots/admin-haut.png": _TOP,
+         "shots/admin-complet.png": _TOP + [
+             ((118, 2609, 800, 2634), "Lieu des photos, rapport de diagnostic, mise à jour par lien",
+              "consola.ttf", 13)]}
 
 # (titre, visuels « dossier/fichier », points clés à l'écran, narration)
 SLIDES = [
@@ -51,14 +58,15 @@ SLIDES = [
      "La page de configuration s'ouvre alors toute seule sur le téléphone. Choisissez le "
      "Wi-Fi de la maison, tapez son mot de passe et touchez Se connecter. Le cadre rejoint la "
      "maison, et le QR code de la page de gestion s'affiche à la télé."),
-    ("La page de gestion", ["shots/admin-haut.png"],
+    ("La page de gestion", ["shots/admin-complet.png#0"],
      ["QR code de la télé, ou http://cadre.local", "Transition, durée, ordre aléatoire",
-      "Date et lieu sur les photos, veille la nuit"],
+      "Réglages par thème : diaporama, photos, écran"],
      "Pour gérer le cadre, scannez le QR code affiché à la télé, ou tapez cadre point local "
      "dans le navigateur d'un téléphone ou d'un ordinateur connecté au même Wi-Fi. En haut de "
      "la page se trouvent les réglages : la transition entre les photos, la durée "
      "d'affichage, l'ordre aléatoire, la date et le lieu sur les photos, et la mise en veille la "
-     "nuit."),
+     "nuit. Ils sont rangés par thème : le diaporama, ce qui s'affiche sur les photos, et "
+     "l'écran."),
     ("Ajouter des photos", ["shots/admin-photos.png"],
      ["Glisser les photos, ou toucher pour les choisir", "Visibles en quelques secondes",
       "Sélectionner puis « Supprimer la sélection »"],
@@ -80,6 +88,19 @@ SLIDES = [
      "chaque photo. Chacun se règle dans la page de gestion. Le lieu est connu pour les photos "
      "prises avec un téléphone et pour celles de l'album iCloud, mais pas pour les photos "
      "reçues par WhatsApp, qui efface cette information."),
+    ("Souvenirs et nouveautés", ["screens/ecran.png"],
+     ["« Il y a 2 ans » : photos prises ce jour-là", "Étincelle : photo arrivée depuis 24 h",
+      "Heure et météo en bas à gauche"],
+     "Le cadre fait revivre vos souvenirs : les photos prises le même jour, les années "
+     "passées, reviennent souvent, avec la mention Il y a deux ans. Une étincelle bleue signale "
+     "les photos arrivées depuis moins d'un jour. Et si vous le souhaitez, l'heure et la météo "
+     "s'affichent en bas à gauche, avec une petite icône."),
+    ("Favoris et photos masquées", ["shots/admin-complet.png#4:430"],
+     ["Étoile : favori, revient plus souvent", "Œil : masquée du diaporama, mais gardée",
+      "Choisir : album, envois, favoris, période"],
+     "Dans la galerie, l'étoile marque une photo favorite : elle revient plus souvent. L'œil "
+     "masque une photo du diaporama sans la supprimer. Dans les réglages, vous pouvez aussi "
+     "choisir ce qui défile : l'album iCloud, les photos envoyées, les favoris, ou une période."),
     ("Un message sur le cadre", ["shots/admin-complet.png#1", "screens/bandeau.png"],
      ["Section « Message sur le cadre »", "Bandeau sur les photos, ou écran entre elles",
       "Jusqu'à une date, ou « Retirer »"],
@@ -101,13 +122,14 @@ SLIDES = [
      "débrancher le cadre, éteignez-le ainsi et attendez que sa diode verte s'éteigne. C'est "
      "aussi là que vous pouvez protéger la page par un mot de passe."),
     ("Mettre à jour le cadre", ["shots/admin-complet.png#6"],
-     ["Fichier « .cadre » reçu par message", "« Installer une mise à jour… »",
+     ["« Rechercher une mise à jour », puis « Installer »", "Ou un fichier « .cadre » reçu",
       "Vérifié avant, contrôlé après", "Problème : ancienne version remise"],
-     "Si la personne qui s'occupe du cadre vous envoie un fichier de mise à jour, terminé par "
-     "point cadre, ouvrez la page de gestion, section Mise à jour, et touchez Installer une "
-     "mise à jour. Le cadre vérifie que le fichier vient bien d'elle, l'installe, puis "
-     "contrôle que tout fonctionne. Au moindre problème, il remet l'ancienne version tout "
-     "seul. Comptez trois minutes."),
+     "Pour mettre le cadre à jour, ouvrez la page de gestion, section Mise à jour, et touchez "
+     "Rechercher une mise à jour. Si une nouvelle version existe, touchez Installer cette "
+     "version. Vous pouvez aussi installer un fichier point cadre reçu par message. Le cadre "
+     "vérifie qu'elle vient bien de la personne qui s'en occupe, l'installe, puis contrôle "
+     "que tout fonctionne ; au moindre problème, il remet l'ancienne version tout seul. "
+     "Comptez trois minutes, la page vous tient au courant."),
     ("Envoyer un rapport", ["shots/admin-complet.png#7"],
      ["Section « Diagnostic »", "Cocher, choisir la période", "« Télécharger le rapport »",
       "L'envoyer par message"],
@@ -173,16 +195,19 @@ def load_visual(base, name):
     « …png#n-m » (sections n à m) : pas de coordonnées à refaire quand la page change."""
     name, _, sections = name.partition("#")
     img = Image.open(os.path.join(base, name)).convert("RGB")
+    d = ImageDraw.Draw(img)
+    for (x0, y0, x1, y1), text, face, size in MASKS.get(name, []):  # avant toute découpe
+        d.rectangle((x0, y0, x1, y1), fill=img.getpixel((x0 + 2, y0 + 2)))
+        d.text((x0 + 6, (y0 + y1) // 2), text, font=font(face, size), fill=(70, 70, 75),
+               anchor="lm")
     if sections:
+        sections, _, maxh = sections.partition(":")  # « #4:420 » : 420 px au plus
         first, _, last = sections.partition("-")
         spans = cards(img)
         top, bottom = spans[int(first)][0], spans[int(last or first)][1]
+        if maxh:
+            bottom = min(bottom, top + int(maxh))
         img = img.crop((90, top - 8, 1190, bottom + 8))
-    d = ImageDraw.Draw(img)
-    for (x0, y0, x1, y1), text in MASKS.get(name, []):
-        d.rectangle((x0, y0, x1, y1), fill=img.getpixel((x0 + 2, y0 + 2)))
-        d.text((x0 + 8, (y0 + y1) // 2), text, font=font("segoeui.ttf", 15),
-               fill=(70, 70, 75), anchor="lm")
     return img
 
 
