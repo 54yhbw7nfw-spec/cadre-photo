@@ -12,7 +12,7 @@ Cahier des charges : [docs/cahier-des-charges.md](docs/cahier-des-charges.md).
 | 3. QR code au boot | ✅ testé sur la télé ; Wi-Fi connecté à ~100 s après la mise sous tension |
 | 4. Hotspot / portail captif | ✅ testé avec un iPhone : portail ouvert tout seul, Wi-Fi de la maison reconnecté en 5 s |
 | 6. Album iCloud partagé | ✅ testé (album récent, 10 photos dont 3 HEIC) — ancien format de lien non testé |
-| 5. install.sh | écrit — à tester : relance sur le Pi actuel, puis carte SD vierge |
+| 5. install.sh | ✅ testé sur une carte SD vierge (Raspberry Pi OS Lite trixie) : cadre complet au 1er redémarrage |
 
 ## Arborescence
 
@@ -57,10 +57,18 @@ Le portail Wi-Fi du hotspot reste accessible sans mot de passe.
 1. Raspberry Pi Imager : Raspberry Pi OS Lite (trixie), nom d'hôte `cadre`, utilisateur `cadre`,
    Wi-Fi de la maison, ssh par clé.
 2. Hôte `cadre` dans `~/.ssh/config` (voir « Accès au Pi »).
-3. Depuis Git Bash : `./install.sh` (ou `./install.sh <hôte>`), puis `ssh cadre sudo reboot`.
+3. Depuis Git Bash : `./install.sh` (ou `CADRE_SSH_KEY=~/.ssh/id_ed25519_cadre ./install.sh cadre@<ip>`),
+   puis `ssh cadre sudo reboot`. Le mot de passe de `cadre` (choisi dans Imager) est demandé une
+   fois : le script configure ensuite sudo sans mot de passe (deploy.sh). Coller la clé publique
+   `id_ed25519_cadre.pub` dans Imager (SSH par clé).
    `--journal-sd` garde le journal sur la carte SD (50 Mo max) pour diagnostiquer un démarrage
    raté ; sans l'option il reste en RAM (moins d'écritures sur la SD), et l'option est retirée
    si elle avait été appliquée.
+
+Test du 2026-10-06 (carte neuve, Pi Zero W, Wi-Fi du bureau) : installation ~25 min, dont les
+paquets ; le répartiteur Raspbian renvoyait vers un miroir en 404 (`mirror.pyratelan.org`), d'où
+le 2e essai par `ftp.halifax.rwth-aachen.de`. Au redémarrage : écran de démarrage à 31 s,
+diaporama à 88 s, Wi-Fi à 110 s (hors netplan, filet retiré à 112 s), 180 Mo de RAM utilisés.
 
 Le script reprend toute la « Configuration déjà appliquée au Pi » ; relancé, il ne refait que ce
 qui manque ou a changé. Il ne touche jamais à une connexion active : la sortie de netplan prend
