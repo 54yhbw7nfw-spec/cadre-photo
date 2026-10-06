@@ -1,9 +1,11 @@
-"""Lieu des photos, hors ligne : ville la plus proche des coordonnées GPS.
+"""Lieu des photos : commune la plus proche des coordonnées GPS.
 
-Villes de plus de 15 000 habitants (GeoNames, CC BY 4.0 : cadre/data/villes.tsv.gz) ; noms
-de pays en français fournis par le paquet iso-codes. Les lieux sont calculés une fois, à
-l'arrivée de la photo (admin web ou album iCloud), et rangés dans places.json : le diaporama
-n'a qu'à les lire.
+Avec Internet : OpenStreetMap (Nominatim), nom de commune en français ; une requête par photo
+au plus, espacées d'au moins 1,1 s (règles d'usage du service). Sans Internet, ou s'il ne
+répond pas : villes de plus de 1 000 habitants (GeoNames, CC BY 4.0 : data/villes.tsv.gz),
+chargées une fois en tableaux numpy (~4 Mo, au lieu de ~40 Mo en objets Python) ; noms de pays
+en français par le paquet iso-codes. Calculé une fois à l'arrivée de la photo (admin web ou
+album iCloud) et rangé dans places.json : le diaporama n'a qu'à le lire.
 """
 import gettext
 import gzip
@@ -11,30 +13,27 @@ import json
 import math
 import os
 import threading
+import time
+import urllib.parse
+import urllib.request
+
+import numpy
 
 from . import config
 
+NOMINATIM = "https://nominatim.openstreetmap.org/reverse"
+USER_AGENT = "cadre-photo/1.0 (cadre photo familial, Raspberry Pi)"
+ONLINE_GAP = 1.1   # s entre deux requêtes
 CITIES = os.path.join(os.path.dirname(__file__), "data", "villes.tsv.gz")
 ISO_JSON = "/usr/share/iso-codes/json/iso_3166-1.json"
-NEAR_KM = 40       # plus près : « Ville, Pays »
-COUNTRY_KM = 200   # plus près : « Pays » seulement ; au-delà (en mer…) : pas de lieu
+NEAR_KM = 25       # hors ligne, plus près : « Ville, Pays »
+COUNTRY_KM = 200   # hors ligne, plus près : « Pays » seulement ; au-delà (en mer…) : rien
 
 _lock = threading.Lock()
-_cities = None
+_online_lock = threading.Lock()
+_last_online = 0.0
 _countries = None
-
-
-def _load_cities():
-    global _cities
-    if _cities is None:
-        rows = []
-        with gzip.open(CITIES, "rt", encoding="utf-8") as f:
-            for line in f:
-                if not line.startswith("#"):
-                    name, lat, lon, cc, _ = line.rstrip("\n").split("\t")
-                    rows.append((math.radians(float(lat)), math.radians(float(lon)), name, cc))
-        _cities = rows
-    return _cities
+_cities = None
 
 
 def country_name(code):
@@ -52,21 +51,66 @@ def country_name(code):
     return _countries.get(code, code)
 
 
-def label(lat, lon):
+def online(lat, lon):
+    """« Commune, Pays » d'OpenStreetMap ; None en mer ; OSError/ValueError si injoignable."""
+    global _last_online
+    with _online_lock:
+        wait = _last_online + ONLINE_GAP - time.monotonic()
+        if wait > 0:
+            time.sleep(wait)
+        query = urllib.parse.urlencode({"format": "jsonv2", "lat": f"{lat:.5f}",
+                                        "lon": f"{lon:.5f}", "zoom": 10, "accept-language": "fr"})
+        req = urllib.request.Request(f"{NOMINATIM}?{query}", headers={"User-Agent": USER_AGENT})
+        try:
+            with urllib.request.urlopen(req, timeout=8) as r:
+                data = json.load(r)
+        finally:
+            _last_online = time.monotonic()
+    addr = data.get("address") or {}
+    town = next((addr[k] for k in ("city", "town", "village", "municipality", "hamlet")
+                 if addr.get(k)), None)
+    return ", ".join(v for v in (town, addr.get("country")) if v) or None
+
+
+def _load_cities():
+    """Chargé au premier besoin (~15 s sur le Pi Zero) puis gardé : tableaux numpy compacts
+    (~4 Mo), noms et pays en une seule chaîne découpée à la demande."""
+    global _cities
+    if _cities is None:
+        lats, lons, names = [], [], []
+        with gzip.open(CITIES, "rt", encoding="utf-8") as f:
+            for line in f:
+                if not line.startswith("#"):
+                    name, lat, lon, cc, _ = line.split("\t")
+                    lats.append(float(lat))
+                    lons.append(float(lon))
+                    names.append(f"{name}\t{cc}")
+        _cities = (numpy.radians(numpy.array(lats, dtype=numpy.float32)),
+                   numpy.radians(numpy.array(lons, dtype=numpy.float32)), "\n".join(names))
+        _cities += (numpy.cumsum([0] + [len(n) + 1 for n in names]),)
+    return _cities
+
+
+def offline(lat, lon):
     """« Ville, Pays », « Pays » ou None selon la distance à la ville la plus proche."""
+    lats, lons, names, starts = _load_cities()
     la, lo = math.radians(lat), math.radians(lon)
-    cos_la = math.cos(la)
-    best, best_d = None, float("inf")
-    for cla, clo, name, cc in _load_cities():
-        d = (cla - la) ** 2 + ((clo - lo) * cos_la) ** 2  # approximation plane, suffisante ici
-        if d < best_d:
-            best, best_d = (name, cc), d
-    km = math.sqrt(best_d) * 6371
+    d = (lats - la) ** 2 + ((lons - lo) * math.cos(la)) ** 2  # approximation plane
+    i = int(d.argmin())
+    name, cc = names[starts[i]:starts[i + 1] - 1].split("\t")
+    km = math.sqrt(float(d[i])) * 6371
     if km <= NEAR_KM:
-        return f"{best[0]}, {country_name(best[1])}"
+        return f"{name}, {country_name(cc)}"
     if km <= COUNTRY_KM:
-        return country_name(best[1])
+        return country_name(cc)
     return None
+
+
+def label(lat, lon):
+    try:
+        return online(lat, lon) or offline(lat, lon)
+    except (OSError, ValueError):
+        return offline(lat, lon)
 
 
 def parse(text):

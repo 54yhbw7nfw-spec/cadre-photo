@@ -246,10 +246,13 @@ pour déployer) :
 - Réglage « Afficher le lieu » (désactivé par défaut) : « Ville, Pays · date » en bas à droite.
 - Position : GPS de l'EXIF (fichier reçu), ou lue par le navigateur avant réduction et envoyée à
   part (champ `gps`), ou `locationEnc` de l'album iCloud (plist binaire). WhatsApp efface le GPS.
-- Hors ligne : ville la plus proche parmi les villes > 15 000 hab. de GeoNames
-  (`cadre/data/villes.tsv.gz`, 34 000 villes, 570 Ko ; données GeoNames, licence CC BY 4.0) ;
-  jusqu'à 40 km « Ville, Pays », jusqu'à 200 km « Pays », au-delà rien. Pays en français par le
-  paquet `iso-codes`. Calculé une fois à l'arrivée de la photo (0,05 s), rangé dans places.json.
+- Avec Internet : OpenStreetMap Nominatim (nom de commune en français, 1,1 s par photo, requêtes
+  espacées de 1,1 s ; les coordonnées partent donc chez OpenStreetMap, une fois par photo).
+- Sans Internet : ville la plus proche parmi les villes > 1 000 hab. de GeoNames
+  (`cadre/data/villes.tsv.gz`, 171 000 villes, 2,5 Mo ; données GeoNames, licence CC BY 4.0) ;
+  jusqu'à 25 km « Ville, Pays », jusqu'à 200 km « Pays », au-delà rien. Chargée une fois en
+  tableaux numpy (19 s sur le Pi Zero, puis 0,07 s par photo). Pays en français par `iso-codes`.
+- Calculé une fois à l'arrivée de la photo et rangé dans places.json.
 
 ## Choix techniques du diaporama
 
