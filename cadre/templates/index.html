@@ -193,7 +193,7 @@ function tile(name) {
   const el = document.createElement("div");
   el.className = "tile" + (selected.has(name) ? " sel" : "") + (cloud.has(name) ? " cloud" : "");
   el.dataset.name = name;
-  el.innerHTML = `<img loading="lazy" alt="" src="/thumbs/${name}"><span class="check"></span>
+  el.innerHTML = `<img alt="" src="/thumbs/${name}"><span class="check"></span>
     <span class="actions"><a href="/photos/${name}" target="_blank" title="Voir">⤢</a>
     <button title="Supprimer">🗑</button></span>`;
   el.addEventListener("click", (e) => {
