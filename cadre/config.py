@@ -16,8 +16,8 @@ MESSAGE_FILE = os.path.join(DATA_DIR, "message.json")  # message affiché sur le
 FLAGS_FILE = os.path.join(DATA_DIR, "flags.json")      # photos favorites et masquées
 WEATHER_FILE = os.path.join(DATA_DIR, "weather.json")  # ville et dernière météo relevée
 UPDATE_URL_FILE = os.path.join(DATA_DIR, "update-url.txt")  # adresse des mises à jour
-# Adresse proposée par défaut : dernière « release » du dépôt public des mises à jour.
-UPDATE_URL_DEFAULT = ("https://github.com/54yhbw7nfw-spec/cadre-photo-maj/releases/latest/"
+# Adresse proposée par défaut : dernière « release » du dépôt public (docs/mise-a-jour.md).
+UPDATE_URL_DEFAULT = ("https://github.com/54yhbw7nfw-spec/cadre-photo/releases/latest/"
                       "download/cadre-maj.cadre")  # lieu de chaque photo (ville, pays)  # album iCloud suivi et ses photos
 RUN_DIR = os.environ.get("CADRE_RUN", "/run/cadre")
 STATE_FILE = os.path.join(RUN_DIR, "state.json")  # état réseau publié par cadre-net
