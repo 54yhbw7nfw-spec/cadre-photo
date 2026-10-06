@@ -33,7 +33,7 @@ def main(out):
     save("hotspot.png", d.hotspot_texture({"ap_ssid": "CadrePhoto-Setup",
                                            "ap_password": "k7m2qx9p4t", "ip": "10.42.0.1"}))
     d.qr_key, d.qr_until, d.info_until = None, 1e12, 0
-    key, build = d.network_screen({"mode": "connected", "ip": "192.168.1.20"})
+    key, build = d.network_screen({"mode": "connected", "ip": "192.168.1.20"  # adresse d'exemple})
     save("qr.png", build())
 
     # Photo avec sa date, puis la même en pause (cartouche comme Display.show).

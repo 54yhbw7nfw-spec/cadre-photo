@@ -130,7 +130,7 @@ pour déployer) :
 
 ## Accès au Pi
 
-- Hôte ssh `cadre` défini dans `~/.ssh/config` : `192.168.1.20`, utilisateur `cadre`,
+- Hôte ssh `cadre` défini dans `~/.ssh/config` : adresse IP du Pi, utilisateur `cadre`,
   clé `~/.ssh/id_ed25519_cadre`.
 - `sudo` sans mot de passe pour `cadre` (`/etc/sudoers.d/010_cadre-nopasswd`).
 
