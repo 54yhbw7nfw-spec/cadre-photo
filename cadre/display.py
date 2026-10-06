@@ -176,7 +176,8 @@ def recent_photos(names):
 def message_active(msg, today=None):
     """Texte du message s'il est à afficher aujourd'hui, sinon None."""
     today = (today or datetime.now()).strftime("%Y-%m-%d")
-    if msg["text"] and (not msg["until"] or today <= msg["until"]):
+    if (msg["text"] and (not msg["since"] or msg["since"] <= today)
+            and (not msg["until"] or today <= msg["until"])):
         return msg["text"]
     return None
 

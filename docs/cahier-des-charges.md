@@ -53,7 +53,8 @@
 - Lieu des photos : OpenStreetMap avec Internet, sinon villes > 1 000 hab. hors ligne.
 - Rapport de diagnostic téléchargeable (journaux choisis, données sensibles retirées).
 - Mise à jour à distance par fichier signé (clé SSH du développeur), retour arrière automatique.
-- Message de la famille affiché sur le cadre (bandeau ou écran), jusqu'à une date.
+- Message de la famille affiché sur le cadre (bandeau ou écran), entre deux dates
+  (préparé à l'avance si besoin).
 - Souvenirs « ce jour-là » et nouvelles photos mises en avant (pictogramme « nouveau »).
 - Favoris et photos masquées, choix des photos affichées (source, période), heure et météo.
 - Mode d'emploi vidéo (diapositives commentées) pour la famille.

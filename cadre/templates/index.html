@@ -80,6 +80,9 @@
       <label style="flex:1">Message
         <input type="text" name="text" maxlength="140" placeholder="Bon anniversaire Mamie !">
       </label>
+      <label>À partir du
+        <input type="date" name="since">
+      </label>
       <label>Jusqu'au (inclus)
         <input type="date" name="until">
       </label>
@@ -940,17 +943,25 @@ $("#poweroff").onclick = () => power("poweroff",
 loadPassword();
 /* ---- Message sur le cadre ---- */
 const msgForm = $("#msg-form");
+// Date du jour locale (AAAA-MM-JJ) : toISOString() donnerait celle de Greenwich.
+function localToday() {
+  const d = new Date();
+  return new Date(d - d.getTimezoneOffset() * 60000).toISOString().slice(0, 10);
+}
 function showMessageState(m) {
-  const today = new Date().toISOString().slice(0, 10);
-  const until = m.until && new Date(m.until + "T12:00").toLocaleDateString("fr-FR");
+  const today = localToday();
+  const fr = (day) => new Date(day + "T12:00").toLocaleDateString("fr-FR");
+  const where = m.mode === "screen" ? "entre les photos" : "en bandeau sur les photos";
+  const end = m.until ? `jusqu'au ${fr(m.until)} inclus` : "sans date de fin";
   $("#msg-state").textContent = !m.text ? "Aucun message affiché."
-    : m.until && m.until < today ? `Message terminé le ${until}.`
-    : `Message affiché ${m.until ? "jusqu'au " + until + " inclus" : "sans date de fin"}, ` +
-      (m.mode === "screen" ? "entre les photos." : "en bandeau sur les photos.");
+    : m.until && m.until < today ? `Message terminé le ${fr(m.until)}.`
+    : m.since && m.since > today ? `Message prévu à partir du ${fr(m.since)}, ${end}, ${where}.`
+    : `Message affiché ${end}, ${where}.`;
 }
 async function loadMessage() {
   const m = await api("/api/message");
   msgForm.text.value = m.text;
+  msgForm.since.value = m.since || localToday();
   msgForm.until.value = m.until;
   msgForm.mode.value = m.mode;
   showMessageState(m);
@@ -962,7 +973,12 @@ async function saveMessage(body) {
 }
 $("#msg-show").onclick = () => {
   if (!msgForm.text.value.trim()) { msgForm.text.focus(); return; }
-  saveMessage({text: msgForm.text.value, until: msgForm.until.value, mode: msgForm.mode.value});
+  if (msgForm.since.value && msgForm.until.value && msgForm.until.value < msgForm.since.value) {
+    alert("La date de fin est avant la date de début.");
+    return;
+  }
+  saveMessage({text: msgForm.text.value, since: msgForm.since.value, until: msgForm.until.value,
+               mode: msgForm.mode.value});
 };
 $("#msg-clear").onclick = () => saveMessage({text: ""});
 

@@ -93,11 +93,12 @@ DATE_RE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
 
 
 def validate_message(raw):
-    """Message de la famille : texte (vide = aucun), date de fin incluse (AAAA-MM-JJ, vide =
-    sans fin), mode d'affichage."""
+    """Message de la famille : texte (vide = aucun), dates de début et de fin incluses
+    (AAAA-MM-JJ, vide = tout de suite / sans fin), mode d'affichage."""
     text = " ".join(str(raw.get("text", "")).split())[:MESSAGE_MAX]
-    until = str(raw.get("until", ""))
-    return {"text": text, "until": until if DATE_RE.match(until) else "",
+    since, until = str(raw.get("since", "")), str(raw.get("until", ""))
+    return {"text": text, "since": since if DATE_RE.match(since) else "",
+            "until": until if DATE_RE.match(until) else "",
             "mode": raw.get("mode") if raw.get("mode") in MESSAGE_MODES else "banner"}
 
 

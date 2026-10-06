@@ -20,7 +20,7 @@ cahier des charges : [cahier-des-charges.md](cahier-des-charges.md) ; mise à jo
 | 10. Lieu des photos (OpenStreetMap, sinon hors ligne) | ✅ testé (album iCloud) |
 | 11. Rapport de diagnostic | ✅ testé (4 s, 360 Ko) |
 | 12. Mise à jour à distance (fichier signé, retour arrière) | ✅ 5 cas testés, dont une version cassée |
-| 13. Message sur le cadre (bandeau ou écran, jusqu'à une date) | ✅ livré par mise à jour signée |
+| 13. Message sur le cadre (bandeau ou écran, entre deux dates) | ✅ livré par mise à jour signée |
 | 14. Souvenirs « ce jour-là » | ✅ testé (photos datées d'un 6 octobre passé) |
 | 15. Nouveautés à l'honneur (pictogramme « nouveau ») | ✅ testé |
 | 16. Favoris et photos masquées | livré par mise à jour signée, à tester |
@@ -73,7 +73,7 @@ Sur le Pi :
 | `/var/lib/cadre/settings.json` | réglages, relus à chaud toutes les 2 s |
 | `/var/lib/cadre/flags.json` | photos favorites et masquées |
 | `/var/lib/cadre/weather.json` | ville de la météo et dernière relève |
-| `/var/lib/cadre/message.json` | message affiché sur le cadre (texte, date de fin, mode) |
+| `/var/lib/cadre/message.json` | message affiché sur le cadre (texte, dates de début et de fin, mode) |
 | `/var/lib/cadre/places.json` | lieu de chaque photo (« Ville, Pays ») |
 | `/var/lib/cadre/icloud.json` | album iCloud suivi : lien, titre, identifiant iCloud → photo du cadre |
 | `/var/lib/cadre/auth.json` | empreinte du mot de passe admin (absent = pas d'authentification) |
@@ -274,8 +274,8 @@ pour déployer) :
 
 ## Message sur le cadre
 
-Section « Message sur le cadre » de l'admin : texte (140 caractères), date de fin incluse
-(facultative), affichage en bandeau en haut de chaque photo (2 lignes au plus, la photo est alors
+Section « Message sur le cadre » de l'admin : texte (140 caractères), date de début (le jour même
+par défaut ; un message peut être préparé à l'avance) et date de fin incluses (facultatives), affichage en bandeau en haut de chaque photo (2 lignes au plus, la photo est alors
 composée en plein écran) ou en carte plein écran toutes les 5 photos (tout de suite quand le
 message change). Pris en compte par le diaporama en quelques secondes (`message.json`).
 
