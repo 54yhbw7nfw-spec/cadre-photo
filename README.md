@@ -24,7 +24,7 @@ Cahier des charges : [docs/cahier-des-charges.md](docs/cahier-des-charges.md).
 | 15. Nouveautés à l'honneur (badge « Nouveau ») | ✅ testé |
 | 16. Favoris et photos masquées | livré par mise à jour signée, à tester |
 | 17. Choix des photos affichées (source, période) | livré par mise à jour signée, à tester |
-| 18. Heure et météo (Open-Meteo) | ✅ heure ; météo testée par l'API (Niort) |
+| 18. Heure et météo (Open-Meteo), icônes dessinées | livré par mise à jour signée, à tester |
 | Mode d'emploi vidéo | ✅ `build/video/cadre-photo-mode-d-emploi.mp4`, à refaire après une évolution visible |
 
 ## Reste à faire / idées
@@ -294,10 +294,15 @@ message change). Pris en compte par le diaporama en quelques secondes (`message.
   suppression d'une photo.
 - Réglage « Photos affichées » : toutes, album iCloud, photos envoyées, favoris ; période
   facultative « prises du … au … » (date du nom de fichier). Rien ne correspond : l'écran le dit.
-- « Heure et météo » : en bas à gauche, « 16:08 · Niort 28 °C, couvert », redessiné chaque
-  minute (pause et transitions comprises). Ville cherchée par Open-Meteo (géocodage, gratuit,
-  sans compte), météo relevée toutes les 30 min par cadre-web ; relève de plus de 3 h ou pas
-  d'Internet : l'heure seule.
+- Réglages « Heure » et « Météo » (séparés) : en bas à gauche, « 16:08 · icône · 28 °C »,
+  redessiné chaque minute (pause et transitions comprises). Icônes dessinées par le diaporama
+  (soleil ou lune, éclaircies, nuages, brouillard, pluie, neige, orage ; la police n'a pas ces
+  symboles). Position : ville choisie (géocodage Open-Meteo) ou, champ vide, position de la
+  connexion Internet (ip-api.com, une fois par jour ; au bureau elle donne la sortie Internet de
+  l'entreprise). Météo Open-Meteo (gratuit, sans compte) relevée toutes les 30 min par cadre-web ;
+  relève de plus de 3 h ou pas d'Internet : pas de météo.
+- Légende (souvenir, lieu, date) toujours dans le coin bas droit de l'écran, quel que soit le
+  format de la photo. Réglages de l'admin regroupés : Diaporama, Sur les photos, Écran, Envois.
 
 ## Mise à jour à distance
 
