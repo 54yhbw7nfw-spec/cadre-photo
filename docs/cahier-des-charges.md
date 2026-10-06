@@ -4,7 +4,7 @@
 - Raspberry Pi Zero W (2017) : ARMv6, 1 cœur 1 GHz, 512 Mo RAM
 - Raspberry Pi OS Lite 32 bits, NetworkManager, pas de serveur graphique
 - Accès : ssh <user>@cadre.local (clé SSH déjà en place)
-- Développement sur mon PC, déploiement via rsync/ssh. Claude Code ne tourne pas sur le Pi.
+- Développement sur mon PC, déploiement via tar/ssh (deploy.sh). Claude Code ne tourne pas sur le Pi.
 
 ## Fonctionnement attendu
 1. Au boot : attente ~30 s d'une connexion Wi-Fi connue.
@@ -33,12 +33,29 @@
 
 ## Contraintes
 - Économiser la RAM et le CPU, tester les perfs réelles sur le Pi.
-- Limiter les écritures sur la SD (logs en RAM via journald volatile si pertinent).
-- Pas de mot de passe en dur. Admin web sans auth pour l'instant, mais prévoir un mot de
-  passe optionnel.
+- Limiter les écritures sur la SD (journal en RAM par défaut ; option --journal-sd d'install.sh).
+- Pas de mot de passe en dur. Mot de passe de l'admin optionnel (page de connexion).
+- Aucune trace du nom réel du développeur dans le dépôt, l'historique et les fichiers envoyés.
 - Me demander validation avant toute commande qui modifie le réseau du Pi
   (risque de perdre l'accès SSH).
 
+## Évolutions ajoutées en cours de projet
+
+- Album iCloud partagé (« Site web public ») synchronisé toutes les 30 min, photos retirées de
+  l'album supprimées du cadre, liseré dans la galerie, synchronisation forcée qui rétablit tout.
+- Écran de démarrage (image + messages du démarrage), écran d'extinction / de redémarrage,
+  boutons Redémarrer et Éteindre dans l'admin.
+- Télécommande de la télé (HDMI-CEC) : photo précédente / suivante, pause, QR code de l'admin.
+- Veille programmée la nuit (écran noir, télé mise en veille par CEC), date et lieu de prise de
+  vue sur les photos (options).
+- Admin : espace libre affiché, marge gardée pour le système, page de connexion, changement du
+  mot de passe, bandeau si pas de Wi-Fi, portail Wi-Fi accessible sans mot de passe.
+- Lieu des photos : OpenStreetMap avec Internet, sinon villes > 1 000 hab. hors ligne.
+- Rapport de diagnostic téléchargeable (journaux choisis, données sensibles retirées).
+- Mise à jour à distance par fichier signé (clé SSH du développeur), retour arrière automatique.
+- Mode d'emploi vidéo (diapositives commentées) pour la famille.
+
 ## Méthode
 Avancer par étapes testées sur le Pi :
-1) diaporama seul, 2) admin web, 3) QR code au boot, 4) hotspot/portail captif, 5) install.sh.
+1) diaporama seul, 2) admin web, 3) QR code au boot, 4) hotspot/portail captif, 5) install.sh,
+puis les évolutions ci-dessus (étapes 6 à 12 du README).

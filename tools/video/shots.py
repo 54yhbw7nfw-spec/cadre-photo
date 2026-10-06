@@ -21,7 +21,7 @@ WAIT = 15  # s laissées à la page pour charger photos et réglages
 SHOTS = [
     ("admin-haut.png", "/", 1280, 1000, 0),
     ("admin-photos.png", "/", 1280, 1100, 470),
-    ("admin-bas.png", "/", 1280, 1000, 1500),
+    ("admin-complet.png", "/", 1280, 4200, 0),
     ("portail-wifi.png", "/wifi", 400, 860, 0),
 ]
 

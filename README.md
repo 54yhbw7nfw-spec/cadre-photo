@@ -11,8 +11,25 @@ Cahier des charges : [docs/cahier-des-charges.md](docs/cahier-des-charges.md).
 | 2. Admin web Flask | ✅ testé par API (20 photos 12 Mpx) et depuis un navigateur |
 | 3. QR code au boot | ✅ testé sur la télé ; Wi-Fi connecté à ~100 s après la mise sous tension |
 | 4. Hotspot / portail captif | ✅ testé avec un iPhone : portail ouvert tout seul, Wi-Fi de la maison reconnecté en 5 s |
-| 6. Album iCloud partagé | ✅ testé (album récent, 10 photos dont 3 HEIC) — ancien format de lien non testé |
 | 5. install.sh | ✅ testé sur une carte SD vierge (Raspberry Pi OS Lite trixie) : cadre complet au 1er redémarrage |
+| 6. Album iCloud partagé | ✅ testé (album récent, 23 photos dont des HEIC) — ancien format de lien non testé |
+| 7. Écrans de démarrage et d'arrêt, Redémarrer / Éteindre | ✅ testés sur la télé |
+| 8. Télécommande (HDMI-CEC), veille programmée, date | ✅ testés sur une Samsung |
+| 9. Admin : connexion, mot de passe, espace libre, liseré iCloud | ✅ |
+| 10. Lieu des photos (OpenStreetMap, sinon hors ligne) | ✅ testé (album iCloud) |
+| 11. Rapport de diagnostic | ✅ testé (4 s, 360 Ko) |
+| 12. Mise à jour à distance (fichier signé, retour arrière) | ✅ 5 cas testés, dont une version cassée |
+| Mode d'emploi vidéo | ✅ `build/video/cadre-photo-mode-d-emploi.mp4`, à refaire après une évolution visible |
+
+## Reste à faire / idées
+
+- Album iCloud : tester un lien de l'ancien format (`www.icloud.com/sharedalbum/#B0…`).
+- Doublons entre photos de l'admin et de l'album iCloud non détectés (réductions différentes).
+- Lieu : impossible pour les photos déjà envoyées sans position (WhatsApp, ou réduites avant
+  cette fonction) ; il faut renvoyer les originaux.
+- Raspberry Pi Zero 2 W : démarrage ~3 fois plus rapide, 1080p envisageable.
+- Garde-fou de mise à jour : il ne vérifie que les services et l'admin ; une régression plus
+  discrète se corrige avec « Revenir à la version précédente ».
 
 ## Arborescence
 

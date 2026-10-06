@@ -10,7 +10,7 @@ import sys
 
 import pygame
 
-from cadre import config, display, splash
+from cadre import config, display, places, splash
 
 
 def main(out):
@@ -37,14 +37,16 @@ def main(out):
     save("qr.png", build())
 
     # Photo avec sa date, puis la même en pause (cartouche comme Display.show).
-    # Une photo de l'album iCloud (vraie date de prise de vue), en largeur.
+    # Une photo de l'album iCloud (vraie date de prise de vue), en largeur, avec un lieu si possible.
     with open(config.ICLOUD_FILE) as f:
         names = sorted(json.load(f)["photos"].values())
+    located = places.load()
+    names.sort(key=lambda n: n not in located)
     for name in names:
         photo = display.load_photo(os.path.join(config.PHOTOS_DIR, name))
         if photo.get_width() >= W:
             break
-    d.draw_date(photo, name)
+    d.draw_date(photo, name, located.get(name))
     screen = pygame.Surface((W, H))
     screen.blit(photo, ((W - photo.get_width()) // 2, (H - photo.get_height()) // 2))
     save("photo.png", screen)

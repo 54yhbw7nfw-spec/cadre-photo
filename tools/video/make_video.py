@@ -2,6 +2,7 @@
 
 Prérequis (PC Windows) : ffmpeg, Pillow, edge-tts (pip install edge-tts, Internet), et les visuels :
   python tools/video/shots.py http://<ip du cadre> build/video/shots      captures de l'admin
+    (dont admin-complet.png, page entière, découpée par « fichier@x0,y0,x1,y1 »)
   écrans du cadre : tools/video/screens.py lancé sur le Pi -> build/video/screens
 Usage : python tools/video/make_video.py build/video     -> build/video/cadre-photo-mode-d-emploi.mp4
 """
@@ -52,11 +53,12 @@ SLIDES = [
      "maison, et le QR code de la page de gestion s'affiche à la télé."),
     ("La page de gestion", ["shots/admin-haut.png"],
      ["QR code de la télé, ou http://cadre.local", "Transition, durée, ordre aléatoire",
-      "Date sur les photos, veille la nuit"],
+      "Date et lieu sur les photos, veille la nuit"],
      "Pour gérer le cadre, scannez le QR code affiché à la télé, ou tapez cadre point local "
      "dans le navigateur d'un téléphone ou d'un ordinateur connecté au même Wi-Fi. En haut de "
      "la page se trouvent les réglages : la transition entre les photos, la durée "
-     "d'affichage, l'ordre aléatoire, la date sur les photos et la mise en veille la nuit."),
+     "d'affichage, l'ordre aléatoire, la date et le lieu sur les photos, et la mise en veille la "
+     "nuit."),
     ("Ajouter des photos", ["shots/admin-photos.png"],
      ["Glisser les photos, ou toucher pour les choisir", "Visibles en quelques secondes",
       "Sélectionner puis « Supprimer la sélection »"],
@@ -72,27 +74,47 @@ SLIDES = [
      "dans la page de gestion. Le cadre vérifie l'album toutes les trente minutes, et ses "
      "photos sont entourées d'orange dans la galerie."),
     ("Pendant le diaporama", ["screens/photo.png"],
-     ["Date de prise de vue en bas à droite", "Désactivable dans les réglages"],
-     "Pendant le diaporama, la date de prise de vue s'affiche en bas à droite de chaque "
-     "photo. Vous pouvez la masquer dans les réglages."),
+     ["Lieu et date de prise de vue en bas à droite", "« Afficher la date », « Afficher le lieu »",
+      "Lieu : photos d'iPhone et album iCloud (WhatsApp l'efface)"],
+     "Pendant le diaporama, le lieu et la date de prise de vue s'affichent en bas à droite de "
+     "chaque photo. Chacun se règle dans la page de gestion. Le lieu est connu pour les photos "
+     "prises avec un téléphone et pour celles de l'album iCloud, mais pas pour les photos "
+     "reçues par WhatsApp, qui efface cette information."),
     ("La télécommande de la télé", ["screens/pause.png"],
      ["→  photo suivante", "←  photo précédente", "↑ ou ↓  pause / reprise",
       "OK  QR code de la page de gestion"],
      "Si la télé le permet, sa télécommande pilote le cadre. Flèche droite : photo suivante. "
      "Flèche gauche : photo précédente. Flèche du haut ou du bas : pause, et de nouveau pour "
      "reprendre. Touche OK : le QR code de la page de gestion."),
-    ("Éteindre et redémarrer", ["shots/admin-bas.png", "screens/extinction.png"],
+    ("Éteindre et redémarrer", ["shots/admin-complet.png@90,2446,1190,2805",
+                                 "screens/extinction.png"],
      ["Boutons en bas de la page de gestion", "Débrancher quand la diode verte est éteinte",
       "Mot de passe de la page, si besoin"],
      "En bas de la page de gestion se trouvent les boutons Redémarrer et Éteindre. Avant de "
      "débrancher le cadre, éteignez-le ainsi et attendez que sa diode verte s'éteigne. C'est "
      "aussi là que vous pouvez protéger la page par un mot de passe."),
+    ("Mettre à jour le cadre", ["shots/admin-complet.png@90,2005,1190,2235"],
+     ["Fichier « .cadre » reçu par message", "« Installer une mise à jour… »",
+      "Vérifié avant, contrôlé après", "Problème : ancienne version remise"],
+     "Si la personne qui s'occupe du cadre vous envoie un fichier de mise à jour, terminé par "
+     "point cadre, ouvrez la page de gestion, section Mise à jour, et touchez Installer une "
+     "mise à jour. Le cadre vérifie que le fichier vient bien d'elle, l'installe, puis "
+     "contrôle que tout fonctionne. Au moindre problème, il remet l'ancienne version tout "
+     "seul. Comptez trois minutes."),
+    ("Envoyer un rapport", ["shots/admin-complet.png@90,2228,1190,2453"],
+     ["Section « Diagnostic »", "Cocher, choisir la période", "« Télécharger le rapport »",
+      "L'envoyer par message"],
+     "En cas de problème, la section Diagnostic prépare un rapport pour la personne qui "
+     "s'occupe du cadre. Laissez les cases cochées, choisissez la période, puis touchez "
+     "Télécharger le rapport, et envoyez-lui le fichier par message. Les mots de passe n'y "
+     "figurent pas."),
     ("En cas de souci", ["screens/demarrage.png"],
      ["Ne répond plus : débrancher, rebrancher", "Wi-Fi perdu : il recrée son réseau",
       "Écran noir : vérifier l'entrée HDMI de la télé"],
-     "En cas de souci : si le cadre ne répond plus, débranchez-le puis rebranchez-le. S'il "
-     "perd le Wi-Fi plus de deux minutes, il recrée son réseau de configuration. Et si l'écran "
-     "reste noir, vérifiez que la télé est sur la bonne entrée HDMI."),
+     "En cas de souci : si le cadre ne répond plus, débranchez-le puis rebranchez-le ; il "
+     "redémarre aussi tout seul s'il se bloque. S'il perd le Wi-Fi plus de deux minutes, il "
+     "recrée son réseau de configuration. Et si l'écran reste noir, vérifiez que la télé est "
+     "sur la bonne entrée HDMI."),
     ("Bon diaporama !", ["screens/photo.png"], [],
      "Voilà, vous savez tout. Bon diaporama !"),
 ]
@@ -127,7 +149,11 @@ def framed(img):
 
 
 def load_visual(base, name):
+    """« dossier/fichier.png », ou « …png@x0,y0,x1,y1 » pour n'en garder qu'une partie."""
+    name, _, box = name.partition("@")
     img = Image.open(os.path.join(base, name)).convert("RGB")
+    if box:
+        img = img.crop(tuple(int(v) for v in box.split(",")))
     d = ImageDraw.Draw(img)
     for (x0, y0, x1, y1), text in MASKS.get(name, []):
         d.rectangle((x0, y0, x1, y1), fill=img.getpixel((x0 + 2, y0 + 2)))

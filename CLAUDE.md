@@ -8,3 +8,9 @@
 - Ne jamais écrire de mot de passe dans le dépôt.
 - Fichiers en LF (`.gitattributes`), commentaires et messages en français.
 - Tenir à jour la section « Configuration déjà appliquée au Pi » du README : elle sert de base à install.sh.
+- Aucune trace du nom réel de l'utilisateur dans le dépôt ni dans l'historique : commits signés
+  `gtt` (configuré dans ce dépôt), archives envoyées avec `--owner=0`.
+- Hors de la maison, le Pi n'est pas à l'adresse de l'alias `cadre` : `ssh -i ~/.ssh/id_ed25519_cadre
+  cadre@<ip>`, et pour deploy.sh `CADRE_HOST=cadre@<ip>` avec un `ssh` qui ajoute la clé.
+- Une évolution visible (écran, admin) : mettre à jour le README, le cahier des charges si besoin,
+  et refaire la vidéo (`tools/video/`, voir README).
