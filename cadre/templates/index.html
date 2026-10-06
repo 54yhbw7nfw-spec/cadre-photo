@@ -315,10 +315,31 @@ async function prepare(file, keepOriginal) {
     bmp.close();
     const blob = await new Promise((r) => canvas.toBlob(r, "image/jpeg", 0.9));
     canvas.width = canvas.height = 0;  // libère la mémoire tout de suite (mobiles)
-    if (!blob || blob.size >= file.size) return original;
+    if (!blob || blob.size >= file.size || !(await looksLikePhoto(blob))) return original;
     return {blob, taken, sig: `${file.name}|${file.size}|${file.lastModified}`};
   } catch {
     return original;  // format non décodable par le navigateur : le cadre tranchera
+  }
+}
+
+/* Certains navigateurs rendent un canvas noir (vu sur Edge, PC professionnel : 124 photos
+   noires sur 267). On relit l'image réduite en miniature : entièrement noire ou transparente,
+   elle est écartée et l'original part à sa place (envoi plus lourd, mais photo intacte). */
+async function looksLikePhoto(blob) {
+  try {
+    const bmp = await createImageBitmap(blob);
+    const c = document.createElement("canvas");
+    c.width = c.height = 16;
+    const ctx = c.getContext("2d", {willReadFrequently: true});
+    ctx.drawImage(bmp, 0, 0, 16, 16);
+    bmp.close();
+    const px = ctx.getImageData(0, 0, 16, 16).data;
+    for (let i = 0; i < px.length; i += 4) {
+      if (px[i + 3] && (px[i] || px[i + 1] || px[i + 2])) return true;
+    }
+    return false;
+  } catch {
+    return false;
   }
 }
 

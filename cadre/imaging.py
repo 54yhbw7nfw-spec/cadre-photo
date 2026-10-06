@@ -105,6 +105,10 @@ def process(src, keep_original=False, original_name="", taken="", sig=""):
         img, date = load_for_screen(src)
     except (OSError, ValueError, SyntaxError, Image.DecompressionBombError) as exc:
         raise Rejected(f"image illisible ou format non pris en charge ({exc})") from None
+    if img.getextrema() == ((0, 0), (0, 0), (0, 0)):
+        # Aucune vraie photo n'est noire à 100 % : réduction ratée côté navigateur.
+        raise Rejected("image entièrement noire (réduction du navigateur ratée) : "
+                       "renvoyer la photo, ou cocher « Conserver les originaux »")
     date = date or parse_exif_date(taken) or datetime.now()
     name = f"{date:%Y%m%d-%H%M%S}_{digest}.jpg"
 
