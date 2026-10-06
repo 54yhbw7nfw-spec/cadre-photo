@@ -12,6 +12,9 @@ import pygame
 
 from cadre import config, display, places, splash
 
+# Le Mont Blanc depuis l'aiguille du Midi (album iCloud du cadre de test).
+TITLE_PHOTO = "20240808-094711_7300f94c98.jpg"
+
 
 def main(out):
     os.makedirs(out, exist_ok=True)
@@ -80,7 +83,16 @@ def main(out):
     box.blit(img, (12, 6))
     screen.blit(box, (16, 16))
     save("pause.png", screen)
-    print("écrans dans", out, "- photo :", name)
+
+    # Photo de titre (première et dernière diapositives) : le Mont Blanc, autre que la photo
+    # des autres écrans ; à défaut, la même.
+    title = TITLE_PHOTO if TITLE_PHOTO in names else name
+    tphoto = display.load_photo(os.path.join(config.PHOTOS_DIR, title))
+    screen = pygame.Surface((W, H))
+    screen.blit(tphoto, ((W - tphoto.get_width()) // 2, (H - tphoto.get_height()) // 2))
+    d.draw_date(screen, title, located.get(title))
+    save("titre.png", screen)
+    print("écrans dans", out, "- photo :", name, "- titre :", title)
 
 
 if __name__ == "__main__":

@@ -33,7 +33,7 @@ MASKS = {"shots/admin-haut.png": _TOP,
 
 # (titre, visuels « dossier/fichier », points clés à l'écran, narration)
 SLIDES = [
-    ("Cadre photo", ["screens/photo.png"], ["Mode d'emploi"],
+    ("Cadre photo", ["screens/titre.png"], ["Mode d'emploi"],
      "Bienvenue. Cette vidéo explique comment utiliser le cadre photo : l'allumer, le "
      "connecter au Wi-Fi, ajouter des photos et le piloter avec la télécommande de la télé."),
     ("Brancher et allumer", ["screens/demarrage.png"],
@@ -144,7 +144,7 @@ SLIDES = [
      "redémarre aussi tout seul s'il se bloque. S'il perd le Wi-Fi plus de deux minutes, il "
      "recrée son réseau de configuration. Et si l'écran reste noir, vérifiez que la télé est "
      "sur la bonne entrée HDMI."),
-    ("Bon diaporama !", ["screens/photo.png"], [],
+    ("Bon diaporama !", ["screens/titre.png"], [],
      "Voilà, vous savez tout. Bon diaporama !"),
 ]
 

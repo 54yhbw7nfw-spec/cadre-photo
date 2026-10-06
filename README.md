@@ -18,7 +18,7 @@ https://github.com/user-attachments/assets/5c049a34-5ee3-4dbe-9e44-6fbbceeaa3bd
 
 ## Ce qu'il sait faire
 
-![Le cadre à l'écran : souvenir, lieu, heure et météo](docs/images/ecran.jpg)
+[![Le cadre à l'écran : souvenir, lieu, heure et météo](docs/images/ecran.jpg)](docs/images/ecran.jpg?raw=true)
 
 - **Diaporama plein écran** : fondu, glissements, volet ; photos verticales et horizontales bien
   cadrées ; date, lieu (« Sallanches, France ») et souvenirs « Il y a 2 ans ».
@@ -38,11 +38,11 @@ https://github.com/user-attachments/assets/5c049a34-5ee3-4dbe-9e44-6fbbceeaa3bd
 
 | Configuration au Wi-Fi | Message de la famille |
 |---|---|
-| ![Écran de configuration du Wi-Fi](docs/images/hotspot.jpg) | ![Message sur le cadre](docs/images/message.jpg) |
+| [![Écran de configuration du Wi-Fi](docs/images/hotspot.jpg)](docs/images/hotspot.jpg?raw=true) | [![Message sur le cadre](docs/images/message.jpg)](docs/images/message.jpg?raw=true) |
 
 | La page de gestion (téléphone ou ordinateur) | |
 |---|---|
-| ![Réglages](docs/images/admin-reglages.jpg) | ![Galerie](docs/images/admin-galerie.jpg) |
+| [![Réglages](docs/images/admin-reglages.jpg)](docs/images/admin-reglages.jpg?raw=true) | [![Galerie](docs/images/admin-galerie.jpg)](docs/images/admin-galerie.jpg?raw=true) |
 
 ## Matériel
 
