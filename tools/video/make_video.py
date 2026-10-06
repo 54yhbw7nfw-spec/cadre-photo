@@ -86,14 +86,14 @@ SLIDES = [
      "Si la télé le permet, sa télécommande pilote le cadre. Flèche droite : photo suivante. "
      "Flèche gauche : photo précédente. Flèche du haut ou du bas : pause, et de nouveau pour "
      "reprendre. Touche OK : le QR code de la page de gestion."),
-    ("Éteindre et redémarrer", ["shots/admin-complet.png@90,2446,1190,2805",
+    ("Éteindre et redémarrer", ["shots/admin-complet.png@90,2450,1190,2805",
                                  "screens/extinction.png"],
      ["Boutons en bas de la page de gestion", "Débrancher quand la diode verte est éteinte",
       "Mot de passe de la page, si besoin"],
      "En bas de la page de gestion se trouvent les boutons Redémarrer et Éteindre. Avant de "
      "débrancher le cadre, éteignez-le ainsi et attendez que sa diode verte s'éteigne. C'est "
      "aussi là que vous pouvez protéger la page par un mot de passe."),
-    ("Mettre à jour le cadre", ["shots/admin-complet.png@90,2005,1190,2235"],
+    ("Mettre à jour le cadre", ["shots/admin-complet.png@90,2008,1190,2232"],
      ["Fichier « .cadre » reçu par message", "« Installer une mise à jour… »",
       "Vérifié avant, contrôlé après", "Problème : ancienne version remise"],
      "Si la personne qui s'occupe du cadre vous envoie un fichier de mise à jour, terminé par "
@@ -101,7 +101,7 @@ SLIDES = [
      "mise à jour. Le cadre vérifie que le fichier vient bien d'elle, l'installe, puis "
      "contrôle que tout fonctionne. Au moindre problème, il remet l'ancienne version tout "
      "seul. Comptez trois minutes."),
-    ("Envoyer un rapport", ["shots/admin-complet.png@90,2228,1190,2453"],
+    ("Envoyer un rapport", ["shots/admin-complet.png@90,2232,1190,2450"],
      ["Section « Diagnostic »", "Cocher, choisir la période", "« Télécharger le rapport »",
       "L'envoyer par message"],
      "En cas de problème, la section Diagnostic prépare un rapport pour la personne qui "
