@@ -490,6 +490,19 @@ def delete():
     return jsonify(deleted=deleted)
 
 
+@app.get("/api/message")
+def get_message():
+    return jsonify(config.load_message())
+
+
+@app.post("/api/message")
+def set_message():
+    config.save_message(request.get_json(silent=True) or {})
+    msg = config.load_message()
+    log.info("Message : %s", repr(msg["text"]) if msg["text"] else "retiré")
+    return jsonify(msg)
+
+
 @app.get("/api/icloud")
 def icloud_status():
     return jsonify(icloud_sync.status())

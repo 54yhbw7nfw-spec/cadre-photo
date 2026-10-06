@@ -29,7 +29,7 @@ select, input[type=number] {
   border-radius: 6px; padding: 5px 8px;
 }
 input[type=number] { width: 80px; }
-input[type=time] { font: inherit; color: inherit; background: var(--bg);
+input[type=time], input[type=date] { font: inherit; color: inherit; background: var(--bg);
   border: 1px solid var(--line); border-radius: 6px; padding: 2px 4px; }
 #saved { color: var(--ok); opacity: 0; transition: opacity .3s; }
 #saved.show { opacity: 1; }

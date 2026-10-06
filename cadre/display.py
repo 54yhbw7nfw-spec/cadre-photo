@@ -43,6 +43,28 @@ ACCENT = (110, 170, 255)
 MONTHS = ("janvier", "février", "mars", "avril", "mai", "juin", "juillet", "août", "septembre",
           "octobre", "novembre", "décembre")
 SLEEP_CHECK = 5.0  # secondes entre deux vérifications pendant la veille
+MESSAGE_EVERY = 5  # mode « écran » : une carte toutes les N photos
+
+
+def message_active(msg, today=None):
+    """Texte du message s'il est à afficher aujourd'hui, sinon None."""
+    today = (today or datetime.now()).strftime("%Y-%m-%d")
+    if msg["text"] and (not msg["until"] or today <= msg["until"]):
+        return msg["text"]
+    return None
+
+
+def wrap(font, text, width):
+    """Découpe text en lignes tenant dans width pixels avec cette police."""
+    lines, line = [], ""
+    for word in text.split():
+        trial = f"{line} {word}".strip()
+        if line and font.size(trial)[0] > width:
+            lines.append(line)
+            line = word
+        else:
+            line = trial
+    return lines + ([line] if line else [])
 
 
 def photo_date(name):
@@ -389,7 +411,33 @@ class Display:
         surf.blit(box, (surf.get_width() - box.get_width() - 16,
                         surf.get_height() - box.get_height() - 16))
 
-    def prepare(self, name, show_date=False, place=None):
+    def draw_banner(self, surf, text):
+        """Bandeau en haut de l'écran : le message, sur fond sombre (2 lignes au plus)."""
+        font = pygame.font.Font(None, 54)
+        lines = wrap(font, text, W - 120)[:2]
+        height = 30 + 52 * len(lines)
+        band = pygame.Surface((W, height), pygame.SRCALPHA)
+        band.fill((0, 0, 0, 170))
+        for i, line in enumerate(lines):
+            img = font.render(line, True, TEXT)
+            band.blit(img, ((W - img.get_width()) // 2, 18 + 52 * i))
+        surf.blit(band, (0, 0))
+
+    def message_card(self, text):
+        """Écran du message, entre les photos."""
+        surf = pygame.Surface((W, H))
+        surf.fill(BG)
+        font = pygame.font.Font(None, 84)
+        lines = wrap(font, text, W - 200)[:5]
+        y = (H - 90 * len(lines)) // 2
+        pygame.draw.rect(surf, ACCENT, ((W - 120) // 2, y - 60, 120, 8), border_radius=4)
+        for line in lines:
+            img = font.render(line, True, TEXT)
+            surf.blit(img, ((W - img.get_width()) // 2, y))
+            y += 90
+        return self.texture(surf)
+
+    def prepare(self, name, show_date=False, place=None, banner=None):
         """Charge une photo et crée sa texture ; None si le fichier est illisible."""
         path = os.path.join(config.PHOTOS_DIR, name)
         t0 = time.monotonic()
@@ -400,6 +448,11 @@ class Display:
             return None
         if show_date or place:
             self.draw_date(surf, name, place, show_date)
+        if banner:
+            screen = pygame.Surface((W, H))
+            screen.blit(surf, ((W - surf.get_width()) // 2, (H - surf.get_height()) // 2))
+            self.draw_banner(screen, banner)
+            surf = screen
         t1 = time.monotonic()
         tex = self.texture(surf)
         log.info("Photo %s : décodage %d ms, envoi GPU %d ms",
@@ -410,7 +463,9 @@ class Display:
         settings = config.load_settings()
         playlist = Playlist()
         playlist.update(config.list_photos(), settings["shuffle"])
-        settings_mtime = photos_mtime = places_mtime = None
+        settings_mtime = photos_mtime = places_mtime = message_mtime = None
+        message = config.load_message()
+        since_card = 0  # photos montrées depuis la dernière carte du message
         photo_places = {}
         current = None
         upcoming = None  # (nom, texture) préchargée pendant l'affichage fixe
@@ -436,6 +491,12 @@ class Display:
                 if m != state_mtime:
                     state_mtime = m
                     state = config.load_state()
+                m = mtime(config.MESSAGE_FILE)
+                if m != message_mtime:
+                    message_mtime = m
+                    message = config.load_message()
+                    upcoming = None  # la prochaine photo prend le nouveau bandeau
+                    since_card = MESSAGE_EVERY  # nouveau message en mode écran : tout de suite
                 m = mtime(config.PLACES_FILE)
                 if m != places_mtime:
                     places_mtime = m
@@ -517,8 +578,10 @@ class Display:
                         current = placeholder
                     self.idle(POLL_INTERVAL)
                     continue
+                text = message_active(message)
                 tex = self.prepare(name, settings["show_date"],
-                                   photo_places.get(name) if settings["show_place"] else None)
+                                   photo_places.get(name) if settings["show_place"] else None,
+                                   text if message["mode"] == "banner" else None)
                 if tex is None:
                     playlist.forget(name)
                     next_check = 0.0  # fichier supprimé ? relire le dossier tout de suite
@@ -527,6 +590,14 @@ class Display:
 
             if (current is None or current is placeholder
                     or (not paused and time.monotonic() >= self.due_at)):
+                text = message_active(message)
+                if text and message["mode"] == "screen" and since_card >= MESSAGE_EVERY:
+                    card = self.message_card(text)
+                    self.transition(current, card, "fade")
+                    current, since_card = card, 0
+                    self.due_at = time.monotonic() + settings["delay"]
+                    continue
+                since_card += 1
                 self.transition(current, upcoming[1], settings["transition"])
                 current = upcoming[1]
                 history = (history + [upcoming[0]])[-50:]

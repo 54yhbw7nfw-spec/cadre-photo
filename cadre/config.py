@@ -11,7 +11,8 @@ ORIGINALS_DIR = os.path.join(DATA_DIR, "originals")
 SETTINGS_FILE = os.path.join(DATA_DIR, "settings.json")
 AUTH_FILE = os.path.join(DATA_DIR, "auth.json")
 ICLOUD_FILE = os.path.join(DATA_DIR, "icloud.json")
-PLACES_FILE = os.path.join(DATA_DIR, "places.json")  # lieu de chaque photo (ville, pays)  # album iCloud suivi et ses photos
+PLACES_FILE = os.path.join(DATA_DIR, "places.json")
+MESSAGE_FILE = os.path.join(DATA_DIR, "message.json")  # message affiché sur le cadre  # lieu de chaque photo (ville, pays)  # album iCloud suivi et ses photos
 RUN_DIR = os.environ.get("CADRE_RUN", "/run/cadre")
 STATE_FILE = os.path.join(RUN_DIR, "state.json")  # état réseau publié par cadre-net
 NET_SOCKET = os.path.join(RUN_DIR, "net.sock")     # commandes Wi-Fi envoyées à cadre-net
@@ -68,6 +69,32 @@ def load_settings():
 
 def save_settings(settings):
     atomic_write_json(SETTINGS_FILE, validate_settings(settings))
+
+
+MESSAGE_MAX = 140
+MESSAGE_MODES = ("banner", "screen")  # bandeau sur les photos, ou écran entre les photos
+DATE_RE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
+
+
+def validate_message(raw):
+    """Message de la famille : texte (vide = aucun), date de fin incluse (AAAA-MM-JJ, vide =
+    sans fin), mode d'affichage."""
+    text = " ".join(str(raw.get("text", "")).split())[:MESSAGE_MAX]
+    until = str(raw.get("until", ""))
+    return {"text": text, "until": until if DATE_RE.match(until) else "",
+            "mode": raw.get("mode") if raw.get("mode") in MESSAGE_MODES else "banner"}
+
+
+def load_message():
+    try:
+        with open(MESSAGE_FILE) as f:
+            return validate_message(json.load(f))
+    except (OSError, ValueError):
+        return validate_message({})
+
+
+def save_message(message):
+    atomic_write_json(MESSAGE_FILE, validate_message(message))
 
 
 def load_state():

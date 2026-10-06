@@ -45,6 +45,27 @@
     </form>
   </section>
 
+  <section id="message">
+    <h2>Message sur le cadre</h2>
+    <form id="msg-form" class="wifi-form" onsubmit="return false">
+      <label style="flex:1">Message
+        <input type="text" name="text" maxlength="140" placeholder="Bon anniversaire Mamie !">
+      </label>
+      <label>Jusqu'au (inclus)
+        <input type="date" name="until">
+      </label>
+      <label>Affichage
+        <select name="mode">
+          <option value="banner">Bandeau en haut des photos</option>
+          <option value="screen">Écran entre les photos (toutes les 5)</option>
+        </select>
+      </label>
+      <button type="button" id="msg-show" class="primary">Afficher</button>
+      <button type="button" id="msg-clear">Retirer</button>
+    </form>
+    <p id="msg-state" class="muted small"></p>
+  </section>
+
   <section>
     <h2>Album iCloud partagé</h2>
     <form id="icloud-form" class="wifi-form" autocomplete="off">
@@ -712,6 +733,35 @@ $("#poweroff").onclick = () => power("poweroff",
   "Extinction en cours : débranchez le cadre quand sa diode verte est éteinte.");
 
 loadPassword();
+/* ---- Message sur le cadre ---- */
+const msgForm = $("#msg-form");
+function showMessageState(m) {
+  const today = new Date().toISOString().slice(0, 10);
+  const until = m.until && new Date(m.until + "T12:00").toLocaleDateString("fr-FR");
+  $("#msg-state").textContent = !m.text ? "Aucun message affiché."
+    : m.until && m.until < today ? `Message terminé le ${until}.`
+    : `Message affiché ${m.until ? "jusqu'au " + until + " inclus" : "sans date de fin"}, ` +
+      (m.mode === "screen" ? "entre les photos." : "en bandeau sur les photos.");
+}
+async function loadMessage() {
+  const m = await api("/api/message");
+  msgForm.text.value = m.text;
+  msgForm.until.value = m.until;
+  msgForm.mode.value = m.mode;
+  showMessageState(m);
+}
+async function saveMessage(body) {
+  const m = await api("/api/message", body);
+  msgForm.text.value = m.text;
+  showMessageState(m);
+}
+$("#msg-show").onclick = () => {
+  if (!msgForm.text.value.trim()) { msgForm.text.focus(); return; }
+  saveMessage({text: msgForm.text.value, until: msgForm.until.value, mode: msgForm.mode.value});
+};
+$("#msg-clear").onclick = () => saveMessage({text: ""});
+
+loadMessage();
 loadUpdate().then((s) => { if (["installing", "pending"].includes(s.state)) pollUpdate(); });
 loadIcloud(true).then((s) => { if (s.running) pollIcloud(s.last_sync); });
 loadSettings();
