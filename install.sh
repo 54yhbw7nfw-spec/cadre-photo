@@ -78,9 +78,17 @@ for p in $PKGS; do
 done
 if [ -n "$MISSING" ]; then
     echo "   à installer :$MISSING"
-    apt-get update
-    # shellcheck disable=SC2086
-    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends $MISSING
+    # Raspbian répartit les téléchargements entre des miroirs, parfois en retard (404) :
+    # nouvel essai, donc sans doute un autre miroir.
+    for try in 1 2 3; do
+        apt-get update
+        # shellcheck disable=SC2086
+        DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+            -o Acquire::Retries=3 $MISSING && break
+        [ $try = 3 ] && { echo "Paquets impossibles à télécharger : relancer plus tard." >&2; exit 1; }
+        echo "   miroir en défaut, nouvel essai dans 10 s ($try/3)"
+        sleep 10
+    done
 else
     echo "   déjà installés"
 fi
