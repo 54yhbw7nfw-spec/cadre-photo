@@ -23,7 +23,8 @@ cadre/               paquet Python déployé dans /opt/cadre/cadre
   imaging.py         traitement des photos reçues (draft JPEG, EXIF, miniature)
   web.py             admin web Flask servi par waitress (service cadre-web)
   icloud.py          lecture d'un album partagé iCloud public (API non officielles)
-  places.py          lieu des photos hors ligne (ville la plus proche, data/villes.tsv.gz)
+  places.py          lieu des photos (OpenStreetMap, sinon data/villes.tsv.gz hors ligne)
+  report.py          rapport de diagnostic (fabriqué par cadre-net, root)
   splash.py          écran de démarrage dans /dev/fb0 (service cadre-splash)
   net.py             surveillance réseau, état dans /run/cadre/state.json (service cadre-net)
   templates/         page unique de l'admin (HTML/CSS/JS sans framework)
@@ -240,6 +241,16 @@ pour déployer) :
   retéléchargée, sauf synchronisation demandée dans l'admin (bouton) : l'album revient en
   entier. Liseré orange dans la galerie de l'admin. Photos de l'admin jamais touchées (pas de détection de doublon entre les deux).
 - Mesuré : 10 photos ajoutées en 28 s, synchronisation sans nouveauté en 2 s.
+
+## Rapport de diagnostic
+
+Section « Diagnostic » de l'admin : cases (informations système, diaporama, admin et iCloud,
+réseau, erreurs système, démarrage précédent) et période (1 h, aujourd'hui, 3 jours) ; bouton
+« Télécharger le rapport » -> `cadre-rapport-AAAAMMJJ-HHMM.txt`, à envoyer par messagerie.
+Fabriqué par `cadre-net` (root, commande `report` : journal système complet), 4 000 lignes au
+plus par rubrique. Retirés : lien de l'album iCloud, `psk`/`password`/`mot de passe` = valeur ;
+les mots de passe Wi-Fi, du hotspot et de l'admin ne sont jamais journalisés.
+Mesuré : rapport complet de la journée en 4 s, 2 900 lignes, 360 Ko.
 
 ## Lieu des photos
 

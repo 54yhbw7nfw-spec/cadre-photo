@@ -9,7 +9,7 @@
 
 Seul ce service modifie le réseau. L'admin web lui envoie des commandes JSON (une ligne)
 sur la socket /run/cadre/net.sock (root:cadre 0660) : status, scan, save, connect, forget,
-reboot, poweroff.
+reboot, poweroff, report.
 
 Les réseaux enregistrés sont des fichiers NetworkManager natifs (jamais netplan : sinon
 NetworkManager régénère netplan et recharge systemd à chaque démarrage, ~20 s par passe).
@@ -31,7 +31,7 @@ import threading
 import time
 import uuid
 
-from . import config
+from . import config, report
 
 log = logging.getLogger("cadre.net")
 
@@ -440,6 +440,11 @@ class Handler(socketserver.StreamRequestHandler):
                     resp = action(ssid, password, bool(req.get("hidden")))
             elif cmd == "forget":
                 resp = ctl.do_forget(str(req.get("uuid", "")))
+            elif cmd == "report":
+                groups = [g for g in req.get("groups", []) if isinstance(g, str)]
+                resp = {"ok": True, "text": report.build(
+                    groups, str(req.get("period", "1h")), bool(req.get("previous_boot")),
+                    bool(req.get("info", True)))}
             elif cmd in ("reboot", "poweroff"):
                 # Différé : la réponse doit repartir vers l'admin avant l'arrêt des services.
                 log.info("Demande de l'admin : %s", cmd)

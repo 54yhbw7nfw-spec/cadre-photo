@@ -23,7 +23,7 @@ import urllib.parse
 import urllib.request
 import uuid
 
-from flask import (Flask, jsonify, redirect, render_template, request, session,
+from flask import (Flask, Response, jsonify, redirect, render_template, request, session,
                    send_from_directory)
 from werkzeug.security import check_password_hash, generate_password_hash
 
@@ -526,10 +526,10 @@ def set_settings():
 
 # --- Wi-Fi : relais vers cadre-net (seul service autorisé à modifier le réseau) ----------
 
-def net_command(cmd, **args):
+def net_command(cmd, timeout=60, **args):
     try:
         with socket.socket(socket.AF_UNIX, socket.SOCK_STREAM) as s:
-            s.settimeout(60)
+            s.settimeout(timeout)
             s.connect(config.NET_SOCKET)
             s.sendall(json.dumps({"cmd": cmd, **args}).encode() + b"\n")
             data = b""
@@ -546,6 +546,19 @@ def net_command(cmd, **args):
 @app.get("/api/wifi")
 def wifi_status():
     return jsonify(net_command("status"))
+
+
+@app.post("/api/report")
+def diagnostic_report():
+    """Rapport de diagnostic (fabriqué par cadre-net, root), téléchargé en fichier texte."""
+    body = request.get_json(silent=True) or {}
+    resp = net_command("report", timeout=240, groups=body.get("groups", []), period=body.get("period", "1h"),
+                       previous_boot=bool(body.get("previous_boot")), info=bool(body.get("info")))
+    if not resp.get("ok"):
+        return jsonify(resp), 500
+    name = time.strftime("cadre-rapport-%Y%m%d-%H%M.txt")
+    return Response(resp["text"], mimetype="text/plain; charset=utf-8",
+                    headers={"Content-Disposition": f'attachment; filename="{name}"'})
 
 
 @app.post("/api/power/<action>")

@@ -97,6 +97,29 @@
 
   {% include "wifi_panel.html" %}
 
+  <section id="diagnostic">
+    <h2>Diagnostic</h2>
+    <form id="report-form" class="settings" onsubmit="return false">
+      <label><input type="checkbox" name="info" checked> Informations système</label>
+      <label><input type="checkbox" name="display" checked> Diaporama</label>
+      <label><input type="checkbox" name="web" checked> Admin et album iCloud</label>
+      <label><input type="checkbox" name="network" checked> Réseau</label>
+      <label><input type="checkbox" name="system"> Système (erreurs)</label>
+      <label><input type="checkbox" name="previous_boot"> Démarrage précédent</label>
+      <label>Période
+        <select name="period">
+          <option value="1h">Dernière heure</option>
+          <option value="today" selected>Aujourd'hui</option>
+          <option value="3d">3 derniers jours</option>
+        </select>
+      </label>
+      <button type="button" id="report-get" class="primary">Télécharger le rapport</button>
+    </form>
+    <p class="muted small">Fichier texte à envoyer à la personne qui s'occupe du cadre en cas de
+      problème. Les mots de passe et le lien de l'album iCloud en sont retirés.
+      « Démarrage précédent » sert après un plantage ou un redémarrage inattendu.</p>
+  </section>
+
   <section id="power">
     <h2>Cadre</h2>
     <div class="toolbar">
@@ -565,6 +588,34 @@ pwForm.onsubmit = async (e) => {
   pwForm.reset();
   alert(s.enabled ? "Mot de passe enregistré." : "Mot de passe supprimé.");
   loadPassword();
+};
+
+/* ---- Rapport de diagnostic ---- */
+$("#report-get").onclick = async () => {
+  const f = $("#report-form"), btn = $("#report-get");
+  btn.disabled = true;
+  btn.textContent = "Préparation…";
+  try {
+    const r = await fetch("/api/report", {
+      method: "POST", headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({
+        info: f.info.checked, previous_boot: f.previous_boot.checked, period: f.period.value,
+        groups: ["display", "web", "network", "system"].filter((g) => f[g].checked),
+      }),
+    });
+    if (!r.ok) throw new Error((await r.json()).error || r.status);
+    const name = (r.headers.get("Content-Disposition") || "").match(/filename="([^"]+)"/);
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(await r.blob());
+    a.download = name ? name[1] : "cadre-rapport.txt";
+    a.click();
+    setTimeout(() => URL.revokeObjectURL(a.href), 10000);
+  } catch (e) {
+    alert("Rapport impossible : " + e.message);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = "Télécharger le rapport";
+  }
 };
 
 /* ---- Redémarrer / éteindre ---- */
