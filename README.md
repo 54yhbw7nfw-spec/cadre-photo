@@ -13,7 +13,10 @@ la télé, et se met à jour à distance.
 
 
 
-https://github.com/user-attachments/assets/5c049a34-5ee3-4dbe-9e44-6fbbceeaa3bd
+
+https://github.com/user-attachments/assets/bcbb4fcc-ea57-4c54-a6ad-acc80952d96a
+
+
 
 
 
