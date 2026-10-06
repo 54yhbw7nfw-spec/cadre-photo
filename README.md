@@ -19,6 +19,7 @@ Cahier des charges : [docs/cahier-des-charges.md](docs/cahier-des-charges.md).
 | 10. Lieu des photos (OpenStreetMap, sinon hors ligne) | ✅ testé (album iCloud) |
 | 11. Rapport de diagnostic | ✅ testé (4 s, 360 Ko) |
 | 12. Mise à jour à distance (fichier signé, retour arrière) | ✅ 5 cas testés, dont une version cassée |
+| 13. Message sur le cadre (bandeau ou écran, jusqu'à une date) | ✅ livré par mise à jour signée |
 | Mode d'emploi vidéo | ✅ `build/video/cadre-photo-mode-d-emploi.mp4`, à refaire après une évolution visible |
 
 ## Reste à faire / idées
@@ -63,6 +64,7 @@ Sur le Pi :
 | `/var/lib/cadre/thumbs/` | miniatures 320x180 de l'admin |
 | `/var/lib/cadre/originals/` | originaux, si l'option est cochée |
 | `/var/lib/cadre/settings.json` | réglages, relus à chaud toutes les 2 s |
+| `/var/lib/cadre/message.json` | message affiché sur le cadre (texte, date de fin, mode) |
 | `/var/lib/cadre/places.json` | lieu de chaque photo (« Ville, Pays ») |
 | `/var/lib/cadre/icloud.json` | album iCloud suivi : lien, titre, identifiant iCloud → photo du cadre |
 | `/var/lib/cadre/auth.json` | empreinte du mot de passe admin (absent = pas d'authentification) |
@@ -260,6 +262,13 @@ pour déployer) :
   retéléchargée, sauf synchronisation demandée dans l'admin (bouton) : l'album revient en
   entier. Liseré orange dans la galerie de l'admin. Photos de l'admin jamais touchées (pas de détection de doublon entre les deux).
 - Mesuré : 10 photos ajoutées en 28 s, synchronisation sans nouveauté en 2 s.
+
+## Message sur le cadre
+
+Section « Message sur le cadre » de l'admin : texte (140 caractères), date de fin incluse
+(facultative), affichage en bandeau en haut de chaque photo (2 lignes au plus, la photo est alors
+composée en plein écran) ou en carte plein écran toutes les 5 photos (tout de suite quand le
+message change). Pris en compte par le diaporama en quelques secondes (`message.json`).
 
 ## Mise à jour à distance
 
