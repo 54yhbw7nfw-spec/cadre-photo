@@ -25,6 +25,7 @@ cadre/               paquet Python déployé dans /opt/cadre/cadre
   icloud.py          lecture d'un album partagé iCloud public (API non officielles)
   places.py          lieu des photos (OpenStreetMap, sinon data/villes.tsv.gz hors ligne)
   report.py          rapport de diagnostic (fabriqué par cadre-net, root)
+  update.py          mise à jour à distance : vérification, installation, garde-fou
   splash.py          écran de démarrage dans /dev/fb0 (service cadre-splash)
   net.py             surveillance réseau, état dans /run/cadre/state.json (service cadre-net)
   templates/         page unique de l'admin (HTML/CSS/JS sans framework)
@@ -32,6 +33,7 @@ system/              fichiers de configuration système (repris par install.sh)
 systemd/             unités copiées dans /etc/systemd/system par deploy.sh
 tools/               outils côté PC (photos de test)
 deploy.sh            envoi du code vers le Pi + redémarrage des services
+make_update.sh       fichier de mise à jour signé (.cadre) pour un cadre installé loin
 install.sh           installation complète sur une Raspberry Pi OS Lite vierge (idempotent)
 ```
 
@@ -241,6 +243,24 @@ pour déployer) :
   retéléchargée, sauf synchronisation demandée dans l'admin (bouton) : l'album revient en
   entier. Liseré orange dans la galerie de l'admin. Photos de l'admin jamais touchées (pas de détection de doublon entre les deux).
 - Mesuré : 10 photos ajoutées en 28 s, synchronisation sans nouveauté en 2 s.
+
+## Mise à jour à distance
+
+Pour un cadre installé loin (famille) : `./make_update.sh "ce qui change"` sur le PC fabrique
+`build/cadre-maj-AAAAMMJJ-HHMM.cadre` (code commité seulement, ~2,6 Mo), à envoyer par messagerie ;
+la personne l'installe dans l'admin (section « Mise à jour »).
+- Signature `ssh-keygen -Y sign` (espace de noms `cadre-maj`) avec `~/.ssh/id_ed25519_cadre`
+  (ou `CADRE_SIGN_KEY`). Clés de confiance du cadre : celles mises dans Raspberry Pi Imager
+  (`authorized_keys` -> `/etc/cadre/allowed_signers`, par install.sh). Aucune clé dans le dépôt.
+- Refusés : fichier non signé, modifié ou signé par une autre clé, version identique ou plus
+  ancienne (date `AAAAMMJJ-HHMM` de `cadre/VERSION`, écrit aussi par deploy.sh et install.sh).
+- Installation par `cadre-net` (root) : nouvelle version dans `/opt/cadre`, ancienne dans
+  `/opt/cadre.prev`, unités systemd mises à jour, `update/apply.sh` éventuel (migration, root,
+  une fois), services redémarrés. Garde-fou 150 s après (copie de `update.py` de l'ancienne
+  version) : services actifs depuis 30 s et admin qui répond, sinon retour à l'ancienne version
+  (la fautive part dans `/opt/cadre.failed`). Bouton « Revenir à la version précédente ».
+- Testé : installation normale validée ; même version, fichier falsifié et fichier quelconque
+  refusés ; version à l'admin cassé remise automatiquement en arrière.
 
 ## Rapport de diagnostic
 
