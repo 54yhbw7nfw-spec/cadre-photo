@@ -40,6 +40,10 @@ class UpdateError(Exception):
     """Mise à jour refusée ou ratée (message pour l'admin)."""
 
 
+class UpdateBusy(UpdateError):
+    """Une installation est en cours de vérification : refus qui ne touche pas à son état."""
+
+
 def version(root=OPT):
     try:
         with open(os.path.join(root, "cadre", "VERSION")) as f:
@@ -176,8 +180,8 @@ def install(bundle):
         st = status()
         if (st.get("state") in ("installing", "pending")
                 and time.time() - st.get("time", 0) < GUARD_DELAY + 60):
-            raise UpdateError("la mise à jour précédente est encore en vérification : "
-                              "réessayez dans quelques minutes")
+            raise UpdateBusy("la mise à jour précédente est encore en vérification : "
+                             "réessayez dans quelques minutes")
         current = version()
         if not is_newer(new_version, current):
             raise UpdateError(f"version {new_version} déjà installée ou plus ancienne "

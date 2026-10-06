@@ -452,6 +452,8 @@ class Handler(socketserver.StreamRequestHandler):
                 with UPDATE_LOCK:
                     try:
                         resp = {"ok": True, "version": update.install(UPDATE_FILE)}
+                    except update.UpdateBusy as exc:  # l'état de l'installation en cours reste
+                        resp = {"ok": False, "error": str(exc)}
                     except update.UpdateError as exc:
                         update.write_status(state="error", message=str(exc))
                         resp = {"ok": False, "error": str(exc)}
@@ -474,6 +476,8 @@ class Handler(socketserver.StreamRequestHandler):
                         if not os.path.exists(PENDING_FILE):
                             raise update.UpdateError("rien à installer : rechercher d'abord")
                         resp = {"ok": True, "version": update.install(PENDING_FILE)}
+                    except update.UpdateBusy as exc:
+                        resp = {"ok": False, "error": str(exc)}
                     except update.UpdateError as exc:
                         update.write_status(state="error", message=str(exc))
                         resp = {"ok": False, "error": str(exc)}
