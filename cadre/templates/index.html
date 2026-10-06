@@ -879,21 +879,63 @@ $("#report-get").onclick = async () => {
 };
 
 /* ---- Redémarrer / éteindre ---- */
-async function power(action, question, message) {
+async function frameUp() {
+  // Toute réponse HTTP (même « connexion requise ») veut dire que le cadre répond.
+  const ctl = new AbortController();
+  const timer = setTimeout(() => ctl.abort(), 3000);
+  try {
+    await fetch("/api/status", {cache: "no-store", signal: ctl.signal});
+    return true;
+  } catch {
+    return false;
+  } finally {
+    clearTimeout(timer);
+  }
+}
+async function followPower(action) {
+  // Attend la coupure du cadre, puis son retour (redémarrage : la page se recharge seule).
+  const box = $("#power-msg"), start = Date.now();
+  const elapsed = () => {
+    const t = Math.round((Date.now() - start) / 1000);
+    return `${Math.floor(t / 60)} min ${String(t % 60).padStart(2, "0")} s`;
+  };
+  let down = false;
+  while (Date.now() - start < 6 * 60 * 1000) {
+    const up = await frameUp();
+    if (!up) down = true;
+    if (action === "poweroff" && down) {
+      box.className = "msg ok";
+      box.textContent = "✓ Le cadre est éteint : débranchez-le quand sa diode verte est éteinte.";
+      return;
+    }
+    if (action === "reboot" && down && up) {
+      box.textContent = "✓ Le cadre a redémarré : rechargement de la page…";
+      setTimeout(() => location.reload(), 2000);
+      return;
+    }
+    box.className = "msg";
+    box.textContent = action === "reboot"
+      ? `Redémarrage en cours (${elapsed()}) : le cadre revient en 2 minutes environ, ` +
+        "cette page se rechargera toute seule."
+      : `Extinction en cours (${elapsed()})…`;
+    await sleep(3000);
+  }
+  box.className = "msg error";
+  box.textContent = "✗ Le cadre ne répond toujours pas : vérifiez qu'il est branché et que ce " +
+    "téléphone ou cet ordinateur est sur le même Wi-Fi, puis rechargez la page.";
+}
+async function power(action, question) {
   if (!confirm(question)) return;
   try {
     const r = await api(`/api/power/${action}`, {});
     if (!r.ok) { alert(r.error); return; }
   } catch { alert("Le cadre ne répond pas."); return; }
-  $("#power-msg").className = "msg ok";
-  $("#power-msg").textContent = message;
   document.querySelectorAll("#power button").forEach((b) => { b.disabled = true; });
+  followPower(action);
 }
-$("#reboot").onclick = () => power("reboot", "Redémarrer le cadre ? Il revient dans 2 minutes environ.",
-  "Redémarrage en cours : rechargez cette page dans 2 minutes environ.");
+$("#reboot").onclick = () => power("reboot", "Redémarrer le cadre ? Il revient dans 2 minutes environ.");
 $("#poweroff").onclick = () => power("poweroff",
-  "Éteindre le cadre ? Il faudra le débrancher puis le rebrancher pour le rallumer.",
-  "Extinction en cours : débranchez le cadre quand sa diode verte est éteinte.");
+  "Éteindre le cadre ? Il faudra le débrancher puis le rebrancher pour le rallumer.");
 
 loadPassword();
 /* ---- Message sur le cadre ---- */
