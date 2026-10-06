@@ -46,9 +46,9 @@ def main(out):
         photo = display.load_photo(os.path.join(config.PHOTOS_DIR, name))
         if name in located or photo.get_width() >= W:
             break
-    d.draw_date(photo, name, located.get(name))
     screen = pygame.Surface((W, H))
     screen.blit(photo, ((W - photo.get_width()) // 2, (H - photo.get_height()) // 2))
+    d.draw_date(screen, name, located.get(name))
     save("photo.png", screen)
     banner = screen.copy()
     d.draw_banner(banner, "Bon anniversaire Mamie ! Gros bisous de toute la famille")

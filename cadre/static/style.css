@@ -24,6 +24,12 @@ section {
 }
 .settings { display: flex; flex-wrap: wrap; gap: 12px 24px; align-items: center; }
 .settings label { display: flex; align-items: center; gap: 8px; }
+/* Réglages regroupés par thème. */
+.settings fieldset { flex: 1 1 100%; display: flex; flex-wrap: wrap; gap: 12px 24px;
+  align-items: center; margin: 0; padding: 10px 14px 14px; border: 1px solid var(--line);
+  border-radius: 8px; }
+.settings legend { padding: 0 6px; font-size: 13px; font-weight: 600; color: var(--muted);
+  text-transform: uppercase; letter-spacing: .04em; }
 select, input[type=number] {
   font: inherit; color: inherit; background: var(--bg); border: 1px solid var(--line);
   border-radius: 6px; padding: 5px 8px;

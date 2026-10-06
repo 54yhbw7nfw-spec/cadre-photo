@@ -505,7 +505,8 @@ def set_flags():
 def get_weather():
     data = weather.load()
     return jsonify(city=data.get("city", ""), name=data.get("name", ""),
-                   country=data.get("country", ""), now=weather.summary(data))
+                   country=data.get("country", ""), now=weather.summary(data),
+                   auto=not data.get("city"))
 
 
 @app.post("/api/weather")

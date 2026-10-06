@@ -5,6 +5,7 @@ au GPU ; les transitions ne font que déplacer / mélanger des textures, ce qui
 laisse le CPU du Pi Zero quasiment libre.
 """
 import glob
+import math
 import json
 import logging
 import os
@@ -76,6 +77,57 @@ def select_photos(names, settings, flags, icloud):
             continue
         keep.append(n)
     return keep
+
+
+def weather_icon(kind, day, size=40):
+    """Icône météo dessinée (pas de symboles dans la police) : tracée 4 fois plus grande puis
+    réduite avec lissage."""
+    k = 4
+    s = pygame.Surface((size * k, size * k), pygame.SRCALPHA)
+    u = size * k / 34  # unité : icône dessinée sur une grille de 34
+
+    def p(x, y):
+        return int(x * u), int(y * u)
+
+    def sun(cx, cy, r):
+        for i in range(8):
+            a = i * math.pi / 4
+            pygame.draw.line(s, (255, 200, 60), p(cx + math.cos(a) * r * 1.35, cy + math.sin(a) * r * 1.35),
+                             p(cx + math.cos(a) * r * 1.9, cy + math.sin(a) * r * 1.9), int(2.2 * u))
+        pygame.draw.circle(s, (255, 200, 60), p(cx, cy), int(r * u))
+
+    def moon(cx, cy, r):
+        pygame.draw.circle(s, (235, 235, 215), p(cx, cy), int(r * u))
+        pygame.draw.circle(s, (0, 0, 0, 0), p(cx + r * 0.55, cy - r * 0.35), int(r * 0.85 * u))
+
+    def cloud(color, dy=0):
+        for cx, cy, r in ((11, 19, 6), (18, 15, 8), (25, 19, 6)):
+            pygame.draw.circle(s, color, p(cx, cy + dy), int(r * u))
+        pygame.draw.rect(s, color, (*p(11, 19 + dy), int(14 * u), int(6 * u)))
+
+    light = (225, 230, 240)
+    if kind == "clear":
+        (sun if day else moon)(17, 17, 7)
+    elif kind == "partly":
+        (sun if day else moon)(22, 11, 5)
+        cloud(light, 3)
+    elif kind == "cloudy":
+        cloud(light, 1)
+    elif kind == "fog":
+        for y in (12, 18, 24):
+            pygame.draw.line(s, (200, 205, 215), p(6, y), p(28, y), int(3 * u))
+    elif kind in ("rain", "snow", "storm"):
+        cloud((150, 155, 170) if kind == "storm" else light, -4)
+        if kind == "rain":
+            for x in (12, 18, 24):
+                pygame.draw.line(s, (110, 170, 255), p(x, 24), p(x - 2, 30), int(2.4 * u))
+        elif kind == "snow":
+            for x, y in ((12, 26), (18, 29), (24, 26)):
+                pygame.draw.circle(s, (255, 255, 255), p(x, y), int(1.8 * u))
+        else:
+            pygame.draw.polygon(s, (255, 200, 60), [p(19, 20), p(13, 28), p(17, 28), p(15, 34),
+                                                     p(23, 25), p(19, 25), p(21, 20)])
+    return pygame.transform.smoothscale(s, (size, size))
 
 
 def load_icloud_names():
@@ -311,21 +363,31 @@ class Display:
         tex.blend_mode = BLEND
         return tex
 
-    def update_corner(self, enabled, weather_data):
-        """Texture du coin bas gauche (heure, météo), refaite quand le texte change."""
-        text = None
-        if enabled:
-            extra = weather.corner_text(weather_data)
-            text = time.strftime("%H:%M") + (f" · {extra}" if extra else "")
-        if text == self.corner_text:
+    def update_corner(self, show_clock, show_weather, weather_data):
+        """Coin bas gauche : heure et/ou icône météo + température, refait quand il change."""
+        clock = time.strftime("%H:%M") if show_clock else None
+        now = weather.current(weather_data) if show_weather else None
+        key = (clock, now)
+        if key == self.corner_text:
             return False
-        self.corner_text = text
+        self.corner_text = key
         self.corner = None
-        if text:
-            img = self.date_font.render(text, True, TEXT)
-            box = pygame.Surface((img.get_width() + 20, img.get_height() + 10), pygame.SRCALPHA)
+        parts = []
+        if clock:
+            parts.append(self.date_font.render(clock, True, TEXT))
+        if now:
+            kind, temp, day = now
+            parts += [weather_icon(kind, day), self.date_font.render(f"{temp} °C", True, TEXT)]
+        if parts:
+            gap = 10
+            w = sum(p.get_width() for p in parts) + gap * (len(parts) - 1) + 24
+            h = max(p.get_height() for p in parts) + 10
+            box = pygame.Surface((w, h), pygame.SRCALPHA)
             box.fill((0, 0, 0, 140))
-            box.blit(img, (10, 5))
+            x = 12
+            for part in parts:
+                box.blit(part, (x, (h - part.get_height()) // 2))
+                x += part.get_width() + gap
             self.corner = (Texture.from_surface(self.renderer, box), box.get_size())
         return True
 
@@ -483,7 +545,7 @@ class Display:
                  kind, frames, elapsed, frames / elapsed)
 
     def draw_date(self, surf, name, place=None, show_date=True, prefix=None):
-        """Lieu et/ou date de prise de vue en bas à droite de la photo, sur un cartouche sombre ;
+        """Lieu et/ou date de prise de vue en bas à droite de surf, sur un cartouche sombre ;
         prefix : « Il y a 3 ans » pour un souvenir."""
         text = " · ".join(t for t in (prefix, place, photo_date(name) if show_date else None)
                           if t)
@@ -541,11 +603,12 @@ class Display:
         except (OSError, ValueError, Image.DecompressionBombError) as exc:
             log.warning("Photo ignorée %s : %s", name, exc)
             return None
-        if show_date or place or prefix:
-            self.draw_date(surf, name, place, show_date, prefix)
-        if banner or badge:  # composés sur tout l'écran, pas seulement sur la photo
+        caption = show_date or place or prefix
+        if caption or banner or badge:  # composés sur tout l'écran : coins de l'écran, pas de la photo
             screen = pygame.Surface((W, H))
             screen.blit(surf, ((W - surf.get_width()) // 2, (H - surf.get_height()) // 2))
+            if caption:
+                self.draw_date(screen, name, place, show_date, prefix)
             top = self.draw_banner(screen, banner) if banner else 0
             if badge:
                 self.draw_badge(screen, badge, top + 16)
@@ -628,7 +691,8 @@ class Display:
                     if upcoming and upcoming[0] not in playlist.known:
                         upcoming = None
 
-            if self.update_corner(settings["show_clock"], weather_data) and current is not None:
+            if (self.update_corner(settings["show_clock"], settings["show_weather"], weather_data)
+                    and current is not None):
                 self.show(current, badge="Pause" if paused else None)
 
             if in_sleep_window(settings):

@@ -21,42 +21,55 @@
   <section>
     <h2>Réglages du diaporama</h2>
     <form class="settings" id="settings" onsubmit="return false">
-      <label>Transition
-        <select name="transition">
-          <option value="random">Aléatoire</option>
-          <option value="fade">Fondu</option>
-          <option value="slide_left">Glissement vers la gauche</option>
-          <option value="slide_right">Glissement vers la droite</option>
-          <option value="slide_up">Glissement vers le haut</option>
-          <option value="slide_down">Glissement vers le bas</option>
-          <option value="wipe">Volet</option>
-          <option value="none">Aucune</option>
-        </select>
-      </label>
-      <label>Délai <input type="number" name="delay" min="2" max="3600" step="1"> s</label>
-      <label><input type="checkbox" name="shuffle"> Ordre aléatoire</label>
-      <label><input type="checkbox" name="keep_originals"> Conserver les originaux</label>
-      <label><input type="checkbox" name="show_date"> Afficher la date</label>
-      <label><input type="checkbox" name="show_place"> Afficher le lieu</label>
-      <label><input type="checkbox" name="memories"> Souvenirs « ce jour-là »</label>
-      <label><input type="checkbox" name="highlight_new"> Nouveautés à l'honneur</label>
-      <label>Photos affichées
-        <select name="source">
-          <option value="all">Toutes</option>
-          <option value="icloud">Album iCloud seulement</option>
-          <option value="uploads">Photos envoyées seulement</option>
-          <option value="favorites">Favoris seulement</option>
-        </select>
-      </label>
-      <label>prises du <input type="date" name="period_from"> au
-        <input type="date" name="period_to"></label>
-      <label><input type="checkbox" name="show_clock"> Heure et météo</label>
-      <label>Ville <input type="text" name="weather_city" placeholder="Niort" size="14">
-        <button type="button" id="weather-ok">OK</button></label>
-      <span id="weather-state" class="muted small"></span>
-      <label><input type="checkbox" name="sleep"> Veille de
-        <input type="time" name="sleep_start" required> à
-        <input type="time" name="sleep_end" required></label>
+      <fieldset>
+        <legend>Diaporama</legend>
+        <label>Transition
+          <select name="transition">
+            <option value="random">Aléatoire</option>
+            <option value="fade">Fondu</option>
+            <option value="slide_left">Glissement vers la gauche</option>
+            <option value="slide_right">Glissement vers la droite</option>
+            <option value="slide_up">Glissement vers le haut</option>
+            <option value="slide_down">Glissement vers le bas</option>
+            <option value="wipe">Volet</option>
+            <option value="none">Aucune</option>
+          </select>
+        </label>
+        <label>Délai <input type="number" name="delay" min="2" max="3600" step="1"> s</label>
+        <label><input type="checkbox" name="shuffle"> Ordre aléatoire</label>
+        <label>Photos affichées
+          <select name="source">
+            <option value="all">Toutes</option>
+            <option value="icloud">Album iCloud seulement</option>
+            <option value="uploads">Photos envoyées seulement</option>
+            <option value="favorites">Favoris seulement</option>
+          </select>
+        </label>
+        <label>prises du <input type="date" name="period_from"> au
+          <input type="date" name="period_to"></label>
+      </fieldset>
+      <fieldset>
+        <legend>Sur les photos</legend>
+        <label><input type="checkbox" name="show_date"> Date</label>
+        <label><input type="checkbox" name="show_place"> Lieu</label>
+        <label><input type="checkbox" name="memories"> Souvenirs « ce jour-là »</label>
+        <label><input type="checkbox" name="highlight_new"> Nouveautés à l'honneur</label>
+      </fieldset>
+      <fieldset>
+        <legend>Écran</legend>
+        <label><input type="checkbox" name="show_clock"> Heure</label>
+        <label><input type="checkbox" name="show_weather"> Météo</label>
+        <label>Ville <input type="text" name="weather_city" placeholder="automatique" size="14">
+          <button type="button" id="weather-ok">OK</button></label>
+        <span id="weather-state" class="muted small"></span>
+        <label><input type="checkbox" name="sleep"> Veille de
+          <input type="time" name="sleep_start" required> à
+          <input type="time" name="sleep_end" required></label>
+      </fieldset>
+      <fieldset>
+        <legend>Envois</legend>
+        <label><input type="checkbox" name="keep_originals"> Conserver les originaux</label>
+      </fieldset>
       <span id="saved">Enregistré ✓</span>
     </form>
   </section>
@@ -229,6 +242,7 @@ async function loadSettings() {
   form.period_from.value = s.period_from;
   form.period_to.value = s.period_to;
   form.show_clock.checked = s.show_clock;
+  form.show_weather.checked = s.show_weather;
   form.sleep.checked = s.sleep;
   form.sleep_start.value = s.sleep_start;
   form.sleep_end.value = s.sleep_end;
@@ -236,7 +250,7 @@ async function loadSettings() {
 /* Ville de la météo : cherchée par le cadre (Open-Meteo), enregistrée à part des réglages. */
 function showWeather(w) {
   $("#weather-state").textContent = w.error ? w.error
-    : w.name ? `${w.name}${w.country ? ", " + w.country : ""}${w.now ? " : " + w.now : ""}`
+    : w.name ? `${w.auto ? "Position automatique : " : ""}${w.name}${w.country ? ", " + w.country : ""}${w.now ? " · " + w.now : ""}`
     : "";
 }
 async function loadWeather() {
@@ -273,6 +287,7 @@ form.addEventListener("change", async (e) => {
     period_from: form.period_from.value,
     period_to: form.period_to.value,
     show_clock: form.show_clock.checked,
+    show_weather: form.show_weather.checked,
     sleep: form.sleep.checked,
     sleep_start: form.sleep_start.value,
     sleep_end: form.sleep_end.value,
