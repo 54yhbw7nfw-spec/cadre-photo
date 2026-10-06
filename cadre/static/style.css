@@ -85,7 +85,15 @@ main.login { max-width: 420px; }
   place-items: center; background: rgba(0,0,0,.6); color: #fff; text-decoration: none;
   font-size: 15px;
 }
-.tile .actions button:hover { background: var(--danger); }
+.tile .actions button:hover { background: var(--accent); }
+.tile .actions button[data-act="del"]:hover { background: var(--danger); }
+/* Favori : étoile en bas à gauche ; masquée : grisée avec une mention. */
+.tile .flag, .tile .hidden-label { display: none; position: absolute; left: 6px; bottom: 4px;
+  font-size: 13px; color: #fff; text-shadow: 0 1px 3px #000; }
+.tile .flag { font-size: 18px; color: #ffc83d; }
+.tile.fav .flag { display: block; }
+.tile.hid img { opacity: .3; }
+.tile.hid .hidden-label { display: block; left: auto; right: 6px; }
 #empty { text-align: center; padding: 24px; }
 .pager { display: flex; justify-content: center; align-items: center; gap: 12px; margin-top: 12px; }
 h3 { font-size: 14px; margin: 16px 0 8px; display: flex; align-items: center; gap: 10px; }

@@ -5,6 +5,7 @@ au GPU ; les transitions ne font que déplacer / mélanger des textures, ce qui
 laisse le CPU du Pi Zero quasiment libre.
 """
 import glob
+import json
 import logging
 import os
 import queue
@@ -26,7 +27,7 @@ import qrcode  # noqa: E402
 from pygame._sdl2.video import Renderer, Texture, Window  # noqa: E402
 from PIL import Image, ImageOps  # noqa: E402
 
-from . import config, places  # noqa: E402
+from . import config, places, weather  # noqa: E402
 
 log = logging.getLogger("cadre.display")
 
@@ -58,6 +59,31 @@ def years_ago(name, today=None):
     if (d.month, d.day) == (today.month, today.day) and d.year < today.year:
         return today.year - d.year
     return 0
+
+
+def select_photos(names, settings, flags, icloud):
+    """Photos à faire défiler : sans les masquées, selon la source et la période choisies."""
+    hidden, fav = set(flags["hidden"]), set(flags["favorites"])
+    start = settings["period_from"].replace("-", "")
+    end = settings["period_to"].replace("-", "")
+    source = settings["source"]
+    keep = []
+    for n in names:
+        if n in hidden or (start and n[:8] < start) or (end and n[:8] > end):
+            continue
+        if ((source == "icloud" and n not in icloud) or (source == "uploads" and n in icloud)
+                or (source == "favorites" and n not in fav)):
+            continue
+        keep.append(n)
+    return keep
+
+
+def load_icloud_names():
+    try:
+        with open(config.ICLOUD_FILE) as f:
+            return set(json.load(f).get("photos", {}).values())
+    except (OSError, ValueError):
+        return set()
 
 
 def recent_photos(names):
@@ -182,6 +208,7 @@ class Playlist:
         self.last = None
         self.shuffle = True
         self.recent = set()  # nouveautés : en tête de chaque nouveau tour
+        self.favorites = set()  # favoris : deux passages par tour (ordre aléatoire)
 
     def update(self, names, shuffle):
         if shuffle != self.shuffle:
@@ -201,6 +228,7 @@ class Playlist:
         if not self.queue:
             self.queue = sorted(self.known)
             if self.shuffle:
+                self.queue += sorted(self.favorites & self.known)
                 random.shuffle(self.queue)
                 if len(self.queue) > 1 and self.queue[0] == self.last:
                     self.queue.append(self.queue.pop(0))
@@ -254,6 +282,7 @@ class Display:
         self.qr_until = 0.0
         self.date_font = pygame.font.Font(None, 34)
         self.info_until = 0.0  # QR code de l'admin demandé par la touche OK
+        self.corner, self.corner_text = None, None  # heure et météo en bas à gauche
         self.keys = queue.Queue()
         threading.Thread(target=read_remote, args=(self.keys,), daemon=True).start()
         # Le Pi se présente à la télé (CEC) et devient la source active : nécessaire pour la
@@ -282,9 +311,33 @@ class Display:
         tex.blend_mode = BLEND
         return tex
 
+    def update_corner(self, enabled, weather_data):
+        """Texture du coin bas gauche (heure, météo), refaite quand le texte change."""
+        text = None
+        if enabled:
+            extra = weather.corner_text(weather_data)
+            text = time.strftime("%H:%M") + (f" · {extra}" if extra else "")
+        if text == self.corner_text:
+            return False
+        self.corner_text = text
+        self.corner = None
+        if text:
+            img = self.date_font.render(text, True, TEXT)
+            box = pygame.Surface((img.get_width() + 20, img.get_height() + 10), pygame.SRCALPHA)
+            box.fill((0, 0, 0, 140))
+            box.blit(img, (10, 5))
+            self.corner = (Texture.from_surface(self.renderer, box), box.get_size())
+        return True
+
+    def draw_corner(self):
+        if self.corner:
+            tex, (w, h) = self.corner
+            tex.draw(dstrect=(16, H - h - 16, w, h))
+
     def show(self, tex, badge=None):
         self.renderer.clear()
         tex.draw()
+        self.draw_corner()
         if badge:  # petit cartouche en haut à gauche (« Pause »)
             img = self.date_font.render(badge, True, TEXT)
             box = pygame.Surface((img.get_width() + 24, img.get_height() + 12), pygame.SRCALPHA)
@@ -420,6 +473,7 @@ class Display:
                 ox, oy = int(dx * e), int(dy * e)
                 old.draw(dstrect=(ox, oy, W, H))
                 new.draw(dstrect=(ox - dx, oy - dy, W, H))
+            self.draw_corner()
             r.present()
             frames += 1
         new.alpha = 255
@@ -504,12 +558,14 @@ class Display:
 
     def run(self):
         settings = config.load_settings()
-        playlist = Playlist()
-        playlist.update(config.list_photos(), settings["shuffle"])
+        playlist = Playlist()  # remplie dès le premier tour (sélection : masquées, source…)
         settings_mtime = photos_mtime = places_mtime = message_mtime = None
+        flags_mtime = icloud_mtime = weather_mtime = None
+        flags, icloud, weather_data = config.load_flags(), set(), {}
         message = config.load_message()
         since_card = 0  # photos montrées depuis la dernière carte du message
         since_memory, memory_day, memories = 0, None, []  # « Ce jour-là »
+        selection, all_names = None, []
         photo_places = {}
         current = None
         upcoming = None  # (nom, texture) préchargée pendant l'affichage fixe
@@ -529,7 +585,7 @@ class Display:
                 if m != settings_mtime:
                     settings_mtime = m
                     settings = config.load_settings()
-                    playlist.update(config.list_photos(), settings["shuffle"])
+                    photos_mtime = None  # sélection refaite plus bas (masquées, source, période)
                     log.info("Réglages : %s", settings)
                 m = mtime(config.STATE_FILE)
                 if m != state_mtime:
@@ -545,16 +601,35 @@ class Display:
                 if m != places_mtime:
                     places_mtime = m
                     photo_places = places.load()
+                reselect = False
+                for path, kind in ((config.FLAGS_FILE, "flags"), (config.ICLOUD_FILE, "icloud")):
+                    m = mtime(path)
+                    if kind == "flags" and m != flags_mtime:
+                        flags_mtime, flags, reselect = m, config.load_flags(), True
+                    elif kind == "icloud" and m != icloud_mtime:
+                        icloud_mtime, icloud, reselect = m, load_icloud_names(), True
+                m = mtime(config.WEATHER_FILE)
+                if m != weather_mtime:
+                    weather_mtime, weather_data = m, weather.load()
                 m = mtime(config.PHOTOS_DIR)
-                if m != photos_mtime or memory_day != time.strftime("%Y%m%d"):
+                if (m != photos_mtime or memory_day != time.strftime("%Y%m%d") or reselect
+                        or selection != (settings["source"], settings["period_from"],
+                                         settings["period_to"])):
                     photos_mtime, memory_day = m, time.strftime("%Y%m%d")
-                    names = config.list_photos()
+                    selection = (settings["source"], settings["period_from"],
+                                 settings["period_to"])
+                    all_names = config.list_photos()
+                    names = select_photos(all_names, settings, flags, icloud)
                     playlist.update(names, settings["shuffle"])
+                    playlist.favorites = set(flags["favorites"])
                     playlist.recent = recent_photos(names)
                     memories = [n for n in names if years_ago(n)]
                     random.shuffle(memories)
                     if upcoming and upcoming[0] not in playlist.known:
                         upcoming = None
+
+            if self.update_corner(settings["show_clock"], weather_data) and current is not None:
+                self.show(current, badge="Pause" if paused else None)
 
             if in_sleep_window(settings):
                 if not asleep:
@@ -627,6 +702,8 @@ class Display:
                 if name is None:
                     if placeholder is None:
                         placeholder = self.message_texture(
+                            ["Aucune photo ne correspond à la sélection",
+                             "Voir les réglages de la page de gestion"] if all_names else
                             ["Aucune photo",
                              f"Ajoutez-en sur http://{socket.gethostname()}.local"])
                         self.transition(current, placeholder, "fade")

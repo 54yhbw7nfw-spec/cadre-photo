@@ -12,7 +12,9 @@ SETTINGS_FILE = os.path.join(DATA_DIR, "settings.json")
 AUTH_FILE = os.path.join(DATA_DIR, "auth.json")
 ICLOUD_FILE = os.path.join(DATA_DIR, "icloud.json")
 PLACES_FILE = os.path.join(DATA_DIR, "places.json")
-MESSAGE_FILE = os.path.join(DATA_DIR, "message.json")  # message affiché sur le cadre  # lieu de chaque photo (ville, pays)  # album iCloud suivi et ses photos
+MESSAGE_FILE = os.path.join(DATA_DIR, "message.json")  # message affiché sur le cadre
+FLAGS_FILE = os.path.join(DATA_DIR, "flags.json")      # photos favorites et masquées
+WEATHER_FILE = os.path.join(DATA_DIR, "weather.json")  # ville et dernière météo relevée  # lieu de chaque photo (ville, pays)  # album iCloud suivi et ses photos
 RUN_DIR = os.environ.get("CADRE_RUN", "/run/cadre")
 STATE_FILE = os.path.join(RUN_DIR, "state.json")  # état réseau publié par cadre-net
 NET_SOCKET = os.path.join(RUN_DIR, "net.sock")     # commandes Wi-Fi envoyées à cadre-net
@@ -26,7 +28,9 @@ PHOTO_EXT = ".jpg"
 TRANSITIONS = ("fade", "slide_left", "slide_right", "slide_up", "slide_down", "wipe", "none")
 DEFAULTS = {"transition": "random", "delay": 10, "shuffle": True, "keep_originals": False,
             "show_date": True, "show_place": False, "memories": True, "highlight_new": True,
-            "sleep": False, "sleep_start": "23:00", "sleep_end": "07:00"}
+            "sleep": False, "sleep_start": "23:00", "sleep_end": "07:00",
+            "source": "all", "period_from": "", "period_to": "", "show_clock": False}
+SOURCES = ("all", "icloud", "uploads", "favorites")  # photos affichées par le diaporama
 TIME_RE = re.compile(r"^([01][0-9]|2[0-3]):[0-5][0-9]$")
 
 
@@ -52,11 +56,16 @@ def validate_settings(raw):
     except (TypeError, ValueError):
         pass
     for key in ("shuffle", "keep_originals", "show_date", "show_place", "memories",
-                "highlight_new", "sleep"):
+                "highlight_new", "sleep", "show_clock"):
         if isinstance(raw.get(key), bool):
             s[key] = raw[key]
     for key in ("sleep_start", "sleep_end"):
         if isinstance(raw.get(key), str) and TIME_RE.match(raw[key]):
+            s[key] = raw[key]
+    if raw.get("source") in SOURCES:
+        s["source"] = raw["source"]
+    for key in ("period_from", "period_to"):
+        if isinstance(raw.get(key), str) and (raw[key] == "" or DATE_RE.match(raw[key])):
             s[key] = raw[key]
     return s
 
@@ -97,6 +106,31 @@ def load_message():
 
 def save_message(message):
     atomic_write_json(MESSAGE_FILE, validate_message(message))
+
+
+def load_flags():
+    """{"favorites": [...], "hidden": [...]} : noms de photos."""
+    try:
+        with open(FLAGS_FILE) as f:
+            data = json.load(f)
+        return {k: [n for n in data.get(k, []) if isinstance(n, str)]
+                for k in ("favorites", "hidden")}
+    except (OSError, ValueError, AttributeError):
+        return {"favorites": [], "hidden": []}
+
+
+def set_flag(name, kind, on):
+    flags = load_flags()
+    names = set(flags[kind])
+    names.add(name) if on else names.discard(name)
+    flags[kind] = sorted(names)
+    atomic_write_json(FLAGS_FILE, flags)
+
+
+def forget_flags(name):
+    flags = load_flags()
+    if any(name in v for v in flags.values()):
+        atomic_write_json(FLAGS_FILE, {k: [n for n in v if n != name] for k, v in flags.items()})
 
 
 def load_state():

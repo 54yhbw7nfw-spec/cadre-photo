@@ -146,6 +146,7 @@ def delete(name):
     if not NAME_RE.match(name):
         return False
     places.remove(name)
+    config.forget_flags(name)
     found = False
     for path in (os.path.join(config.PHOTOS_DIR, name), os.path.join(config.THUMBS_DIR, name)):
         try:

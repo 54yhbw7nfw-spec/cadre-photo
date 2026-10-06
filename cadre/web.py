@@ -27,7 +27,7 @@ from flask import (Flask, Response, jsonify, redirect, render_template, request,
                    send_from_directory)
 from werkzeug.security import check_password_hash, generate_password_hash
 
-from . import config, icloud, imaging, places, update
+from . import config, icloud, imaging, places, update, weather
 
 log = logging.getLogger("cadre.web")
 
@@ -479,8 +479,52 @@ def photos():
     page = max(1, min(pages, request.args.get("page", 1, type=int)))
     items = names[(page - 1) * per:page * per]
     cloud = set(icloud_sync.load().get("photos", {}).values())
+    flags = config.load_flags()
+    fav, hidden = set(flags["favorites"]), set(flags["hidden"])
     return jsonify(total=len(names), page=page, pages=pages, disk=disk_status(),
-                   items=items, cloud=[n for n in items if n in cloud])
+                   items=items, cloud=[n for n in items if n in cloud],
+                   favorites=[n for n in items if n in fav],
+                   hidden=[n for n in items if n in hidden])
+
+
+@app.post("/api/flags")
+def set_flags():
+    """Favori (revient plus souvent) ou masquée (gardée, mais plus affichée)."""
+    body = request.get_json(silent=True) or {}
+    name = str(body.get("name", ""))
+    if name not in config.list_photos():
+        return jsonify(error="photo inconnue"), 404
+    for kind, key in (("favorites", "favorite"), ("hidden", "hidden")):
+        if isinstance(body.get(key), bool):
+            config.set_flag(name, kind, body[key])
+    flags = config.load_flags()
+    return jsonify(favorite=name in flags["favorites"], hidden=name in flags["hidden"])
+
+
+@app.get("/api/weather")
+def get_weather():
+    data = weather.load()
+    return jsonify(city=data.get("city", ""), name=data.get("name", ""),
+                   country=data.get("country", ""), now=weather.summary(data))
+
+
+@app.post("/api/weather")
+def set_weather():
+    try:
+        weather.set_city((request.get_json(silent=True) or {}).get("city", ""))
+    except ValueError as exc:
+        return jsonify(error=str(exc)), 400
+    except OSError as exc:
+        return jsonify(error=f"service météo injoignable ({exc})"), 502
+    return get_weather()
+
+
+def weather_loop():
+    """Relève la météo toutes les 30 min (hors mode hotspot : pas d'Internet)."""
+    while True:
+        if config.load_state().get("mode") != "hotspot":
+            weather.refresh()
+        time.sleep(weather.EVERY)
 
 
 @app.post("/api/delete")
@@ -648,6 +692,7 @@ def main():
     app.secret_key = load_secret_key()
     queue.start()
     icloud_sync.start()
+    threading.Thread(target=weather_loop, name="météo", daemon=True).start()
 
     from waitress import serve
     log.info("Admin web sur le port %d", args.port)

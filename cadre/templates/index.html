@@ -40,6 +40,19 @@
       <label><input type="checkbox" name="show_place"> Afficher le lieu</label>
       <label><input type="checkbox" name="memories"> Souvenirs « ce jour-là »</label>
       <label><input type="checkbox" name="highlight_new"> Nouveautés à l'honneur</label>
+      <label>Photos affichées
+        <select name="source">
+          <option value="all">Toutes</option>
+          <option value="icloud">Album iCloud seulement</option>
+          <option value="uploads">Photos envoyées seulement</option>
+          <option value="favorites">Favoris seulement</option>
+        </select>
+      </label>
+      <label>prises du <input type="date" name="period_from"> au
+        <input type="date" name="period_to"></label>
+      <label><input type="checkbox" name="show_clock"> Heure et météo</label>
+      <label>Ville <input type="text" name="weather_city" placeholder="Niort" size="14"></label>
+      <span id="weather-state" class="muted small"></span>
       <label><input type="checkbox" name="sleep"> Veille de
         <input type="time" name="sleep_start" required> à
         <input type="time" name="sleep_end" required></label>
@@ -211,11 +224,35 @@ async function loadSettings() {
   form.show_place.checked = s.show_place;
   form.memories.checked = s.memories;
   form.highlight_new.checked = s.highlight_new;
+  form.source.value = s.source;
+  form.period_from.value = s.period_from;
+  form.period_to.value = s.period_to;
+  form.show_clock.checked = s.show_clock;
   form.sleep.checked = s.sleep;
   form.sleep_start.value = s.sleep_start;
   form.sleep_end.value = s.sleep_end;
 }
-form.addEventListener("change", async () => {
+/* Ville de la météo : cherchée par le cadre (Open-Meteo), enregistrée à part des réglages. */
+function showWeather(w) {
+  $("#weather-state").textContent = w.error ? w.error
+    : w.name ? `${w.name}${w.country ? ", " + w.country : ""}${w.now ? " : " + w.now : ""}`
+    : "";
+}
+async function loadWeather() {
+  const w = await api("/api/weather");
+  form.weather_city.value = w.city;
+  showWeather(w);
+}
+form.weather_city.addEventListener("change", async (e) => {
+  e.stopPropagation();  // pas un réglage du diaporama
+  $("#weather-state").textContent = "Recherche…";
+  const r = await fetch("/api/weather", {method: "POST", headers: {"Content-Type": "application/json"},
+                                          body: JSON.stringify({city: form.weather_city.value})});
+  showWeather(await r.json());
+});
+
+form.addEventListener("change", async (e) => {
+  if (e.target === form.weather_city) return;
   const s = await api("/api/settings", {
     transition: form.transition.value,
     delay: parseInt(form.delay.value, 10) || 10,
@@ -225,6 +262,10 @@ form.addEventListener("change", async () => {
     show_place: form.show_place.checked,
     memories: form.memories.checked,
     highlight_new: form.highlight_new.checked,
+    source: form.source.value,
+    period_from: form.period_from.value,
+    period_to: form.period_to.value,
+    show_clock: form.show_clock.checked,
     sleep: form.sleep.checked,
     sleep_start: form.sleep_start.value,
     sleep_end: form.sleep_end.value,
@@ -240,11 +281,13 @@ form.addEventListener("change", async () => {
 const PER_PAGE = 48;
 let page = 1, pages = 1, items = [];
 let cloud = new Set();  // photos venant de l'album iCloud (liseré)
+let favorites = new Set(), hiddenSet = new Set();  // favoris, photos masquées du diaporama
 const selected = new Set();
 
 async function loadPage(p = page) {
   const data = await api(`/api/photos?page=${p}&per=${PER_PAGE}`);
   page = data.page; pages = data.pages; items = data.items; cloud = new Set(data.cloud);
+  favorites = new Set(data.favorites); hiddenSet = new Set(data.hidden);
   $("#count").textContent = `${data.total} photo${data.total > 1 ? "s" : ""}`;
   showDisk(data.disk);
   $("#empty").hidden = data.total > 0;
@@ -258,14 +301,29 @@ async function loadPage(p = page) {
 
 function tile(name) {
   const el = document.createElement("div");
-  el.className = "tile" + (selected.has(name) ? " sel" : "") + (cloud.has(name) ? " cloud" : "");
+  el.className = "tile" + (selected.has(name) ? " sel" : "") + (cloud.has(name) ? " cloud" : "")
+    + (favorites.has(name) ? " fav" : "") + (hiddenSet.has(name) ? " hid" : "");
   el.dataset.name = name;
   el.innerHTML = `<img alt="" src="/thumbs/${name}"><span class="check"></span>
+    <span class="flag">★</span><span class="hidden-label">masquée</span>
     <span class="actions"><a href="/photos/${name}" target="_blank" title="Voir">⤢</a>
-    <button title="Supprimer">🗑</button></span>`;
-  el.addEventListener("click", (e) => {
+    <button data-act="fav" title="Favori : revient plus souvent">★</button>
+    <button data-act="hide" title="Masquer du diaporama (sans supprimer)">👁</button>
+    <button data-act="del" title="Supprimer">🗑</button></span>`;
+  el.addEventListener("click", async (e) => {
     if (e.target.closest("a")) return;
-    if (e.target.closest("button")) { removePhotos([name]); return; }
+    const act = e.target.closest("button")?.dataset.act;
+    if (act === "del") { removePhotos([name]); return; }
+    if (act === "fav" || act === "hide") {
+      const body = act === "fav" ? {name, favorite: !favorites.has(name)}
+                                 : {name, hidden: !hiddenSet.has(name)};
+      const r = await api("/api/flags", body);
+      r.favorite ? favorites.add(name) : favorites.delete(name);
+      r.hidden ? hiddenSet.add(name) : hiddenSet.delete(name);
+      el.classList.toggle("fav", r.favorite);
+      el.classList.toggle("hid", r.hidden);
+      return;
+    }
     selected.has(name) ? selected.delete(name) : selected.add(name);
     el.classList.toggle("sel");
     updateSelection();
@@ -771,6 +829,7 @@ loadMessage();
 loadUpdate().then((s) => { if (["installing", "pending"].includes(s.state)) pollUpdate(); });
 loadIcloud(true).then((s) => { if (s.running) pollIcloud(s.last_sync); });
 loadSettings();
+loadWeather();
 loadPage(1);
 </script>
 <script src="/static/wifi.js"></script>
