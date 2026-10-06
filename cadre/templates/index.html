@@ -51,7 +51,8 @@
       <label>prises du <input type="date" name="period_from"> au
         <input type="date" name="period_to"></label>
       <label><input type="checkbox" name="show_clock"> Heure et météo</label>
-      <label>Ville <input type="text" name="weather_city" placeholder="Niort" size="14"></label>
+      <label>Ville <input type="text" name="weather_city" placeholder="Niort" size="14">
+        <button type="button" id="weather-ok">OK</button></label>
       <span id="weather-state" class="muted small"></span>
       <label><input type="checkbox" name="sleep"> Veille de
         <input type="time" name="sleep_start" required> à
@@ -240,16 +241,22 @@ function showWeather(w) {
 }
 async function loadWeather() {
   const w = await api("/api/weather");
-  form.weather_city.value = w.city;
+  form.weather_city.value = weatherCity = w.city;
   showWeather(w);
 }
-form.weather_city.addEventListener("change", async (e) => {
-  e.stopPropagation();  // pas un réglage du diaporama
+let weatherCity = null;  // dernière ville envoyée : pas de recherche en double
+async function saveWeather() {
+  if (form.weather_city.value === weatherCity) return;
+  weatherCity = form.weather_city.value;
   $("#weather-state").textContent = "Recherche…";
   const r = await fetch("/api/weather", {method: "POST", headers: {"Content-Type": "application/json"},
-                                          body: JSON.stringify({city: form.weather_city.value})});
+                                          body: JSON.stringify({city: weatherCity})});
   showWeather(await r.json());
-});
+}
+// Enregistrée en quittant le champ, avec Entrée ou avec « OK ».
+form.weather_city.addEventListener("change", (e) => { e.stopPropagation(); saveWeather(); });
+form.weather_city.addEventListener("keydown", (e) => { if (e.key === "Enter") saveWeather(); });
+$("#weather-ok").onclick = saveWeather;
 
 form.addEventListener("change", async (e) => {
   if (e.target === form.weather_city) return;
