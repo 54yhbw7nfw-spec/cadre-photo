@@ -59,8 +59,23 @@ set -e
 dpkg -s python3-requests >/dev/null 2>&1 || apt-get install -y --no-install-recommends python3-requests
 ```
 
-Pensez à le supprimer (ou à le rendre sans effet s'il est relancé) pour les mises à jour suivantes :
-il part dans chaque fichier tant qu'il est commité. Il faut Internet sur le cadre pour `apt-get`.
+**Gardez-le cumulatif, ne le supprimez pas.** Un cadre en retard de plusieurs versions passe
+directement à la dernière (chaque fichier contient tout le code) : seul le `apply.sh` de ce
+dernier fichier est lancé. Ajoutez donc chaque nouvelle étape à la suite des précédentes, et
+faites-la vérifier si elle est déjà faite (comme `dpkg -s … ||` ci-dessus) : le script part dans
+chaque fichier et peut être relancé sur un cadre déjà à jour sans dommage. Exemple après deux
+évolutions :
+
+```sh
+#!/bin/sh
+set -e
+# 20261101 : paquet requests
+dpkg -s python3-requests >/dev/null 2>&1 || apt-get install -y --no-install-recommends python3-requests
+# 20261215 : dossier des archives
+[ -d /var/lib/cadre/archives ] || install -d -o cadre -g cadre /var/lib/cadre/archives
+```
+
+Il faut Internet sur le cadre pour `apt-get`.
 
 ## Distribuer la mise à jour
 
