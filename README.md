@@ -20,8 +20,11 @@ Cahier des charges : [docs/cahier-des-charges.md](docs/cahier-des-charges.md).
 | 11. Rapport de diagnostic | ✅ testé (4 s, 360 Ko) |
 | 12. Mise à jour à distance (fichier signé, retour arrière) | ✅ 5 cas testés, dont une version cassée |
 | 13. Message sur le cadre (bandeau ou écran, jusqu'à une date) | ✅ livré par mise à jour signée |
-| 14. Souvenirs « ce jour-là » | livré par mise à jour signée, à tester |
-| 15. Nouveautés à l'honneur (badge « Nouveau ») | livré par mise à jour signée, à tester |
+| 14. Souvenirs « ce jour-là » | ✅ testé (photos datées d'un 6 octobre passé) |
+| 15. Nouveautés à l'honneur (badge « Nouveau ») | ✅ testé |
+| 16. Favoris et photos masquées | livré par mise à jour signée, à tester |
+| 17. Choix des photos affichées (source, période) | livré par mise à jour signée, à tester |
+| 18. Heure et météo (Open-Meteo) | ✅ heure ; météo testée par l'API (Niort) |
 | Mode d'emploi vidéo | ✅ `build/video/cadre-photo-mode-d-emploi.mp4`, à refaire après une évolution visible |
 
 ## Reste à faire / idées
@@ -66,6 +69,8 @@ Sur le Pi :
 | `/var/lib/cadre/thumbs/` | miniatures 320x180 de l'admin |
 | `/var/lib/cadre/originals/` | originaux, si l'option est cochée |
 | `/var/lib/cadre/settings.json` | réglages, relus à chaud toutes les 2 s |
+| `/var/lib/cadre/flags.json` | photos favorites et masquées |
+| `/var/lib/cadre/weather.json` | ville de la météo et dernière relève |
 | `/var/lib/cadre/message.json` | message affiché sur le cadre (texte, date de fin, mode) |
 | `/var/lib/cadre/places.json` | lieu de chaque photo (« Ville, Pays ») |
 | `/var/lib/cadre/icloud.json` | album iCloud suivi : lien, titre, identifiant iCloud → photo du cadre |
@@ -281,6 +286,18 @@ message change). Pris en compte par le diaporama en quelques secondes (`message.
 - « Nouveautés à l'honneur » (réglage, actif par défaut) : photos arrivées depuis moins de 24 h
   (date du fichier sur le cadre) en tête de chaque tour du diaporama, badge « Nouveau » en haut
   à gauche (sous le bandeau du message s'il y en a un).
+
+## Favoris, sélection, heure et météo
+
+- Galerie : ★ favori (deux passages par tour en ordre aléatoire, étoile sur la miniature),
+  👁 masquer (photo gardée mais plus affichée, miniature grisée). `flags.json`, nettoyé à la
+  suppression d'une photo.
+- Réglage « Photos affichées » : toutes, album iCloud, photos envoyées, favoris ; période
+  facultative « prises du … au … » (date du nom de fichier). Rien ne correspond : l'écran le dit.
+- « Heure et météo » : en bas à gauche, « 16:08 · Niort 28 °C, couvert », redessiné chaque
+  minute (pause et transitions comprises). Ville cherchée par Open-Meteo (géocodage, gratuit,
+  sans compte), météo relevée toutes les 30 min par cadre-web ; relève de plus de 3 h ou pas
+  d'Internet : l'heure seule.
 
 ## Mise à jour à distance
 
