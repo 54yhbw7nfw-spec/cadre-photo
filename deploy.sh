@@ -9,7 +9,7 @@ cd "$(dirname "$0")"
 # Version affichée par l'admin, comparée par la mise à jour à distance (date, commit).
 printf '%s %s%s\n' "$(date +%Y%m%d-%H%M)" "$(git rev-parse --short HEAD)" \
     "$(git diff --quiet HEAD -- cadre systemd || echo +modifs)" > cadre/VERSION
-tar --exclude=__pycache__ -czf - cadre systemd | ssh "$HOST" "
+tar --exclude=__pycache__ --owner=0 --group=0 --numeric-owner -czf - cadre systemd | ssh "$HOST" "
 set -e
 sudo install -d -o cadre -g cadre /opt/cadre /var/lib/cadre /var/lib/cadre/photos
 sudo rm -rf /opt/cadre/cadre /opt/cadre/systemd  # sudo : __pycache__ de cadre-net (root)

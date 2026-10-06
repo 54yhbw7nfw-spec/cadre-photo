@@ -33,7 +33,7 @@ if [ $LOCAL = 0 ]; then
     # Version affichée par l'admin, comparée par la mise à jour à distance (date, commit).
     printf '%s %s%s\n' "$(date +%Y%m%d-%H%M)" "$(git rev-parse --short HEAD)" \
         "$(git diff --quiet HEAD -- cadre systemd || echo +modifs)" > cadre/VERSION
-    tar --exclude=__pycache__ -czf - install.sh cadre systemd system | $SSH "$HOST" "
+    tar --exclude=__pycache__ --owner=0 --group=0 --numeric-owner -czf - install.sh cadre systemd system | $SSH "$HOST" "
         rm -rf /tmp/cadre-install && mkdir /tmp/cadre-install && tar -xzf - -C /tmp/cadre-install"
     # Terminal interactif : sur un système neuf, sudo demande le mot de passe choisi dans Imager
     # (une seule fois : l'installation configure ensuite sudo sans mot de passe).
@@ -143,8 +143,18 @@ if [ -e /etc/systemd/system.conf.d/cadre-watchdog.conf ]; then
     REBOOT=1
 fi
 
-step "Mise à jour à distance : clé publique de signature"
-put system/update/allowed_signers /etc/cadre/allowed_signers 644 || true
+step "Mise à jour à distance : clés de confiance = clés SSH mises dans Raspberry Pi Imager"
+# Une mise à jour .cadre n'est acceptée que signée par l'une d'elles (make_update.sh).
+KEYS="$(getent passwd "${SUDO_USER:-cadre}" | cut -d: -f6)/.ssh/authorized_keys"
+if [ -s "$KEYS" ]; then
+    TMP=$(mktemp)
+    grep -E '^(ssh-|ecdsa-)' "$KEYS" | awk '{print "cadre-maj namespaces=\"cadre-maj\" " $1 " " $2}' > "$TMP"
+    install -d -m 755 /etc/cadre
+    put "$TMP" /etc/cadre/allowed_signers 644 || true
+    rm -f "$TMP"
+else
+    echo "   aucune clé SSH dans $KEYS : mise à jour à distance impossible"
+fi
 install -d -m 700 /var/lib/cadre-updates
 
 step "NetworkManager : Wi-Fi sans économie d'énergie, portail captif"
