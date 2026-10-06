@@ -27,7 +27,7 @@ from flask import (Flask, jsonify, redirect, render_template, request, session,
                    send_from_directory)
 from werkzeug.security import check_password_hash, generate_password_hash
 
-from . import config, icloud, imaging
+from . import config, icloud, imaging, places
 
 log = logging.getLogger("cadre.web")
 
@@ -62,9 +62,9 @@ class ProcessingQueue:
     def full(self):
         return self.pending_bytes > QUEUE_MAX_BYTES
 
-    def put(self, path, original_name, size, taken="", sig=""):
+    def put(self, path, original_name, size, taken="", sig="", gps=""):
         with self.cond:
-            self.items.append((path, original_name, size, taken, sig))
+            self.items.append((path, original_name, size, taken, sig, gps))
             self.pending_bytes += size
             self.cond.notify()
 
@@ -78,14 +78,19 @@ class ProcessingQueue:
             with self.cond:
                 while not self.items:
                     self.cond.wait()
-                path, original_name, size, taken, sig = self.items.popleft()
+                path, original_name, size, taken, sig, gps = self.items.popleft()
                 self.busy = True
             t0 = time.monotonic()
             error = None
             try:
+                # Position envoyée à part par le navigateur (EXIF perdu à la réduction),
+                # sinon celle du fichier ; lue avant le traitement, qui peut déplacer le fichier.
+                position = places.parse(gps) or imaging.read_gps(path)
                 with process_lock:
                     name, new = imaging.process(path, config.load_settings()["keep_originals"],
                                                 original_name, taken, sig)
+                if new and position:
+                    places.set_place(name, *position)
                 log.info("%s -> %s%s en %d ms", original_name, name,
                          "" if new else " (doublon)", (time.monotonic() - t0) * 1000)
             except imaging.Rejected as exc:
@@ -225,6 +230,12 @@ class IcloudSync:
             imaging.delete(name)
         self.update(url, lambda st: [st["photos"].pop(pid, None) for pid in gone])
 
+        located = places.load()
+        for p in photos:
+            name = known.get(p["id"])
+            if name and p.get("position") and name not in located:
+                places.set_place(name, *p["position"])
+
         new = [p for p in photos if p["id"] not in known]
         error = ""
         for i, p in enumerate(new, 1):
@@ -261,6 +272,8 @@ class IcloudSync:
             with process_lock:
                 name, _ = imaging.process(path, False, "icloud.jpg", taken,
                                           "icloud:" + photo["id"])
+            if photo.get("position"):
+                places.set_place(name, *photo["position"])
             return name
         finally:
             try:
@@ -448,7 +461,8 @@ def upload():
     f.save(dest)
     # Photo réduite par le navigateur : EXIF perdu, d'où la date et la signature transmises à part.
     queue.put(dest, os.path.basename(f.filename), os.path.getsize(dest),
-              request.form.get("taken", "")[:19], request.form.get("sig", "")[:300])
+              request.form.get("taken", "")[:19], request.form.get("sig", "")[:300],
+              request.form.get("gps", "")[:40])
     return jsonify(ok=True)
 
 

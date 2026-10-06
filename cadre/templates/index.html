@@ -37,6 +37,7 @@
       <label><input type="checkbox" name="shuffle"> Ordre aléatoire</label>
       <label><input type="checkbox" name="keep_originals"> Conserver les originaux</label>
       <label><input type="checkbox" name="show_date"> Afficher la date</label>
+      <label><input type="checkbox" name="show_place"> Afficher le lieu</label>
       <label><input type="checkbox" name="sleep"> Veille de
         <input type="time" name="sleep_start" required> à
         <input type="time" name="sleep_end" required></label>
@@ -147,6 +148,7 @@ async function loadSettings() {
   form.shuffle.checked = s.shuffle;
   form.keep_originals.checked = s.keep_originals;
   form.show_date.checked = s.show_date;
+  form.show_place.checked = s.show_place;
   form.sleep.checked = s.sleep;
   form.sleep_start.value = s.sleep_start;
   form.sleep_end.value = s.sleep_end;
@@ -158,6 +160,7 @@ form.addEventListener("change", async () => {
     shuffle: form.shuffle.checked,
     keep_originals: form.keep_originals.checked,
     show_date: form.show_date.checked,
+    show_place: form.show_place.checked,
     sleep: form.sleep.checked,
     sleep_start: form.sleep_start.value,
     sleep_end: form.sleep_end.value,
@@ -260,9 +263,10 @@ function enqueue(fileList) {
 
 /* Date de prise de vue (EXIF DateTimeOriginal) lue dans l'en-tête JPEG : la réduction par le
    navigateur supprime l'EXIF, la date est donc envoyée à part. */
-async function exifDate(file) {
+async function exifInfo(file) {
   const v = new DataView(await file.slice(0, 256 * 1024).arrayBuffer());
-  if (v.byteLength < 4 || v.getUint16(0) !== 0xFFD8) return "";
+  const none = {taken: "", gps: ""};
+  if (v.byteLength < 4 || v.getUint16(0) !== 0xFFD8) return none;
   let p = 2;
   while (p + 4 <= v.byteLength) {
     const marker = v.getUint16(p), len = v.getUint16(p + 2);
@@ -280,12 +284,45 @@ async function exifDate(file) {
       const ifd0 = u32(4), exifIfd = find(ifd0, 0x8769);
       const off = (exifIfd !== null && find(exifIfd, 0x9003)) || find(ifd0, 0x0132);
       const d = off ? str(off) : "";
-      return /^\d{4}:\d\d:\d\d \d\d:\d\d:\d\d$/.test(d) ? d : "";
+      return {taken: /^\d{4}:\d\d:\d\d \d\d:\d\d:\d\d$/.test(d) ? d : "",
+              gps: exifGps(v, t, u16, u32, find(ifd0, 0x8825))};
     }
     if ((marker & 0xFF00) !== 0xFF00 || marker === 0xFFDA) break;
     p += 2 + len;
   }
-  return "";
+  return none;
+}
+
+/* Position GPS de l'EXIF (« lat,lon ») : perdue quand le navigateur réduit la photo, elle est
+   envoyée à part pour afficher le lieu sur le cadre. */
+function exifGps(v, t, u16, u32, gpsIfd) {
+  try {
+    return readGps(v, t, u16, u32, gpsIfd);
+  } catch {
+    return "";  // EXIF tronqué ou inhabituel : la date reste utilisable
+  }
+}
+
+function readGps(v, t, u16, u32, gpsIfd) {
+  if (gpsIfd === null) return "";
+  const entry = (tag) => {
+    for (let i = 0, n = u16(gpsIfd); i < n; i++) {
+      const e = gpsIfd + 2 + i * 12;
+      if (u16(e) === tag) return e;
+    }
+    return null;
+  };
+  const coord = (refTag, tag) => {
+    const r = entry(refTag), e = entry(tag);
+    if (r === null || e === null) return null;
+    const o = u32(e + 8);
+    const [d, m, sec] = [0, 1, 2].map((k) => u32(o + 8 * k) / (u32(o + 8 * k + 4) || 1));
+    const ref = String.fromCharCode(v.getUint8(t + r + 8));
+    return (d + m / 60 + sec / 3600) * (ref === "S" || ref === "W" ? -1 : 1);
+  };
+  const lat = coord(1, 2), lon = coord(3, 4);
+  return lat === null || lon === null || (lat === 0 && lon === 0) ? ""
+    : `${lat.toFixed(5)},${lon.toFixed(5)}`;
 }
 
 function showDisk(d) {
@@ -299,8 +336,8 @@ function showDisk(d) {
    Le cadre fait ensuite le traitement final (Pillow). */
 const MAX_W = 2560, MAX_H = 1440;
 async function prepare(file, keepOriginal) {
-  const taken = await exifDate(file).catch(() => "");
-  const original = {blob: file, taken, sig: ""};
+  const {taken, gps} = await exifInfo(file).catch(() => ({taken: "", gps: ""}));
+  const original = {blob: file, taken, gps, sig: ""};
   if (keepOriginal) return original;
   try {
     const bmp = await createImageBitmap(file, {imageOrientation: "from-image"});
@@ -319,7 +356,7 @@ async function prepare(file, keepOriginal) {
     // Une photo JPEG 0,9 pèse ~0,1 à 0,3 octet par pixel ; une image vide ~0,01.
     const tooLight = blob && blob.size < pixels * 0.03;
     if (!blob || blob.size >= file.size || tooLight || !(await looksLikePhoto(blob))) return original;
-    return {blob, taken, sig: `${file.name}|${file.size}|${file.lastModified}`};
+    return {blob, taken, gps, sig: `${file.name}|${file.size}|${file.lastModified}`};
   } catch {
     return original;  // format non décodable par le navigateur : le cadre tranchera
   }
@@ -382,6 +419,7 @@ function send(file, prep, onProgress) {
     const fd = new FormData();
     fd.append("taken", prep.taken);
     fd.append("sig", prep.sig);
+    fd.append("gps", prep.gps);
     fd.append("file", prep.blob, file.name);
     xhr.send(fd);
   });

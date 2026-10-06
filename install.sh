@@ -71,7 +71,7 @@ fi
 step "Paquets"
 PKGS="python3-pygame python3-pil libegl1 libegl-mesa0 libgles2 libgl1-mesa-dri
       python3-flask python3-waitress python3-qrcode iw
-      network-manager dnsmasq-base wpasupplicant avahi-daemon"
+      network-manager dnsmasq-base wpasupplicant avahi-daemon iso-codes"
 MISSING=""
 for p in $PKGS; do
     dpkg-query -W -f='${Status}' "$p" 2>/dev/null | grep -q "ok installed" || MISSING="$MISSING $p"

@@ -23,6 +23,7 @@ cadre/               paquet Python déployé dans /opt/cadre/cadre
   imaging.py         traitement des photos reçues (draft JPEG, EXIF, miniature)
   web.py             admin web Flask servi par waitress (service cadre-web)
   icloud.py          lecture d'un album partagé iCloud public (API non officielles)
+  places.py          lieu des photos hors ligne (ville la plus proche, data/villes.tsv.gz)
   splash.py          écran de démarrage dans /dev/fb0 (service cadre-splash)
   net.py             surveillance réseau, état dans /run/cadre/state.json (service cadre-net)
   templates/         page unique de l'admin (HTML/CSS/JS sans framework)
@@ -42,6 +43,7 @@ Sur le Pi :
 | `/var/lib/cadre/thumbs/` | miniatures 320x180 de l'admin |
 | `/var/lib/cadre/originals/` | originaux, si l'option est cochée |
 | `/var/lib/cadre/settings.json` | réglages, relus à chaud toutes les 2 s |
+| `/var/lib/cadre/places.json` | lieu de chaque photo (« Ville, Pays ») |
 | `/var/lib/cadre/icloud.json` | album iCloud suivi : lien, titre, identifiant iCloud → photo du cadre |
 | `/var/lib/cadre/auth.json` | empreinte du mot de passe admin (absent = pas d'authentification) |
 | `/run/cadre-web/incoming/` | fichiers reçus en attente de traitement (RAM) |
@@ -238,6 +240,16 @@ pour déployer) :
   retéléchargée, sauf synchronisation demandée dans l'admin (bouton) : l'album revient en
   entier. Liseré orange dans la galerie de l'admin. Photos de l'admin jamais touchées (pas de détection de doublon entre les deux).
 - Mesuré : 10 photos ajoutées en 28 s, synchronisation sans nouveauté en 2 s.
+
+## Lieu des photos
+
+- Réglage « Afficher le lieu » (désactivé par défaut) : « Ville, Pays · date » en bas à droite.
+- Position : GPS de l'EXIF (fichier reçu), ou lue par le navigateur avant réduction et envoyée à
+  part (champ `gps`), ou `locationEnc` de l'album iCloud (plist binaire). WhatsApp efface le GPS.
+- Hors ligne : ville la plus proche parmi les villes > 15 000 hab. de GeoNames
+  (`cadre/data/villes.tsv.gz`, 34 000 villes, 570 Ko ; données GeoNames, licence CC BY 4.0) ;
+  jusqu'à 40 km « Ville, Pays », jusqu'à 200 km « Pays », au-delà rien. Pays en français par le
+  paquet `iso-codes`. Calculé une fois à l'arrivée de la photo (0,05 s), rangé dans places.json.
 
 ## Choix techniques du diaporama
 

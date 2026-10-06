@@ -13,7 +13,7 @@ from datetime import datetime
 
 from PIL import Image, ImageOps
 
-from . import config
+from . import config, places
 
 # Au-delà : refus (bombe de décompression, RAM du Pi).
 Image.MAX_IMAGE_PIXELS = 60_000_000
@@ -24,6 +24,7 @@ EXIF_ORIENTATION = 0x0112
 EXIF_IFD = 0x8769
 EXIF_DATETIME_ORIGINAL = 0x9003
 EXIF_DATETIME = 0x0132
+EXIF_GPS = 0x8825
 ROTATED_90 = {5, 6, 7, 8}
 NAME_RE = re.compile(r"^\d{8}-\d{6}_[0-9a-f]{10}\.jpg$")
 
@@ -52,6 +53,22 @@ def parse_exif_date(raw):
     try:
         return datetime.strptime(str(raw).strip("\x00 "), "%Y:%m:%d %H:%M:%S")
     except ValueError:
+        return None
+
+
+def read_gps(path):
+    """Coordonnées GPS de l'EXIF (lat, lon) ou None. WhatsApp, par exemple, les efface."""
+    try:
+        with Image.open(path) as im:
+            gps = im.getexif().get_ifd(EXIF_GPS)
+
+        def degrees(v):
+            d, m, s = (float(x) for x in v)
+            return d + m / 60 + s / 3600
+        lat = degrees(gps[2]) * (-1 if gps.get(1) == "S" else 1)
+        lon = degrees(gps[4]) * (-1 if gps.get(3) == "W" else 1)
+        return lat, lon
+    except (OSError, KeyError, TypeError, ValueError, ZeroDivisionError):
         return None
 
 
@@ -125,9 +142,10 @@ def process(src, keep_original=False, original_name="", taken="", sig=""):
 
 
 def delete(name):
-    """Supprime une photo, sa miniature et son original éventuel. Renvoie True si trouvée."""
+    """Supprime une photo, sa miniature, son original éventuel et son lieu. True si trouvée."""
     if not NAME_RE.match(name):
         return False
+    places.remove(name)
     found = False
     for path in (os.path.join(config.PHOTOS_DIR, name), os.path.join(config.THUMBS_DIR, name)):
         try:

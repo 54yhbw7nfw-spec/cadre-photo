@@ -10,7 +10,9 @@ fetch_album() renvoie le titre et la liste des photos : identifiant stable, adre
 téléchargement (valable peu de temps : télécharger aussitôt) et date de prise de vue.
 Vidéos ignorées ; HEIC remplacé par le JPEG 2048 px fourni par Apple (Pillow ne lit pas le HEIC).
 """
+import base64
 import json
+import plistlib
 import re
 import urllib.error
 import urllib.parse
@@ -124,8 +126,17 @@ def _cloudkit(code):
                      + offset).replace(tzinfo=None)
         photos.append({"id": r["recordName"],
                        "url": res["value"]["downloadURL"].replace("${f}", "photo.jpg"),
-                       "taken": taken})
+                       "taken": taken, "position": _position(f)})
     return title, photos
+
+
+def _position(fields):
+    """Position (lat, lon) de « locationEnc » (plist binaire en base64) ou None."""
+    try:
+        loc = plistlib.loads(base64.b64decode(fields["locationEnc"]["value"]))
+        return (float(loc["lat"]), float(loc["lon"])) if loc.get("lat") else None
+    except (KeyError, ValueError, TypeError, plistlib.InvalidFileException):
+        return None
 
 
 # --- Ancien album : sharedstreams --------------------------------------------------------------

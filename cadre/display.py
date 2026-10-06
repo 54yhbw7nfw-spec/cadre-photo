@@ -26,7 +26,7 @@ import qrcode  # noqa: E402
 from pygame._sdl2.video import Renderer, Texture, Window  # noqa: E402
 from PIL import Image, ImageOps  # noqa: E402
 
-from . import config  # noqa: E402
+from . import config, places  # noqa: E402
 
 log = logging.getLogger("cadre.display")
 
@@ -376,9 +376,9 @@ class Display:
         log.info("Transition %s : %d images en %.2f s (%.1f i/s)",
                  kind, frames, elapsed, frames / elapsed)
 
-    def draw_date(self, surf, name):
-        """Date de prise de vue en bas à droite de la photo, sur un cartouche sombre."""
-        text = photo_date(name)
+    def draw_date(self, surf, name, place=None, show_date=True):
+        """Lieu et/ou date de prise de vue en bas à droite de la photo, sur un cartouche sombre."""
+        text = " · ".join(t for t in (place, photo_date(name) if show_date else None) if t)
         if not text:
             return
         img = self.date_font.render(text, True, TEXT)
@@ -389,7 +389,7 @@ class Display:
         surf.blit(box, (surf.get_width() - box.get_width() - 16,
                         surf.get_height() - box.get_height() - 16))
 
-    def prepare(self, name, show_date=False):
+    def prepare(self, name, show_date=False, place=None):
         """Charge une photo et crée sa texture ; None si le fichier est illisible."""
         path = os.path.join(config.PHOTOS_DIR, name)
         t0 = time.monotonic()
@@ -398,8 +398,8 @@ class Display:
         except (OSError, ValueError, Image.DecompressionBombError) as exc:
             log.warning("Photo ignorée %s : %s", name, exc)
             return None
-        if show_date:
-            self.draw_date(surf, name)
+        if show_date or place:
+            self.draw_date(surf, name, place, show_date)
         t1 = time.monotonic()
         tex = self.texture(surf)
         log.info("Photo %s : décodage %d ms, envoi GPU %d ms",
@@ -410,7 +410,8 @@ class Display:
         settings = config.load_settings()
         playlist = Playlist()
         playlist.update(config.list_photos(), settings["shuffle"])
-        settings_mtime = photos_mtime = None
+        settings_mtime = photos_mtime = places_mtime = None
+        photo_places = {}
         current = None
         upcoming = None  # (nom, texture) préchargée pendant l'affichage fixe
         placeholder = None
@@ -435,6 +436,10 @@ class Display:
                 if m != state_mtime:
                     state_mtime = m
                     state = config.load_state()
+                m = mtime(config.PLACES_FILE)
+                if m != places_mtime:
+                    places_mtime = m
+                    photo_places = places.load()
                 m = mtime(config.PHOTOS_DIR)
                 if m != photos_mtime:
                     photos_mtime = m
@@ -512,7 +517,8 @@ class Display:
                         current = placeholder
                     self.idle(POLL_INTERVAL)
                     continue
-                tex = self.prepare(name, settings["show_date"])
+                tex = self.prepare(name, settings["show_date"],
+                                   photo_places.get(name) if settings["show_place"] else None)
                 if tex is None:
                     playlist.forget(name)
                     next_check = 0.0  # fichier supprimé ? relire le dossier tout de suite

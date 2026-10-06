@@ -10,7 +10,8 @@ THUMBS_DIR = os.path.join(DATA_DIR, "thumbs")
 ORIGINALS_DIR = os.path.join(DATA_DIR, "originals")
 SETTINGS_FILE = os.path.join(DATA_DIR, "settings.json")
 AUTH_FILE = os.path.join(DATA_DIR, "auth.json")
-ICLOUD_FILE = os.path.join(DATA_DIR, "icloud.json")  # album iCloud suivi et ses photos
+ICLOUD_FILE = os.path.join(DATA_DIR, "icloud.json")
+PLACES_FILE = os.path.join(DATA_DIR, "places.json")  # lieu de chaque photo (ville, pays)  # album iCloud suivi et ses photos
 RUN_DIR = os.environ.get("CADRE_RUN", "/run/cadre")
 STATE_FILE = os.path.join(RUN_DIR, "state.json")  # état réseau publié par cadre-net
 NET_SOCKET = os.path.join(RUN_DIR, "net.sock")     # commandes Wi-Fi envoyées à cadre-net
@@ -23,7 +24,7 @@ PHOTO_EXT = ".jpg"
 
 TRANSITIONS = ("fade", "slide_left", "slide_right", "slide_up", "slide_down", "wipe", "none")
 DEFAULTS = {"transition": "random", "delay": 10, "shuffle": True, "keep_originals": False,
-            "show_date": True, "sleep": False, "sleep_start": "23:00", "sleep_end": "07:00"}
+            "show_date": True, "show_place": False, "sleep": False, "sleep_start": "23:00", "sleep_end": "07:00"}
 TIME_RE = re.compile(r"^([01][0-9]|2[0-3]):[0-5][0-9]$")
 
 
@@ -48,7 +49,7 @@ def validate_settings(raw):
         s["delay"] = max(2, min(3600, int(raw.get("delay", s["delay"]))))
     except (TypeError, ValueError):
         pass
-    for key in ("shuffle", "keep_originals", "show_date", "sleep"):
+    for key in ("shuffle", "keep_originals", "show_date", "show_place", "sleep"):
         if isinstance(raw.get(key), bool):
             s[key] = raw[key]
     for key in ("sleep_start", "sleep_end"):
