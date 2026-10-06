@@ -25,7 +25,8 @@ PHOTO_EXT = ".jpg"
 
 TRANSITIONS = ("fade", "slide_left", "slide_right", "slide_up", "slide_down", "wipe", "none")
 DEFAULTS = {"transition": "random", "delay": 10, "shuffle": True, "keep_originals": False,
-            "show_date": True, "show_place": False, "sleep": False, "sleep_start": "23:00", "sleep_end": "07:00"}
+            "show_date": True, "show_place": False, "memories": True, "highlight_new": True,
+            "sleep": False, "sleep_start": "23:00", "sleep_end": "07:00"}
 TIME_RE = re.compile(r"^([01][0-9]|2[0-3]):[0-5][0-9]$")
 
 
@@ -50,7 +51,8 @@ def validate_settings(raw):
         s["delay"] = max(2, min(3600, int(raw.get("delay", s["delay"]))))
     except (TypeError, ValueError):
         pass
-    for key in ("shuffle", "keep_originals", "show_date", "show_place", "sleep"):
+    for key in ("shuffle", "keep_originals", "show_date", "show_place", "memories",
+                "highlight_new", "sleep"):
         if isinstance(raw.get(key), bool):
             s[key] = raw[key]
     for key in ("sleep_start", "sleep_end"):

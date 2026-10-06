@@ -44,6 +44,33 @@ MONTHS = ("janvier", "février", "mars", "avril", "mai", "juin", "juillet", "ao�
           "octobre", "novembre", "décembre")
 SLEEP_CHECK = 5.0  # secondes entre deux vérifications pendant la veille
 MESSAGE_EVERY = 5  # mode « écran » : une carte toutes les N photos
+MEMORY_EVERY = 4   # « Ce jour-là » : un souvenir toutes les N photos
+NEW_FOR = 24 * 3600  # « Nouveau » : photo arrivée depuis moins de 24 h
+
+
+def years_ago(name, today=None):
+    """Nombre d'années si la photo a été prise un jour comme aujourd'hui, une année passée."""
+    try:
+        d = datetime.strptime(name[:8], "%Y%m%d")
+    except ValueError:
+        return 0
+    today = today or datetime.now()
+    if (d.month, d.day) == (today.month, today.day) and d.year < today.year:
+        return today.year - d.year
+    return 0
+
+
+def recent_photos(names):
+    """Photos arrivées sur le cadre (fichier créé) depuis moins de NEW_FOR secondes."""
+    limit = time.time() - NEW_FOR
+    recent = set()
+    for n in names:
+        try:
+            if os.stat(os.path.join(config.PHOTOS_DIR, n)).st_mtime >= limit:
+                recent.add(n)
+        except OSError:
+            pass
+    return recent
 
 
 def message_active(msg, today=None):
@@ -154,6 +181,7 @@ class Playlist:
         self.queue = []
         self.last = None
         self.shuffle = True
+        self.recent = set()  # nouveautés : en tête de chaque nouveau tour
 
     def update(self, names, shuffle):
         if shuffle != self.shuffle:
@@ -176,6 +204,8 @@ class Playlist:
                 random.shuffle(self.queue)
                 if len(self.queue) > 1 and self.queue[0] == self.last:
                     self.queue.append(self.queue.pop(0))
+            if self.recent:  # tri stable : l'ordre (aléatoire ou non) est gardé dans chaque groupe
+                self.queue.sort(key=lambda n: n not in self.recent)
         self.last = self.queue.pop(0)
         return self.last
 
@@ -398,9 +428,11 @@ class Display:
         log.info("Transition %s : %d images en %.2f s (%.1f i/s)",
                  kind, frames, elapsed, frames / elapsed)
 
-    def draw_date(self, surf, name, place=None, show_date=True):
-        """Lieu et/ou date de prise de vue en bas à droite de la photo, sur un cartouche sombre."""
-        text = " · ".join(t for t in (place, photo_date(name) if show_date else None) if t)
+    def draw_date(self, surf, name, place=None, show_date=True, prefix=None):
+        """Lieu et/ou date de prise de vue en bas à droite de la photo, sur un cartouche sombre ;
+        prefix : « Il y a 3 ans » pour un souvenir."""
+        text = " · ".join(t for t in (prefix, place, photo_date(name) if show_date else None)
+                          if t)
         if not text:
             return
         img = self.date_font.render(text, True, TEXT)
@@ -422,6 +454,15 @@ class Display:
             img = font.render(line, True, TEXT)
             band.blit(img, ((W - img.get_width()) // 2, 18 + 52 * i))
         surf.blit(band, (0, 0))
+        return height
+
+    def draw_badge(self, surf, text, y=16):
+        """Petit cartouche bleu en haut à gauche (« Nouveau »)."""
+        img = self.date_font.render(text, True, (255, 255, 255))
+        box = pygame.Surface((img.get_width() + 24, img.get_height() + 12), pygame.SRCALPHA)
+        box.fill(ACCENT + (230,))
+        box.blit(img, (12, 6))
+        surf.blit(box, (16, y))
 
     def message_card(self, text):
         """Écran du message, entre les photos."""
@@ -437,7 +478,7 @@ class Display:
             y += 90
         return self.texture(surf)
 
-    def prepare(self, name, show_date=False, place=None, banner=None):
+    def prepare(self, name, show_date=False, place=None, banner=None, prefix=None, badge=None):
         """Charge une photo et crée sa texture ; None si le fichier est illisible."""
         path = os.path.join(config.PHOTOS_DIR, name)
         t0 = time.monotonic()
@@ -446,12 +487,14 @@ class Display:
         except (OSError, ValueError, Image.DecompressionBombError) as exc:
             log.warning("Photo ignorée %s : %s", name, exc)
             return None
-        if show_date or place:
-            self.draw_date(surf, name, place, show_date)
-        if banner:
+        if show_date or place or prefix:
+            self.draw_date(surf, name, place, show_date, prefix)
+        if banner or badge:  # composés sur tout l'écran, pas seulement sur la photo
             screen = pygame.Surface((W, H))
             screen.blit(surf, ((W - surf.get_width()) // 2, (H - surf.get_height()) // 2))
-            self.draw_banner(screen, banner)
+            top = self.draw_banner(screen, banner) if banner else 0
+            if badge:
+                self.draw_badge(screen, badge, top + 16)
             surf = screen
         t1 = time.monotonic()
         tex = self.texture(surf)
@@ -466,6 +509,7 @@ class Display:
         settings_mtime = photos_mtime = places_mtime = message_mtime = None
         message = config.load_message()
         since_card = 0  # photos montrées depuis la dernière carte du message
+        since_memory, memory_day, memories = 0, None, []  # « Ce jour-là »
         photo_places = {}
         current = None
         upcoming = None  # (nom, texture) préchargée pendant l'affichage fixe
@@ -502,9 +546,13 @@ class Display:
                     places_mtime = m
                     photo_places = places.load()
                 m = mtime(config.PHOTOS_DIR)
-                if m != photos_mtime:
-                    photos_mtime = m
-                    playlist.update(config.list_photos(), settings["shuffle"])
+                if m != photos_mtime or memory_day != time.strftime("%Y%m%d"):
+                    photos_mtime, memory_day = m, time.strftime("%Y%m%d")
+                    names = config.list_photos()
+                    playlist.update(names, settings["shuffle"])
+                    playlist.recent = recent_photos(names)
+                    memories = [n for n in names if years_ago(n)]
+                    random.shuffle(memories)
                     if upcoming and upcoming[0] not in playlist.known:
                         upcoming = None
 
@@ -568,7 +616,14 @@ class Display:
                 self.due_at = 0.0  # photo suivante dès la fin de l'écran réseau
 
             if upcoming is None:
-                name = playlist.next()
+                name = None
+                if settings["memories"] and memories and since_memory >= MEMORY_EVERY:
+                    name = memories.pop(0)
+                    memories.append(name)  # tour des souvenirs du jour
+                    since_memory = 0
+                else:
+                    name = playlist.next()
+                    since_memory += 1
                 if name is None:
                     if placeholder is None:
                         placeholder = self.message_texture(
@@ -579,9 +634,13 @@ class Display:
                     self.idle(POLL_INTERVAL)
                     continue
                 text = message_active(message)
+                ago = years_ago(name) if settings["memories"] else 0
+                new = settings["highlight_new"] and name in playlist.recent
                 tex = self.prepare(name, settings["show_date"],
                                    photo_places.get(name) if settings["show_place"] else None,
-                                   text if message["mode"] == "banner" else None)
+                                   text if message["mode"] == "banner" else None,
+                                   f"Il y a {ago} an{'s' if ago > 1 else ''}" if ago else None,
+                                   "Nouveau" if new else None)
                 if tex is None:
                     playlist.forget(name)
                     next_check = 0.0  # fichier supprimé ? relire le dossier tout de suite

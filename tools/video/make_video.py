@@ -2,7 +2,7 @@
 
 Prérequis (PC Windows) : ffmpeg, Pillow, edge-tts (pip install edge-tts, Internet), et les visuels :
   python tools/video/shots.py http://<ip du cadre> build/video/shots      captures de l'admin
-    (dont admin-complet.png, page entière, découpée par « fichier@x0,y0,x1,y1 »)
+    (dont admin-complet.png, page entière, découpée par section : « fichier#n » ou « #n-m »)
   écrans du cadre : tools/video/screens.py lancé sur le Pi -> build/video/screens
 Usage : python tools/video/make_video.py build/video     -> build/video/cadre-photo-mode-d-emploi.mp4
 """
@@ -80,20 +80,27 @@ SLIDES = [
      "chaque photo. Chacun se règle dans la page de gestion. Le lieu est connu pour les photos "
      "prises avec un téléphone et pour celles de l'album iCloud, mais pas pour les photos "
      "reçues par WhatsApp, qui efface cette information."),
+    ("Un message sur le cadre", ["shots/admin-complet.png#1", "screens/bandeau.png"],
+     ["Section « Message sur le cadre »", "Bandeau sur les photos, ou écran entre elles",
+      "Jusqu'à une date, ou « Retirer »"],
+     "Pour une occasion, vous pouvez afficher un message sur le cadre. Dans la section Message "
+     "sur le cadre, tapez votre texte, choisissez un bandeau en haut des photos ou un écran "
+     "entre les photos, et éventuellement une date de fin. Touchez Afficher. Le message "
+     "disparaît tout seul après cette date, ou quand vous touchez Retirer."),
     ("La télécommande de la télé", ["screens/pause.png"],
      ["→  photo suivante", "←  photo précédente", "↑ ou ↓  pause / reprise",
       "OK  QR code de la page de gestion"],
      "Si la télé le permet, sa télécommande pilote le cadre. Flèche droite : photo suivante. "
      "Flèche gauche : photo précédente. Flèche du haut ou du bas : pause, et de nouveau pour "
      "reprendre. Touche OK : le QR code de la page de gestion."),
-    ("Éteindre et redémarrer", ["shots/admin-complet.png@90,2450,1190,2805",
+    ("Éteindre et redémarrer", ["shots/admin-complet.png#8-9",
                                  "screens/extinction.png"],
      ["Boutons en bas de la page de gestion", "Débrancher quand la diode verte est éteinte",
       "Mot de passe de la page, si besoin"],
      "En bas de la page de gestion se trouvent les boutons Redémarrer et Éteindre. Avant de "
      "débrancher le cadre, éteignez-le ainsi et attendez que sa diode verte s'éteigne. C'est "
      "aussi là que vous pouvez protéger la page par un mot de passe."),
-    ("Mettre à jour le cadre", ["shots/admin-complet.png@90,2008,1190,2232"],
+    ("Mettre à jour le cadre", ["shots/admin-complet.png#6"],
      ["Fichier « .cadre » reçu par message", "« Installer une mise à jour… »",
       "Vérifié avant, contrôlé après", "Problème : ancienne version remise"],
      "Si la personne qui s'occupe du cadre vous envoie un fichier de mise à jour, terminé par "
@@ -101,7 +108,7 @@ SLIDES = [
      "mise à jour. Le cadre vérifie que le fichier vient bien d'elle, l'installe, puis "
      "contrôle que tout fonctionne. Au moindre problème, il remet l'ancienne version tout "
      "seul. Comptez trois minutes."),
-    ("Envoyer un rapport", ["shots/admin-complet.png@90,2232,1190,2450"],
+    ("Envoyer un rapport", ["shots/admin-complet.png#7"],
      ["Section « Diagnostic »", "Cocher, choisir la période", "« Télécharger le rapport »",
       "L'envoyer par message"],
      "En cas de problème, la section Diagnostic prépare un rapport pour la personne qui "
@@ -148,12 +155,29 @@ def framed(img):
     return shadow
 
 
+def cards(img):
+    """Sections (cartes blanches) d'une capture de l'admin : [(haut, bas), ...] de haut en bas."""
+    px, spans, top = img.load(), [], None
+    for y in range(img.height):
+        on_card = px[115, y][0] > 250
+        if on_card and top is None:
+            top = y
+        elif not on_card and top is not None:
+            spans.append((top, y))
+            top = None
+    return spans
+
+
 def load_visual(base, name):
-    """« dossier/fichier.png », ou « …png@x0,y0,x1,y1 » pour n'en garder qu'une partie."""
-    name, _, box = name.partition("@")
+    """« dossier/fichier.png », « …png#n » (n-ième section de l'admin, à partir de 0) ou
+    « …png#n-m » (sections n à m) : pas de coordonnées à refaire quand la page change."""
+    name, _, sections = name.partition("#")
     img = Image.open(os.path.join(base, name)).convert("RGB")
-    if box:
-        img = img.crop(tuple(int(v) for v in box.split(",")))
+    if sections:
+        first, _, last = sections.partition("-")
+        spans = cards(img)
+        top, bottom = spans[int(first)][0], spans[int(last or first)][1]
+        img = img.crop((90, top - 8, 1190, bottom + 8))
     d = ImageDraw.Draw(img)
     for (x0, y0, x1, y1), text in MASKS.get(name, []):
         d.rectangle((x0, y0, x1, y1), fill=img.getpixel((x0 + 2, y0 + 2)))

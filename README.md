@@ -20,6 +20,8 @@ Cahier des charges : [docs/cahier-des-charges.md](docs/cahier-des-charges.md).
 | 11. Rapport de diagnostic | ✅ testé (4 s, 360 Ko) |
 | 12. Mise à jour à distance (fichier signé, retour arrière) | ✅ 5 cas testés, dont une version cassée |
 | 13. Message sur le cadre (bandeau ou écran, jusqu'à une date) | ✅ livré par mise à jour signée |
+| 14. Souvenirs « ce jour-là » | livré par mise à jour signée, à tester |
+| 15. Nouveautés à l'honneur (badge « Nouveau ») | livré par mise à jour signée, à tester |
 | Mode d'emploi vidéo | ✅ `build/video/cadre-photo-mode-d-emploi.mp4`, à refaire après une évolution visible |
 
 ## Reste à faire / idées
@@ -269,6 +271,16 @@ Section « Message sur le cadre » de l'admin : texte (140 caractères), date de
 (facultative), affichage en bandeau en haut de chaque photo (2 lignes au plus, la photo est alors
 composée en plein écran) ou en carte plein écran toutes les 5 photos (tout de suite quand le
 message change). Pris en compte par le diaporama en quelques secondes (`message.json`).
+
+## Souvenirs et nouveautés
+
+- « Souvenirs « ce jour-là » » (réglage, actif par défaut) : les photos prises le même jour une
+  année passée (date du nom de fichier) passent une fois sur 4, légende « Il y a N ans · … ».
+  Les photos sans date de prise de vue (WhatsApp) portent leur date d'arrivée : jamais de faux
+  souvenir. Photos de test : `build/test-souvenirs/` (EXIF du 6 octobre 2020 et 2023).
+- « Nouveautés à l'honneur » (réglage, actif par défaut) : photos arrivées depuis moins de 24 h
+  (date du fichier sur le cadre) en tête de chaque tour du diaporama, badge « Nouveau » en haut
+  à gauche (sous le bandeau du message s'il y en a un).
 
 ## Mise à jour à distance
 

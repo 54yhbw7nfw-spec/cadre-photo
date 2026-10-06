@@ -38,6 +38,8 @@
       <label><input type="checkbox" name="keep_originals"> Conserver les originaux</label>
       <label><input type="checkbox" name="show_date"> Afficher la date</label>
       <label><input type="checkbox" name="show_place"> Afficher le lieu</label>
+      <label><input type="checkbox" name="memories"> Souvenirs « ce jour-là »</label>
+      <label><input type="checkbox" name="highlight_new"> Nouveautés à l'honneur</label>
       <label><input type="checkbox" name="sleep"> Veille de
         <input type="time" name="sleep_start" required> à
         <input type="time" name="sleep_end" required></label>
@@ -207,6 +209,8 @@ async function loadSettings() {
   form.keep_originals.checked = s.keep_originals;
   form.show_date.checked = s.show_date;
   form.show_place.checked = s.show_place;
+  form.memories.checked = s.memories;
+  form.highlight_new.checked = s.highlight_new;
   form.sleep.checked = s.sleep;
   form.sleep_start.value = s.sleep_start;
   form.sleep_end.value = s.sleep_end;
@@ -219,6 +223,8 @@ form.addEventListener("change", async () => {
     keep_originals: form.keep_originals.checked,
     show_date: form.show_date.checked,
     show_place: form.show_place.checked,
+    memories: form.memories.checked,
+    highlight_new: form.highlight_new.checked,
     sleep: form.sleep.checked,
     sleep_start: form.sleep_start.value,
     sleep_end: form.sleep_end.value,

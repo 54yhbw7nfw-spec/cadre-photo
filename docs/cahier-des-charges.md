@@ -54,6 +54,7 @@
 - Rapport de diagnostic téléchargeable (journaux choisis, données sensibles retirées).
 - Mise à jour à distance par fichier signé (clé SSH du développeur), retour arrière automatique.
 - Message de la famille affiché sur le cadre (bandeau ou écran), jusqu'à une date.
+- Souvenirs « ce jour-là » et nouvelles photos mises en avant (badge « Nouveau »).
 - Mode d'emploi vidéo (diapositives commentées) pour la famille.
 
 ## Méthode
