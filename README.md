@@ -21,7 +21,7 @@ Cahier des charges : [docs/cahier-des-charges.md](docs/cahier-des-charges.md).
 | 12. Mise à jour à distance (fichier signé, retour arrière) | ✅ 5 cas testés, dont une version cassée |
 | 13. Message sur le cadre (bandeau ou écran, jusqu'à une date) | ✅ livré par mise à jour signée |
 | 14. Souvenirs « ce jour-là » | ✅ testé (photos datées d'un 6 octobre passé) |
-| 15. Nouveautés à l'honneur (badge « Nouveau ») | ✅ testé |
+| 15. Nouveautés à l'honneur (pictogramme « nouveau ») | ✅ testé |
 | 16. Favoris et photos masquées | livré par mise à jour signée, à tester |
 | 17. Choix des photos affichées (source, période) | livré par mise à jour signée, à tester |
 | 18. Heure et météo (Open-Meteo), icônes dessinées | livré par mise à jour signée, à tester |
@@ -285,7 +285,7 @@ message change). Pris en compte par le diaporama en quelques secondes (`message.
   Les photos sans date de prise de vue (WhatsApp) portent leur date d'arrivée : jamais de faux
   souvenir. Photos de test : `build/test-souvenirs/` (EXIF du 6 octobre 2020 et 2023).
 - « Nouveautés à l'honneur » (réglage, actif par défaut) : photos arrivées depuis moins de 24 h
-  (date du fichier sur le cadre) en tête de chaque tour du diaporama, badge « Nouveau » en haut
+  (date du fichier sur le cadre) en tête de chaque tour du diaporama, pictogramme « nouveau » (étincelle sur pastille bleue) en haut
   à gauche (sous le bandeau du message s'il y en a un).
 
 ## Favoris, sélection, heure et météo

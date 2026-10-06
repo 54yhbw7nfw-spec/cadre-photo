@@ -130,6 +130,28 @@ def weather_icon(kind, day, size=40):
     return pygame.transform.smoothscale(s, (size, size))
 
 
+def new_badge(size=46):
+    """Pastille bleue avec une étincelle blanche (« nouveau »), tracée 4 fois plus grande puis
+    réduite avec lissage."""
+    k = 4
+    s = pygame.Surface((size * k, size * k), pygame.SRCALPHA)
+    c = size * k / 2
+    pygame.draw.circle(s, ACCENT + (235,), (c, c), c)
+
+    def sparkle(cx, cy, r):
+        thin = r * 0.28  # étoile à 4 branches, creusée entre les pointes
+        pts = []
+        for i in range(8):
+            a = i * math.pi / 4 - math.pi / 2
+            d = r if i % 2 == 0 else thin
+            pts.append((cx + math.cos(a) * d, cy + math.sin(a) * d))
+        pygame.draw.polygon(s, (255, 255, 255), pts)
+
+    sparkle(c - c * 0.1, c + c * 0.08, c * 0.62)
+    sparkle(c + c * 0.42, c - c * 0.42, c * 0.26)
+    return pygame.transform.smoothscale(s, (size, size))
+
+
 def load_icloud_names():
     try:
         with open(config.ICLOUD_FILE) as f:
@@ -573,13 +595,9 @@ class Display:
         surf.blit(band, (0, 0))
         return height
 
-    def draw_badge(self, surf, text, y=16):
-        """Petit cartouche bleu en haut à gauche (« Nouveau »)."""
-        img = self.date_font.render(text, True, (255, 255, 255))
-        box = pygame.Surface((img.get_width() + 24, img.get_height() + 12), pygame.SRCALPHA)
-        box.fill(ACCENT + (230,))
-        box.blit(img, (12, 6))
-        surf.blit(box, (16, y))
+    def draw_badge(self, surf, y=16):
+        """Pictogramme « nouvelle photo » en haut à gauche."""
+        surf.blit(new_badge(), (16, y))
 
     def message_card(self, text):
         """Écran du message, entre les photos."""
@@ -612,7 +630,7 @@ class Display:
                 self.draw_date(screen, name, place, show_date, prefix)
             top = self.draw_banner(screen, banner) if banner else 0
             if badge:
-                self.draw_badge(screen, badge, top + 16)
+                self.draw_badge(screen, top + 16)
             surf = screen
         t1 = time.monotonic()
         tex = self.texture(surf)
@@ -782,7 +800,7 @@ class Display:
                                    photo_places.get(name) if settings["show_place"] else None,
                                    text if message["mode"] == "banner" else None,
                                    f"Il y a {ago} an{'s' if ago > 1 else ''}" if ago else None,
-                                   "Nouveau" if new else None)
+                                   new)
                 if tex is None:
                     playlist.forget(name)
                     next_check = 0.0  # fichier supprimé ? relire le dossier tout de suite
