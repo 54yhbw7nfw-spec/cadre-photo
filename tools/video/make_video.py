@@ -198,12 +198,12 @@ def render_slide(base, title, visuals, bullets, path):
         cards = [framed(fit(pics[0], area_w, area_h))]
     else:  # deux visuels empilés
         cards = [framed(fit(p, area_w, area_h // 2 - 20)) for p in pics]
-    total = sum(c.height for c in cards) - 60 * (len(cards) - 1)
+    total = sum(c.height for c in cards) - 30 * (len(cards) - 1)
     y = 200 + (area_h - total) // 2 - 30
     for c in cards:
         x = 60 + (area_w - c.width) // 2 + 30
         img.alpha_composite(c, (max(0, x), max(170, y)))
-        y += c.height - 60
+        y += c.height - 30
     if bullets:
         f = font("segoeui.ttf", 40)
         y = 300
