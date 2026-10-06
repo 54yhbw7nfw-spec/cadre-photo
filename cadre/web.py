@@ -27,7 +27,7 @@ from flask import (Flask, Response, jsonify, redirect, render_template, request,
                    send_from_directory)
 from werkzeug.security import check_password_hash, generate_password_hash
 
-from . import config, icloud, imaging, places
+from . import config, icloud, imaging, places, update
 
 log = logging.getLogger("cadre.web")
 
@@ -546,6 +546,28 @@ def net_command(cmd, timeout=60, **args):
 @app.get("/api/wifi")
 def wifi_status():
     return jsonify(net_command("status"))
+
+
+@app.get("/api/update")
+def update_status():
+    return jsonify(update.status())
+
+
+@app.post("/api/update")
+def update_install():
+    """Fichier .cadre déposé pour cadre-net (root), qui le vérifie et l'installe."""
+    f = request.files.get("file")
+    if f is None or not f.filename:
+        return jsonify(ok=False, error="aucun fichier"), 400
+    f.save(os.path.join(config.DATA_DIR, "update-incoming.cadre"))
+    resp = net_command("update", timeout=1000)
+    return jsonify(resp), 200 if resp.get("ok") else 400
+
+
+@app.post("/api/update/rollback")
+def update_rollback():
+    resp = net_command("rollback", timeout=120)
+    return jsonify(resp), 200 if resp.get("ok") else 400
 
 
 @app.post("/api/report")

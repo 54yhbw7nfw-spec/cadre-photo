@@ -6,6 +6,9 @@ set -euo pipefail
 HOST=${CADRE_HOST:-cadre}
 cd "$(dirname "$0")"
 
+# Version affichée par l'admin, comparée par la mise à jour à distance (date, commit).
+printf '%s %s%s\n' "$(date +%Y%m%d-%H%M)" "$(git rev-parse --short HEAD)" \
+    "$(git diff --quiet HEAD -- cadre systemd || echo +modifs)" > cadre/VERSION
 tar --exclude=__pycache__ -czf - cadre systemd | ssh "$HOST" "
 set -e
 sudo install -d -o cadre -g cadre /opt/cadre /var/lib/cadre /var/lib/cadre/photos

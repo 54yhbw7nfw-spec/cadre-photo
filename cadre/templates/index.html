@@ -97,6 +97,20 @@
 
   {% include "wifi_panel.html" %}
 
+  <section id="update">
+    <h2>Mise à jour</h2>
+    <p id="upd-state" class="small"></p>
+    <pre id="upd-notes" class="small muted" hidden></pre>
+    <div class="toolbar">
+      <input type="file" id="upd-file" accept=".cadre" hidden>
+      <button type="button" id="upd-pick" class="primary">Installer une mise à jour…</button>
+      <button type="button" id="upd-rollback" hidden>Revenir à la version précédente</button>
+    </div>
+    <p class="muted small">Fichier « .cadre » reçu de la personne qui s'occupe du cadre. Il est
+      vérifié (signature) avant l'installation ; si le cadre ne repart pas correctement, l'ancienne
+      version revient toute seule au bout de 3 minutes.</p>
+  </section>
+
   <section id="diagnostic">
     <h2>Diagnostic</h2>
     <form id="report-form" class="settings" onsubmit="return false">
@@ -590,6 +604,68 @@ pwForm.onsubmit = async (e) => {
   loadPassword();
 };
 
+/* ---- Mise à jour à distance ---- */
+const UPD_LABELS = {installing: "installation en cours", pending: "vérification en cours",
+                    ok: "installée et vérifiée", rolled_back: "annulée, ancienne version remise",
+                    error: "refusée"};
+async function loadUpdate() {
+  const s = await api("/api/update");
+  const box = $("#upd-state");
+  const last = s.state ? ` · dernière mise à jour ${s.version || ""} : ${UPD_LABELS[s.state] || s.state}`
+    + (s.message && s.state !== "ok" ? ` (${s.message})` : "") : "";
+  box.className = "small " + (["rolled_back", "error"].includes(s.state) ? "msg error" : "muted");
+  box.textContent = `Version installée : ${s.current || "inconnue"}${last}`;
+  $("#upd-notes").hidden = !(s.notes && s.state === "ok");
+  $("#upd-notes").textContent = s.notes || "";
+  $("#upd-rollback").hidden = !s.previous;
+  return s;
+}
+async function pollUpdate() {
+  // Les services redémarrent : la page ne répond plus quelques secondes.
+  for (let i = 0; i < 80; i++) {
+    await sleep(5000);
+    let s;
+    try { s = await loadUpdate(); } catch { continue; }
+    if (["ok", "rolled_back", "error"].includes(s.state)) {
+      $("#upd-pick").disabled = false;
+      return;
+    }
+  }
+}
+$("#upd-pick").onclick = () => $("#upd-file").click();
+$("#upd-file").onchange = async (e) => {
+  const file = e.target.files[0];
+  e.target.value = "";
+  if (!file || !confirm(`Installer la mise à jour « ${file.name} » ?\n` +
+                        "Le diaporama s'interrompt une minute environ.")) return;
+  $("#upd-pick").disabled = true;
+  $("#upd-state").className = "small muted";
+  $("#upd-state").textContent = "Envoi et vérification du fichier…";
+  const fd = new FormData();
+  fd.append("file", file);
+  try {
+    const r = await (await fetch("/api/update", {method: "POST", body: fd})).json();
+    if (!r.ok) {
+      alert("Mise à jour refusée : " + r.error);
+      $("#upd-pick").disabled = false;
+      loadUpdate();
+      return;
+    }
+    $("#upd-state").textContent = `Version ${r.version} installée : redémarrage des services, ` +
+      "puis vérification (environ 3 minutes). Gardez cette page ouverte.";
+  } catch {
+    $("#upd-state").textContent = "Installation en cours…";
+  }
+  pollUpdate();
+};
+$("#upd-rollback").onclick = async () => {
+  if (!confirm("Revenir à la version précédente du cadre ?")) return;
+  const r = await (await fetch("/api/update/rollback", {method: "POST"})).json();
+  if (!r.ok) { alert(r.error); return; }
+  $("#upd-state").textContent = "Retour à la version précédente : redémarrage des services…";
+  pollUpdate();
+};
+
 /* ---- Rapport de diagnostic ---- */
 $("#report-get").onclick = async () => {
   const f = $("#report-form"), btn = $("#report-get");
@@ -636,6 +712,7 @@ $("#poweroff").onclick = () => power("poweroff",
   "Extinction en cours : débranchez le cadre quand sa diode verte est éteinte.");
 
 loadPassword();
+loadUpdate().then((s) => { if (["installing", "pending"].includes(s.state)) pollUpdate(); });
 loadIcloud(true).then((s) => { if (s.running) pollIcloud(s.last_sync); });
 loadSettings();
 loadPage(1);

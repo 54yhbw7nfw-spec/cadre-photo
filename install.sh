@@ -30,6 +30,9 @@ if [ $LOCAL = 0 ]; then
     cd "$(dirname "$0")"
     # CADRE_SSH_KEY : clé à utiliser quand l'hôte n'est pas l'alias « cadre » de ~/.ssh/config.
     SSH="ssh${CADRE_SSH_KEY:+ -i $CADRE_SSH_KEY}"
+    # Version affichée par l'admin, comparée par la mise à jour à distance (date, commit).
+    printf '%s %s%s\n' "$(date +%Y%m%d-%H%M)" "$(git rev-parse --short HEAD)" \
+        "$(git diff --quiet HEAD -- cadre systemd || echo +modifs)" > cadre/VERSION
     tar --exclude=__pycache__ -czf - install.sh cadre systemd system | $SSH "$HOST" "
         rm -rf /tmp/cadre-install && mkdir /tmp/cadre-install && tar -xzf - -C /tmp/cadre-install"
     # Terminal interactif : sur un système neuf, sudo demande le mot de passe choisi dans Imager
@@ -139,6 +142,10 @@ if [ -e /etc/systemd/system.conf.d/cadre-watchdog.conf ]; then
     echo "   ancienne configuration retirée"
     REBOOT=1
 fi
+
+step "Mise à jour à distance : clé publique de signature"
+put system/update/allowed_signers /etc/cadre/allowed_signers 644 || true
+install -d -m 700 /var/lib/cadre-updates
 
 step "NetworkManager : Wi-Fi sans économie d'énergie, portail captif"
 put system/NetworkManager/99-cadre-wifi.conf /etc/NetworkManager/conf.d/99-cadre-wifi.conf 644 \

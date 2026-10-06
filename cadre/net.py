@@ -9,13 +9,14 @@
 
 Seul ce service modifie le réseau. L'admin web lui envoie des commandes JSON (une ligne)
 sur la socket /run/cadre/net.sock (root:cadre 0660) : status, scan, save, connect, forget,
-reboot, poweroff, report.
+reboot, poweroff, report, update, rollback.
 
 Les réseaux enregistrés sont des fichiers NetworkManager natifs (jamais netplan : sinon
 NetworkManager régénère netplan et recharge systemd à chaque démarrage, ~20 s par passe).
 Le profil du hotspot est créé en RAM (/run), son mot de passe change à chaque démarrage.
 """
 import configparser
+import contextlib
 import fcntl
 import glob
 import grp
@@ -31,7 +32,7 @@ import threading
 import time
 import uuid
 
-from . import config, report
+from . import config, report, update
 
 log = logging.getLogger("cadre.net")
 
@@ -418,6 +419,10 @@ class Controller:
 
 # --- Socket de commandes -------------------------------------------------------------------
 
+UPDATE_FILE = os.path.join(config.DATA_DIR, "update-incoming.cadre")  # déposé par l'admin
+UPDATE_LOCK = threading.Lock()
+
+
 class Handler(socketserver.StreamRequestHandler):
     def handle(self):
         try:
@@ -440,6 +445,24 @@ class Handler(socketserver.StreamRequestHandler):
                     resp = action(ssid, password, bool(req.get("hidden")))
             elif cmd == "forget":
                 resp = ctl.do_forget(str(req.get("uuid", "")))
+            elif cmd == "update":
+                # Chemin fixe : jamais celui envoyé par le client.
+                with UPDATE_LOCK:
+                    try:
+                        resp = {"ok": True, "version": update.install(UPDATE_FILE)}
+                    except update.UpdateError as exc:
+                        update.write_status(state="error", message=str(exc))
+                        resp = {"ok": False, "error": str(exc)}
+                    finally:
+                        with contextlib.suppress(FileNotFoundError):
+                            os.unlink(UPDATE_FILE)
+            elif cmd == "rollback":
+                with UPDATE_LOCK:
+                    try:
+                        update.rollback()
+                        resp = {"ok": True}
+                    except update.UpdateError as exc:
+                        resp = {"ok": False, "error": str(exc)}
             elif cmd == "report":
                 groups = [g for g in req.get("groups", []) if isinstance(g, str)]
                 resp = {"ok": True, "text": report.build(
