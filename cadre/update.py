@@ -173,6 +173,11 @@ def install(bundle):
     tmp = tempfile.mkdtemp(dir=WORK)
     try:
         new, new_version, notes = verify(bundle, tmp)
+        st = status()
+        if (st.get("state") in ("installing", "pending")
+                and time.time() - st.get("time", 0) < GUARD_DELAY + 60):
+            raise UpdateError("la mise à jour précédente est encore en vérification : "
+                              "réessayez dans quelques minutes")
         current = version()
         if not is_newer(new_version, current):
             raise UpdateError(f"version {new_version} déjà installée ou plus ancienne "
@@ -201,7 +206,8 @@ def install(bundle):
         write_status(state="pending", message="services en redémarrage, vérification dans "
                      f"{GUARD_DELAY // 60} min {GUARD_DELAY % 60} s")
         run("systemd-run", f"--on-active={GUARD_DELAY}", "--unit",
-            f"cadre-update-guard-{int(time.time())}", sys.executable, guard, "guard")
+            f"cadre-update-guard-{int(time.time())}", sys.executable, guard, "guard",
+            new_version)
         restart_later()
         return new_version
     finally:
@@ -241,7 +247,12 @@ def healthy():
     return None
 
 
-def guard():
+def guard(expected=None):
+    """Vérifie l'installation de la version expected, et elle seule : si une autre a été
+    installée ou remise depuis, ce garde-fou n'a plus rien à juger."""
+    st = status()
+    if expected and (st.get("version") != expected or st.get("state") != "pending"):
+        return
     problem = healthy()
     if problem:
         rollback(f"vérification après installation : {problem}")
@@ -250,5 +261,5 @@ def guard():
 
 
 if __name__ == "__main__":
-    if sys.argv[1:] == ["guard"]:
-        guard()
+    if sys.argv[1:2] == ["guard"]:
+        guard(" ".join(sys.argv[2:]) or None)
