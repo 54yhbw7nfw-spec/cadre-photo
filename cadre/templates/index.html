@@ -322,7 +322,7 @@ async function prepare(file, keepOriginal) {
   }
 }
 
-/* Certains navigateurs rendent un canvas noir (vu sur Edge, PC professionnel : 124 photos
+/* Certains navigateurs rendent un canvas noir (vu sur Firefox, PC professionnel : 124 photos
    noires sur 267). On relit l'image réduite en miniature : entièrement noire ou transparente,
    elle est écartée et l'original part à sa place (envoi plus lourd, mais photo intacte). */
 async function looksLikePhoto(blob) {
