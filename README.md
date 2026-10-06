@@ -9,7 +9,10 @@ proches et oublié : il se configure au Wi-Fi par un QR code, se pilote avec la 
 la télé, et se met à jour à distance.
 
 
-https://github.com/user-attachments/assets/2b167433-4f0e-4ca1-a0dd-108d34d276e3
+
+
+https://github.com/user-attachments/assets/5c049a34-5ee3-4dbe-9e44-6fbbceeaa3bd
+
 
 
 
