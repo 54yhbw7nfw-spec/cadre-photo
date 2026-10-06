@@ -606,9 +606,34 @@ def wifi_status():
     return jsonify(net_command("status"))
 
 
+def update_url():
+    try:
+        with open(config.UPDATE_URL_FILE) as f:
+            return f.read().strip() or config.UPDATE_URL_DEFAULT
+    except OSError:
+        return config.UPDATE_URL_DEFAULT
+
+
 @app.get("/api/update")
 def update_status():
-    return jsonify(update.status())
+    return jsonify({**update.status(), "url": update_url()})
+
+
+@app.post("/api/update/check")
+def update_check():
+    """Télécharge et vérifie la mise à jour du lien, sans l'installer."""
+    url = str((request.get_json(silent=True) or {}).get("url", "")).strip()[:500]
+    with open(config.UPDATE_URL_FILE, "w") as f:
+        f.write(url)
+    resp = net_command("update_check", timeout=300, url=url or config.UPDATE_URL_DEFAULT)
+    return jsonify(resp), 200 if resp.get("ok") else 400
+
+
+@app.post("/api/update/pending")
+def update_pending():
+    """Installe la mise à jour téléchargée et vérifiée par update_check."""
+    resp = net_command("update_pending", timeout=1000)
+    return jsonify(resp), 200 if resp.get("ok") else 400
 
 
 @app.post("/api/update")

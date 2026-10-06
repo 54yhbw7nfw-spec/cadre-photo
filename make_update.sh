@@ -36,4 +36,7 @@ tar --owner=0 --group=0 --numeric-owner -czf "$TMP/payload.tar.gz" -C "$TMP" $ME
 ssh-keygen -Y sign -q -f "$KEY" -n cadre-maj "$TMP/payload.tar.gz"
 mkdir -p build
 tar --owner=0 --group=0 --numeric-owner -cf "$OUT" -C "$TMP" payload.tar.gz payload.tar.gz.sig
+# Même fichier sous un nom fixe, à joindre à une release GitHub (lien « latest/download »).
+cp "$OUT" build/cadre-maj.cadre
 echo "Mise à jour $VERSION : $OUT ($(du -k "$OUT" | cut -f1) Ko)"
+echo "Pour la mise à jour depuis un lien : joindre build/cadre-maj.cadre à une release."

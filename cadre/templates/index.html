@@ -151,14 +151,23 @@
     <h2>Mise à jour</h2>
     <p id="upd-state" class="small"></p>
     <pre id="upd-notes" class="small muted" hidden></pre>
-    <div class="toolbar">
+    <form id="upd-link" class="wifi-form" onsubmit="return false">
+      <label style="flex:1">Adresse des mises à jour
+        <input type="text" name="url" spellcheck="false">
+      </label>
+      <button type="button" id="upd-check" class="primary">Rechercher une mise à jour</button>
+    </form>
+    <p id="upd-found" class="small" hidden></p>
+    <div class="toolbar" style="margin-top:12px">
+      <button type="button" id="upd-install" class="primary" hidden>Installer cette version</button>
       <input type="file" id="upd-file" accept=".cadre" hidden>
-      <button type="button" id="upd-pick" class="primary">Installer une mise à jour…</button>
+      <button type="button" id="upd-pick">Installer depuis un fichier…</button>
       <button type="button" id="upd-rollback" hidden>Revenir à la version précédente</button>
     </div>
-    <p class="muted small">Fichier « .cadre » reçu de la personne qui s'occupe du cadre. Il est
-      vérifié (signature) avant l'installation ; si le cadre ne repart pas correctement, l'ancienne
-      version revient toute seule au bout de 3 minutes.</p>
+    <p class="muted small">Mise à jour depuis l'adresse ci-dessus, ou depuis un fichier « .cadre »
+      reçu de la personne qui s'occupe du cadre. Rien ne s'installe sans votre accord ; le fichier
+      est vérifié (signature) avant l'installation et, si le cadre ne repart pas correctement,
+      l'ancienne version revient toute seule au bout de 3 minutes.</p>
   </section>
 
   <section id="diagnostic">
@@ -725,6 +734,8 @@ async function loadUpdate() {
   $("#upd-notes").hidden = !(s.notes && s.state === "ok");
   $("#upd-notes").textContent = s.notes || "";
   $("#upd-rollback").hidden = !s.previous;
+  const link = $("#upd-link").url;
+  if (!link.value) link.value = s.url;
   return s;
 }
 async function pollUpdate() {
@@ -739,6 +750,56 @@ async function pollUpdate() {
     }
   }
 }
+/* Recherche depuis le lien : téléchargée et vérifiée, installée seulement sur demande. */
+async function checkUpdate() {
+  const btn = $("#upd-check"), found = $("#upd-found");
+  btn.disabled = true;
+  btn.textContent = "Recherche…";
+  $("#upd-install").hidden = true;
+  try {
+    const r = await (await fetch("/api/update/check", {
+      method: "POST", headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({url: $("#upd-link").url.value}),
+    })).json();
+    found.hidden = false;
+    if (!r.ok) {
+      found.className = "small msg error";
+      found.textContent = r.error;
+    } else if (!r.newer) {
+      found.className = "small msg ok";
+      found.textContent = `Le cadre est à jour (version disponible : ${r.version}).`;
+    } else {
+      found.className = "small";
+      found.textContent = `Version ${r.version} disponible` + (r.notes ? ` : ${r.notes}` : ".");
+      $("#upd-install").hidden = false;
+    }
+  } catch {
+    found.hidden = false;
+    found.className = "small msg error";
+    found.textContent = "Le cadre ne répond pas.";
+  } finally {
+    btn.disabled = false;
+    btn.textContent = "Rechercher une mise à jour";
+  }
+}
+$("#upd-check").onclick = checkUpdate;
+$("#upd-install").onclick = async () => {
+  if (!confirm("Installer cette version ?\nLe diaporama s'interrompt une minute environ.")) return;
+  $("#upd-install").hidden = true;
+  $("#upd-found").hidden = true;
+  $("#upd-state").className = "small muted";
+  $("#upd-state").textContent = "Installation…";
+  try {
+    const r = await (await fetch("/api/update/pending", {method: "POST"})).json();
+    if (!r.ok) { alert("Mise à jour refusée : " + r.error); loadUpdate(); return; }
+    $("#upd-state").textContent = `Version ${r.version} installée : redémarrage des services, ` +
+      "puis vérification (environ 3 minutes). Gardez cette page ouverte.";
+  } catch {
+    $("#upd-state").textContent = "Installation en cours…";
+  }
+  pollUpdate();
+};
+
 $("#upd-pick").onclick = () => $("#upd-file").click();
 $("#upd-file").onchange = async (e) => {
   const file = e.target.files[0];

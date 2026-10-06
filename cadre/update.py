@@ -21,6 +21,7 @@ import sys
 import tarfile
 import tempfile
 import time
+import urllib.error
 import urllib.request
 
 OPT = "/opt/cadre"
@@ -97,41 +98,85 @@ def chown_cadre(path):
     run("chown", "-R", "cadre:cadre", path)
 
 
+def verify(bundle, tmp):
+    """Vérifie un fichier .cadre et l'extrait dans tmp/new ; renvoie (dossier, version, notes)."""
+    try:
+        with tarfile.open(bundle) as t:
+            names = sorted(t.getnames())
+            if names != ["payload.tar.gz", "payload.tar.gz.sig"]:
+                raise UpdateError("ce n'est pas un fichier de mise à jour du cadre")
+            t.extractall(tmp, filter="data")
+    except tarfile.TarError:
+        raise UpdateError("fichier illisible : ce n'est pas un fichier de mise à jour") from None
+    payload = os.path.join(tmp, "payload.tar.gz")
+    with open(payload, "rb") as f:
+        check = run("ssh-keygen", "-Y", "verify", "-f", SIGNERS, "-I", PRINCIPAL,
+                    "-n", NAMESPACE, "-s", payload + ".sig", stdin=f)
+    if check.returncode != 0:
+        raise UpdateError("signature invalide : fichier modifié ou non fourni par le "
+                          "développeur du cadre")
+    new = os.path.join(tmp, "new")
+    with tarfile.open(payload) as t:
+        t.extractall(new, filter="data")
+    new_version = version(new)
+    if not new_version:
+        raise UpdateError("version absente du fichier")
+    notes = ""
+    try:
+        with open(os.path.join(new, "cadre", "NOTES")) as f:
+            notes = f.read().strip()
+    except OSError:
+        pass
+    return new, new_version, notes
+
+
+def is_newer(new_version, current):
+    return not current or new_version.split()[0] > current.split()[0]
+
+
+def check(bundle):
+    """Vérifie sans installer : {"version", "notes", "newer", "current"} (UpdateError sinon)."""
+    os.makedirs(WORK, mode=0o700, exist_ok=True)
+    tmp = tempfile.mkdtemp(dir=WORK)
+    try:
+        _, new_version, notes = verify(bundle, tmp)
+        return {"version": new_version, "notes": notes,
+                "newer": is_newer(new_version, version()), "current": version()}
+    finally:
+        shutil.rmtree(tmp, ignore_errors=True)
+
+
+def download(url, dest, limit=60 * 1024 * 1024):
+    """Télécharge un .cadre (lien https, par exemple une release GitHub publique)."""
+    if not url.startswith("https://"):
+        raise UpdateError("l'adresse doit commencer par https://")
+    os.makedirs(WORK, mode=0o700, exist_ok=True)
+    req = urllib.request.Request(url, headers={"User-Agent": "cadre-photo"})
+    try:
+        with urllib.request.urlopen(req, timeout=60) as r, open(dest, "wb") as f:
+            size = 0
+            while chunk := r.read(1 << 16):
+                size += len(chunk)
+                if size > limit:
+                    raise UpdateError("fichier trop volumineux")
+                f.write(chunk)
+    except urllib.error.HTTPError as exc:
+        raise UpdateError("aucune mise à jour à cette adresse" if exc.code == 404
+                          else f"téléchargement refusé (HTTP {exc.code})") from None
+    except OSError as exc:
+        raise UpdateError(f"téléchargement impossible ({exc})") from None
+
+
 def install(bundle):
     """Vérifie et installe un fichier .cadre ; renvoie la nouvelle version."""
     os.makedirs(WORK, mode=0o700, exist_ok=True)
     tmp = tempfile.mkdtemp(dir=WORK)
     try:
-        try:
-            with tarfile.open(bundle) as t:
-                names = sorted(t.getnames())
-                if names != ["payload.tar.gz", "payload.tar.gz.sig"]:
-                    raise UpdateError("ce n'est pas un fichier de mise à jour du cadre")
-                t.extractall(tmp, filter="data")
-        except tarfile.TarError:
-            raise UpdateError("fichier illisible : ce n'est pas un fichier de mise à jour") from None
-        payload = os.path.join(tmp, "payload.tar.gz")
-        with open(payload, "rb") as f:
-            check = run("ssh-keygen", "-Y", "verify", "-f", SIGNERS, "-I", PRINCIPAL,
-                        "-n", NAMESPACE, "-s", payload + ".sig", stdin=f)
-        if check.returncode != 0:
-            raise UpdateError("signature invalide : fichier modifié ou non fourni par le "
-                              "développeur du cadre")
-        new = os.path.join(tmp, "new")
-        with tarfile.open(payload) as t:
-            t.extractall(new, filter="data")
-        new_version, current = version(new), version()
-        if not new_version:
-            raise UpdateError("version absente du fichier")
-        if current and new_version.split()[0] <= current.split()[0]:
+        new, new_version, notes = verify(bundle, tmp)
+        current = version()
+        if not is_newer(new_version, current):
             raise UpdateError(f"version {new_version} déjà installée ou plus ancienne "
                               f"(installée : {current})")
-        notes = ""
-        try:
-            with open(os.path.join(new, "cadre", "NOTES")) as f:
-                notes = f.read().strip()
-        except OSError:
-            pass
 
         # Garde-fou de l'ancienne version, mis de côté avant tout changement.
         guard = os.path.join(WORK, "guard.py")

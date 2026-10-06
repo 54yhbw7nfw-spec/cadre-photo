@@ -9,7 +9,8 @@
 
 Seul ce service modifie le réseau. L'admin web lui envoie des commandes JSON (une ligne)
 sur la socket /run/cadre/net.sock (root:cadre 0660) : status, scan, save, connect, forget,
-reboot, poweroff, report, update, rollback.
+reboot, poweroff, report, update, update_check,
+update_pending, rollback.
 
 Les réseaux enregistrés sont des fichiers NetworkManager natifs (jamais netplan : sinon
 NetworkManager régénère netplan et recharge systemd à chaque démarrage, ~20 s par passe).
@@ -421,6 +422,7 @@ class Controller:
 
 UPDATE_FILE = os.path.join(config.DATA_DIR, "update-incoming.cadre")  # déposé par l'admin
 UPDATE_LOCK = threading.Lock()
+PENDING_FILE = "/var/lib/cadre-updates/pending.cadre"  # téléchargé depuis un lien, vérifié
 
 
 class Handler(socketserver.StreamRequestHandler):
@@ -456,6 +458,28 @@ class Handler(socketserver.StreamRequestHandler):
                     finally:
                         with contextlib.suppress(FileNotFoundError):
                             os.unlink(UPDATE_FILE)
+            elif cmd == "update_check":
+                # Lien fourni par l'admin : téléchargé et vérifié, installé seulement sur demande.
+                with UPDATE_LOCK:
+                    try:
+                        update.download(str(req.get("url", "")), PENDING_FILE)
+                        resp = {"ok": True, **update.check(PENDING_FILE)}
+                    except update.UpdateError as exc:
+                        with contextlib.suppress(FileNotFoundError):
+                            os.unlink(PENDING_FILE)
+                        resp = {"ok": False, "error": str(exc)}
+            elif cmd == "update_pending":
+                with UPDATE_LOCK:
+                    try:
+                        if not os.path.exists(PENDING_FILE):
+                            raise update.UpdateError("rien à installer : rechercher d'abord")
+                        resp = {"ok": True, "version": update.install(PENDING_FILE)}
+                    except update.UpdateError as exc:
+                        update.write_status(state="error", message=str(exc))
+                        resp = {"ok": False, "error": str(exc)}
+                    finally:
+                        with contextlib.suppress(FileNotFoundError):
+                            os.unlink(PENDING_FILE)
             elif cmd == "rollback":
                 with UPDATE_LOCK:
                     try:
