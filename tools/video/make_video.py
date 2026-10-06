@@ -1,6 +1,6 @@
 """Mode d'emploi vidéo du cadre : diapositives commentées (voix de synthèse Windows) en MP4.
 
-Prérequis (PC Windows) : ffmpeg, voix française « Hortense », Pillow, et les visuels :
+Prérequis (PC Windows) : ffmpeg, Pillow, edge-tts (pip install edge-tts, Internet), et les visuels :
   python tools/video/shots.py http://<ip du cadre> build/video/shots      captures de l'admin
   écrans du cadre : tools/video/screens.py lancé sur le Pi -> build/video/screens
 Usage : python tools/video/make_video.py build/video     -> build/video/cadre-photo-mode-d-emploi.mp4
@@ -8,7 +8,6 @@ Usage : python tools/video/make_video.py build/video     -> build/video/cadre-ph
 import os
 import subprocess
 import sys
-import wave
 
 from PIL import Image, ImageDraw, ImageFilter, ImageFont
 
@@ -18,7 +17,7 @@ TEXT = (235, 235, 235)
 MUTED = (160, 160, 165)
 ACCENT = (110, 170, 255)
 FONTS = r"C:\Windows\Fonts"
-VOICE = "Microsoft Hortense Desktop"
+VOICE = "fr-FR-DeniseNeural"  # voix neuronale Microsoft (edge-tts)
 PAUSE = 0.9  # s de silence après chaque narration
 # Zones à masquer sur les captures : le lien réel de l'album iCloud (accès « contributeur »).
 MASKS = {"shots/admin-haut.png": [((124, 304, 836, 332),
@@ -179,21 +178,15 @@ def render_slide(base, title, visuals, bullets, path):
 
 
 def speak(text, path):
-    # Texte passé par un fichier UTF-8 : la console PowerShell lit en IBM850 (accents faux).
-    txt = path[:-4] + ".txt"
-    with open(txt, "w", encoding="utf-8") as f:
-        f.write(text)
-    ps = ("Add-Type -AssemblyName System.Speech;"
-          "$s = New-Object System.Speech.Synthesis.SpeechSynthesizer;"
-          f"$s.SelectVoice('{VOICE}'); $s.Rate = -1;"
-          f"$s.SetOutputToWaveFile('{path}');"
-          f"$s.Speak([IO.File]::ReadAllText('{txt}', [Text.Encoding]::UTF8)); $s.Dispose()")
-    subprocess.run(["powershell", "-NoProfile", "-Command", ps], check=True)
+    """Voix neuronale de Microsoft (celle de la lecture à voix haute d'Edge) : MP3."""
+    subprocess.run([sys.executable, "-m", "edge_tts", "--voice", VOICE, "--text", text,
+                    "--write-media", path], check=True)
 
 
-def duration(wav_path):
-    with wave.open(wav_path) as w:
-        return w.getnframes() / w.getframerate()
+def duration(path):
+    out = subprocess.run(["ffprobe", "-v", "error", "-show_entries", "format=duration",
+                          "-of", "csv=p=0", path], capture_output=True, text=True, check=True)
+    return float(out.stdout)
 
 
 def main(base):
@@ -201,13 +194,13 @@ def main(base):
     os.makedirs(work, exist_ok=True)
     segments = []
     for i, (title, visuals, bullets, narration) in enumerate(SLIDES, 1):
-        png, wav, mp4 = (os.path.abspath(os.path.join(work, f"{i:02d}.{e}"))
-                         for e in ("png", "wav", "mp4"))
+        png, voice, mp4 = (os.path.abspath(os.path.join(work, f"{i:02d}.{e}"))
+                         for e in ("png", "mp3", "mp4"))
         render_slide(base, title, visuals, bullets, png)
-        speak(narration, wav)
-        dur = duration(wav) + PAUSE
+        speak(narration, voice)
+        dur = duration(voice) + PAUSE
         subprocess.run([
-            "ffmpeg", "-y", "-loglevel", "error", "-loop", "1", "-i", png, "-i", wav,
+            "ffmpeg", "-y", "-loglevel", "error", "-loop", "1", "-i", png, "-i", voice,
             "-vf", f"fade=t=in:st=0:d=0.4,fade=t=out:st={dur - 0.4:.2f}:d=0.4,format=yuv420p",
             "-af", f"apad=whole_dur={dur:.2f}", "-t", f"{dur:.2f}", "-r", "25",
             "-c:v", "libx264", "-tune", "stillimage", "-c:a", "aac", "-ar", "48000", mp4],

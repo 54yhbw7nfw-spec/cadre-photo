@@ -76,8 +76,8 @@ effet au redémarrage, protégée par `cadre-net-rollback`.
 
 ## Mode d'emploi vidéo
 
-`build/video/cadre-photo-mode-d-emploi.mp4` (~4 min, 13 diapositives commentées, voix Windows
-« Hortense »). Pour la refaire, sur le PC :
+`build/video/cadre-photo-mode-d-emploi.mp4` (~3 min 20, 13 diapositives commentées, voix neuronale
+Microsoft « Denise » via `edge-tts`, Internet requis). Pour la refaire, sur le PC :
 1. `python tools/video/shots.py http://<ip du cadre> build/video/shots` (captures de l'admin,
    Firefox sans fenêtre) ;
 2. `tools/video/screens.py` lancé sur le Pi (`PYTHONPATH=/opt/cadre SDL_VIDEODRIVER=dummy`),
