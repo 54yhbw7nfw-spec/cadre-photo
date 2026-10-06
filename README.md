@@ -74,6 +74,17 @@ Le script reprend toute la « Configuration déjà appliquée au Pi » ; relanc�
 qui manque ou a changé. Il ne touche jamais à une connexion active : la sortie de netplan prend
 effet au redémarrage, protégée par `cadre-net-rollback`.
 
+## Mode d'emploi vidéo
+
+`build/video/cadre-photo-mode-d-emploi.mp4` (~4 min, 13 diapositives commentées, voix Windows
+« Hortense »). Pour la refaire, sur le PC :
+1. `python tools/video/shots.py http://<ip du cadre> build/video/shots` (captures de l'admin,
+   Firefox sans fenêtre) ;
+2. `tools/video/screens.py` lancé sur le Pi (`PYTHONPATH=/opt/cadre SDL_VIDEODRIVER=dummy`),
+   résultat copié dans `build/video/screens` (écrans du cadre dessinés par son propre code) ;
+3. `python tools/video/make_video.py build/video` (Pillow + ffmpeg). Le lien réel de l'album
+   iCloud est masqué sur les captures.
+
 ## Travailler depuis VS Code
 
 Le terminal intégré est Git Bash. Tâches (`Ctrl+Maj+P` → *Tasks: Run Task*, ou `Ctrl+Maj+B`

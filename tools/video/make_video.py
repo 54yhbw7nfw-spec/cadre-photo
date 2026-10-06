@@ -1,0 +1,227 @@
+"""Mode d'emploi vidéo du cadre : diapositives commentées (voix de synthèse Windows) en MP4.
+
+Prérequis (PC Windows) : ffmpeg, voix française « Hortense », Pillow, et les visuels :
+  python tools/video/shots.py http://<ip du cadre> build/video/shots      captures de l'admin
+  écrans du cadre : tools/video/screens.py lancé sur le Pi -> build/video/screens
+Usage : python tools/video/make_video.py build/video     -> build/video/cadre-photo-mode-d-emploi.mp4
+"""
+import os
+import subprocess
+import sys
+import wave
+
+from PIL import Image, ImageDraw, ImageFilter, ImageFont
+
+W, H = 1920, 1080
+BG = (18, 18, 20)
+TEXT = (235, 235, 235)
+MUTED = (160, 160, 165)
+ACCENT = (110, 170, 255)
+FONTS = r"C:\Windows\Fonts"
+VOICE = "Microsoft Hortense Desktop"
+PAUSE = 0.9  # s de silence après chaque narration
+# Zones à masquer sur les captures : le lien réel de l'album iCloud (accès « contributeur »).
+MASKS = {"shots/admin-haut.png": [((124, 304, 836, 332),
+                                   "https://photos.icloud.com/shared/album/…")]}
+
+# (titre, visuels « dossier/fichier », points clés à l'écran, narration)
+SLIDES = [
+    ("Cadre photo", ["screens/photo.png"], ["Mode d'emploi"],
+     "Bienvenue. Cette vidéo explique comment utiliser le cadre photo : l'allumer, le "
+     "connecter au Wi-Fi, ajouter des photos et le piloter avec la télécommande de la télé."),
+    ("Brancher et allumer", ["screens/demarrage.png"],
+     ["Câble HDMI vers la télé", "Puis l'alimentation : démarrage automatique",
+      "Photos au bout d'1 min 30 environ"],
+     "Branchez le cadre sur la télé avec le câble HDMI, puis branchez son alimentation. Il n'a "
+     "pas de bouton : il démarre tout seul. Au bout d'une demi-minute, cet écran apparaît. "
+     "Comptez environ une minute et demie avant les premières photos."),
+    ("Wi-Fi de la maison", ["screens/qr.png"],
+     ["Connexion automatique", "QR code affiché 30 secondes", "Il mène à la page de gestion"],
+     "Si le cadre connaît le Wi-Fi de la maison, il s'y connecte tout seul, puis affiche "
+     "pendant trente secondes ce QR code. Il mène à la page de gestion des photos."),
+    ("Premier Wi-Fi", ["screens/hotspot.png"],
+     ["Aucun réseau connu : le cadre crée le sien", "Scanner le QR code avec le téléphone",
+      "Mot de passe affiché à l'écran"],
+     "S'il ne connaît aucun réseau, par exemple chez quelqu'un d'autre, le cadre crée son "
+     "propre Wi-Fi, appelé Cadre Photo Setup. Scannez ce QR code avec votre téléphone pour "
+     "vous y connecter. Le mot de passe change à chaque démarrage et reste affiché à l'écran."),
+    ("Choisir le Wi-Fi", ["shots/portail-wifi.png"],
+     ["La page s'ouvre toute seule", "Choisir le réseau, taper son mot de passe",
+      "« Se connecter »"],
+     "La page de configuration s'ouvre alors toute seule sur le téléphone. Choisissez le "
+     "Wi-Fi de la maison, tapez son mot de passe et touchez Se connecter. Le cadre rejoint la "
+     "maison, et le QR code de la page de gestion s'affiche à la télé."),
+    ("La page de gestion", ["shots/admin-haut.png"],
+     ["QR code de la télé, ou http://cadre.local", "Transition, durée, ordre aléatoire",
+      "Date sur les photos, veille la nuit"],
+     "Pour gérer le cadre, scannez le QR code affiché à la télé, ou tapez cadre point local "
+     "dans le navigateur d'un téléphone ou d'un ordinateur connecté au même Wi-Fi. En haut de "
+     "la page se trouvent les réglages : la transition entre les photos, la durée "
+     "d'affichage, l'ordre aléatoire, la date sur les photos et la mise en veille la nuit."),
+    ("Ajouter des photos", ["shots/admin-photos.png"],
+     ["Glisser les photos, ou toucher pour les choisir", "Visibles en quelques secondes",
+      "Sélectionner puis « Supprimer la sélection »"],
+     "Pour ajouter des photos, glissez-les dans la zone en pointillés, ou touchez-la pour les "
+     "choisir sur votre téléphone. Elles arrivent dans la galerie et dans le diaporama "
+     "quelques secondes plus tard. Pour en retirer, sélectionnez-les, puis touchez Supprimer "
+     "la sélection."),
+    ("Album iCloud partagé", ["shots/admin-haut.png"],
+     ["iPhone : album partagé, « Site web public »", "Coller le lien dans la page de gestion",
+      "Vérifié toutes les 30 minutes", "Photos de l'album entourées d'orange"],
+     "Vous pouvez aussi relier un album partagé iCloud. Sur l'iPhone, ouvrez l'album, touchez "
+     "l'icône des personnes et activez Site web public. Copiez ensuite le lien et collez-le "
+     "dans la page de gestion. Le cadre vérifie l'album toutes les trente minutes, et ses "
+     "photos sont entourées d'orange dans la galerie."),
+    ("Pendant le diaporama", ["screens/photo.png"],
+     ["Date de prise de vue en bas à droite", "Désactivable dans les réglages"],
+     "Pendant le diaporama, la date de prise de vue s'affiche en bas à droite de chaque "
+     "photo. Vous pouvez la masquer dans les réglages."),
+    ("La télécommande de la télé", ["screens/pause.png"],
+     ["→  photo suivante", "←  photo précédente", "↑ ou ↓  pause / reprise",
+      "OK  QR code de la page de gestion"],
+     "Si la télé le permet, sa télécommande pilote le cadre. Flèche droite : photo suivante. "
+     "Flèche gauche : photo précédente. Flèche du haut ou du bas : pause, et de nouveau pour "
+     "reprendre. Touche OK : le QR code de la page de gestion."),
+    ("Éteindre et redémarrer", ["shots/admin-bas.png", "screens/extinction.png"],
+     ["Boutons en bas de la page de gestion", "Débrancher quand la diode verte est éteinte",
+      "Mot de passe de la page, si besoin"],
+     "En bas de la page de gestion se trouvent les boutons Redémarrer et Éteindre. Avant de "
+     "débrancher le cadre, éteignez-le ainsi et attendez que sa diode verte s'éteigne. C'est "
+     "aussi là que vous pouvez protéger la page par un mot de passe."),
+    ("En cas de souci", ["screens/demarrage.png"],
+     ["Ne répond plus : débrancher, rebrancher", "Wi-Fi perdu : il recrée son réseau",
+      "Écran noir : vérifier l'entrée HDMI de la télé"],
+     "En cas de souci : si le cadre ne répond plus, débranchez-le puis rebranchez-le. S'il "
+     "perd le Wi-Fi plus de deux minutes, il recrée son réseau de configuration. Et si l'écran "
+     "reste noir, vérifiez que la télé est sur la bonne entrée HDMI."),
+    ("Bon diaporama !", ["screens/photo.png"], [],
+     "Voilà, vous savez tout. Bon diaporama !"),
+]
+
+
+def font(name, size):
+    return ImageFont.truetype(os.path.join(FONTS, name), size)
+
+
+def fit(img, box_w, box_h):
+    img = img.convert("RGB")
+    scale = min(box_w / img.width, box_h / img.height)
+    return img.resize((max(1, int(img.width * scale)), max(1, int(img.height * scale))),
+                      Image.LANCZOS)
+
+
+def framed(img):
+    """Visuel posé sur une carte arrondie avec une ombre douce."""
+    pad = 10
+    card = Image.new("RGBA", (img.width + 2 * pad, img.height + 2 * pad), (0, 0, 0, 0))
+    mask = Image.new("L", card.size, 0)
+    ImageDraw.Draw(mask).rounded_rectangle((0, 0, *card.size), radius=18, fill=255)
+    card.paste((52, 52, 58), mask=mask)
+    card.paste(img, (pad, pad))
+    shadow = Image.new("RGBA", (card.width + 60, card.height + 60), (0, 0, 0, 0))
+    smask = Image.new("L", shadow.size, 0)
+    ImageDraw.Draw(smask).rounded_rectangle((30, 40, card.width + 30, card.height + 40),
+                                            radius=18, fill=150)
+    shadow.paste((0, 0, 0), mask=smask.filter(ImageFilter.GaussianBlur(18)))
+    shadow.alpha_composite(card, (30, 30))
+    return shadow
+
+
+def load_visual(base, name):
+    img = Image.open(os.path.join(base, name)).convert("RGB")
+    d = ImageDraw.Draw(img)
+    for (x0, y0, x1, y1), text in MASKS.get(name, []):
+        d.rectangle((x0, y0, x1, y1), fill=img.getpixel((x0 + 2, y0 + 2)))
+        d.text((x0 + 8, (y0 + y1) // 2), text, font=font("segoeui.ttf", 15),
+               fill=(70, 70, 75), anchor="lm")
+    return img
+
+
+def render_slide(base, title, visuals, bullets, path):
+    img = Image.new("RGBA", (W, H), BG + (255,))
+    d = ImageDraw.Draw(img)
+    d.text((90, 70), title, font=font("seguisb.ttf", 64), fill=TEXT)
+    d.rectangle((90, 178, 210, 184), fill=ACCENT)
+    area_w = 1180 if bullets else W - 180
+    area_h = H - 290
+    pics = [load_visual(base, v) for v in visuals]
+    if len(pics) == 1:
+        cards = [framed(fit(pics[0], area_w, area_h))]
+    else:  # deux visuels empilés
+        cards = [framed(fit(p, area_w, area_h // 2 - 20)) for p in pics]
+    total = sum(c.height for c in cards) - 60 * (len(cards) - 1)
+    y = 200 + (area_h - total) // 2 - 30
+    for c in cards:
+        x = 60 + (area_w - c.width) // 2 + 30
+        img.alpha_composite(c, (max(0, x), max(170, y)))
+        y += c.height - 60
+    if bullets:
+        f = font("segoeui.ttf", 40)
+        y = 300
+        for b in bullets:
+            d.ellipse((1335, y + 20, 1349, y + 34), fill=ACCENT)
+            # Guillemets collés à leur mot (espace insécable : pas de coupure de ligne).
+            b = b.replace("« ", "« ").replace(" »", " »")
+            words, line, lines = b.split(" "), "", []
+            for w_ in words:
+                trial = (line + " " + w_).strip()
+                if d.textlength(trial, font=f) > 470 and line:
+                    lines.append(line)
+                    line = w_
+                else:
+                    line = trial
+            lines.append(line)
+            for ln in lines:
+                d.text((1370, y), ln, font=f, fill=TEXT)
+                y += 54
+            y += 34
+    img.convert("RGB").save(path)
+
+
+def speak(text, path):
+    # Texte passé par un fichier UTF-8 : la console PowerShell lit en IBM850 (accents faux).
+    txt = path[:-4] + ".txt"
+    with open(txt, "w", encoding="utf-8") as f:
+        f.write(text)
+    ps = ("Add-Type -AssemblyName System.Speech;"
+          "$s = New-Object System.Speech.Synthesis.SpeechSynthesizer;"
+          f"$s.SelectVoice('{VOICE}'); $s.Rate = -1;"
+          f"$s.SetOutputToWaveFile('{path}');"
+          f"$s.Speak([IO.File]::ReadAllText('{txt}', [Text.Encoding]::UTF8)); $s.Dispose()")
+    subprocess.run(["powershell", "-NoProfile", "-Command", ps], check=True)
+
+
+def duration(wav_path):
+    with wave.open(wav_path) as w:
+        return w.getnframes() / w.getframerate()
+
+
+def main(base):
+    work = os.path.join(base, "slides")
+    os.makedirs(work, exist_ok=True)
+    segments = []
+    for i, (title, visuals, bullets, narration) in enumerate(SLIDES, 1):
+        png, wav, mp4 = (os.path.abspath(os.path.join(work, f"{i:02d}.{e}"))
+                         for e in ("png", "wav", "mp4"))
+        render_slide(base, title, visuals, bullets, png)
+        speak(narration, wav)
+        dur = duration(wav) + PAUSE
+        subprocess.run([
+            "ffmpeg", "-y", "-loglevel", "error", "-loop", "1", "-i", png, "-i", wav,
+            "-vf", f"fade=t=in:st=0:d=0.4,fade=t=out:st={dur - 0.4:.2f}:d=0.4,format=yuv420p",
+            "-af", f"apad=whole_dur={dur:.2f}", "-t", f"{dur:.2f}", "-r", "25",
+            "-c:v", "libx264", "-tune", "stillimage", "-c:a", "aac", "-ar", "48000", mp4],
+            check=True)
+        segments.append(mp4)
+        print(f"{i:02d} {title} : {dur:.1f} s")
+    listing = os.path.join(work, "liste.txt")
+    with open(listing, "w", encoding="utf-8") as f:
+        f.writelines(f"file '{s}'\n" for s in segments)
+    out = os.path.abspath(os.path.join(base, "cadre-photo-mode-d-emploi.mp4"))
+    subprocess.run(["ffmpeg", "-y", "-loglevel", "error", "-f", "concat", "-safe", "0",
+                    "-i", listing, "-c", "copy", "-movflags", "+faststart", out], check=True)
+    print("vidéo :", out)
+
+
+if __name__ == "__main__":
+    main(sys.argv[1])
