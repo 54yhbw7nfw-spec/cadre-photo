@@ -1,6 +1,6 @@
 # Cadre photo
 
-[Français](README.md) · **English** · [Español](README.es.md) · [Deutsch](README.de.md)
+[Français](README.md) · **English** · [Español](README.es.md) · [Deutsch](README.de.md) · [Română](README.ro.md) · [中文](README.zh.md)
 
 **Turn any TV into a family photo frame, with a €20 Raspberry Pi.**
 

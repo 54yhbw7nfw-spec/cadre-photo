@@ -1,6 +1,6 @@
 # Cadre photo
 
-[Français](README.md) · [English](README.en.md) · **Español** · [Deutsch](README.de.md)
+[Français](README.md) · [English](README.en.md) · **Español** · [Deutsch](README.de.md) · [Română](README.ro.md) · [中文](README.zh.md)
 
 **Convierte cualquier televisor en un marco de fotos familiar, con una Raspberry Pi de 20 €.**
 

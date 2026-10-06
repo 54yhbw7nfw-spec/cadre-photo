@@ -1,6 +1,6 @@
 # Cadre photo
 
-**Français** · [English](README.en.md) · [Español](README.es.md) · [Deutsch](README.de.md)
+**Français** · [English](README.en.md) · [Español](README.es.md) · [Deutsch](README.de.md) · [Română](README.ro.md) · [中文](README.zh.md)
 
 **Transformez n'importe quelle télé en cadre photo familial, avec un Raspberry Pi à 20 €.**
 

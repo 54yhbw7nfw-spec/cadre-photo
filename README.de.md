@@ -1,6 +1,6 @@
 # Cadre photo
 
-[Français](README.md) · [English](README.en.md) · [Español](README.es.md) · **Deutsch**
+[Français](README.md) · [English](README.en.md) · [Español](README.es.md) · **Deutsch** · [Română](README.ro.md) · [中文](README.zh.md)
 
 **Verwandeln Sie jeden Fernseher in einen digitalen Familien-Bilderrahmen – mit einem Raspberry
 Pi für 20 €.**
