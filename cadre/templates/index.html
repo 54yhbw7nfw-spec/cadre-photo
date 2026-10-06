@@ -738,16 +738,28 @@ async function loadUpdate() {
   if (!link.value) link.value = s.url;
   return s;
 }
+const GUARD_WAIT = 160;  // s : garde-fou du cadre (150 s) + marge
 async function pollUpdate() {
-  // Les services redémarrent : la page ne répond plus quelques secondes.
-  for (let i = 0; i < 80; i++) {
-    await sleep(5000);
-    let s;
-    try { s = await loadUpdate(); } catch { continue; }
-    if (["ok", "rolled_back", "error"].includes(s.state)) {
+  // Les services redémarrent : la page ne répond plus quelques secondes. Compte à rebours
+  // jusqu'à la vérification automatique, puis résultat bien visible.
+  const start = Date.now(), box = $("#upd-state");
+  for (let i = 0; i < 160; i++) {
+    let s = null;
+    try { s = await loadUpdate(); } catch { /* services en redémarrage */ }
+    if (s && ["ok", "rolled_back", "error"].includes(s.state)) {
       $("#upd-pick").disabled = false;
+      box.className = "msg " + (s.state === "ok" ? "ok" : "error");
+      box.textContent = s.state === "ok" ? `✓ Version ${s.version} installée et vérifiée.`
+        : s.state === "rolled_back" ? `✗ Mise à jour annulée, ancienne version remise : ${s.message}`
+        : `✗ Mise à jour refusée : ${s.message}`;
       return;
     }
+    const left = Math.max(0, GUARD_WAIT - Math.round((Date.now() - start) / 1000));
+    box.className = "small muted";
+    box.textContent = left ? `Installation : redémarrage des services, vérification automatique ` +
+      `dans ${Math.floor(left / 60)} min ${String(left % 60).padStart(2, "0")} s…`
+      : "Vérification en cours…";
+    await sleep(3000);
   }
 }
 /* Recherche depuis le lien : téléchargée et vérifiée, installée seulement sur demande. */
@@ -756,6 +768,9 @@ async function checkUpdate() {
   btn.disabled = true;
   btn.textContent = "Recherche…";
   $("#upd-install").hidden = true;
+  found.hidden = false;
+  found.className = "small muted";
+  found.textContent = "Téléchargement et vérification depuis l'adresse… (quelques secondes)";
   try {
     const r = await (await fetch("/api/update/check", {
       method: "POST", headers: {"Content-Type": "application/json"},
@@ -763,14 +778,15 @@ async function checkUpdate() {
     })).json();
     found.hidden = false;
     if (!r.ok) {
-      found.className = "small msg error";
-      found.textContent = r.error;
+      found.className = "msg error";
+      found.textContent = "✗ " + r.error;
     } else if (!r.newer) {
-      found.className = "small msg ok";
-      found.textContent = `Le cadre est à jour (version disponible : ${r.version}).`;
+      found.className = "msg ok";
+      found.textContent = `✓ Le cadre est à jour (version disponible : ${r.version}).`;
     } else {
-      found.className = "small";
-      found.textContent = `Version ${r.version} disponible` + (r.notes ? ` : ${r.notes}` : ".");
+      found.className = "msg";
+      found.textContent = `Version ${r.version} disponible` + (r.notes ? ` : ${r.notes}` : ".")
+        + " Touchez « Installer cette version ».";
       $("#upd-install").hidden = false;
     }
   } catch {
