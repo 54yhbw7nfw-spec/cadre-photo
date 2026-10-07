@@ -11,7 +11,11 @@ iCloud-Album, dem der Rahmen von selbst folgt. Gemacht, um bei Angehörigen aufg
 vergessen zu werden: Er verbindet sich per QR-Code mit dem WLAN, wird mit der
 TV-Fernbedienung gesteuert und aus der Ferne aktualisiert.
 
-▶ [Das Erklärvideo ansehen (Deutsch)](docs/video/cadre-photo-mode-d-emploi-de.mp4)
+
+
+https://github.com/user-attachments/assets/a8b461aa-8c9c-4914-9142-d1d3fda74f1f
+
+
 
 ## Was er kann
 
