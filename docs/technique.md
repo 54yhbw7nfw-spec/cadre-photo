@@ -28,7 +28,7 @@ cahier des charges : [cahier-des-charges.md](cahier-des-charges.md) ; mise à jo
 | 18. Heure et météo (Open-Meteo), icônes dessinées | livré par mise à jour signée, à tester |
 | 19. Mise à jour depuis un lien (release GitHub), sur demande | ✅ cas d'erreur testés ; release à tester |
 | 20. Traduction : admin et écrans en 7 langues (fr, en, es, de, pt, ro, zh) | ✅ testé sur le Pi (écrans rendus dans chaque langue, admin en chinois) |
-| Mode d'emploi vidéo | ✅ `build/video/cadre-photo-mode-d-emploi.mp4`, à refaire après une évolution visible |
+| Mode d'emploi vidéo (7 langues) | ✅ `docs/video/`, à refaire après une évolution visible |
 
 ## Reste à faire / idées
 
@@ -110,14 +110,21 @@ effet au redémarrage, protégée par `cadre-net-rollback`.
 
 ## Mode d'emploi vidéo
 
-`docs/video/cadre-photo-mode-d-emploi.mp4` (copie de `build/video/…`, ~5 min, 18 diapositives commentées, voix neuronale
-Microsoft « Denise » via `edge-tts`, Internet requis). Pour la refaire, sur le PC :
-1. `python tools/video/shots.py http://<ip du cadre> build/video/shots [langue]` (captures de
-   l'admin, Firefox sans fenêtre, page dans la langue demandée) ;
-2. `tools/video/screens.py` lancé sur le Pi (`PYTHONPATH=/opt/cadre SDL_VIDEODRIVER=dummy`),
-   résultat copié dans `build/video/screens` (écrans du cadre dessinés par son propre code) ;
-3. `python tools/video/make_video.py build/video` (Pillow + ffmpeg). Le lien réel de l'album
-   iCloud est masqué sur les captures.
+Une vidéo par langue dans `docs/video/` : `cadre-photo-mode-d-emploi.mp4` (français) et
+`cadre-photo-mode-d-emploi-<langue>.mp4` (en, es, de, pt, ro, zh) ; copies de `build/video/…`,
+~5 min, 18 diapositives commentées, voix neuronales Microsoft via `edge-tts` (Denise, Sonia,
+Elvira, Katja, Raquel, Alina, Xiaoxiao ; Internet requis). Pour les refaire, sur le PC, pour
+chaque langue :
+1. `python tools/video/shots.py http://<ip du cadre> build/video/shots-<langue> <langue>`
+   (captures de l'admin, Firefox sans fenêtre ; le temps des captures, la langue du cadre et la
+   ville de la météo sont changées sur le cadre, puis remises ; lien de l'album iCloud, réseaux
+   Wi-Fi et notes de mise à jour floutés par une feuille de style) ;
+2. `tools/video/screens.py <sortie> <langue>` lancé sur le Pi (`PYTHONPATH=/opt/cadre
+   SDL_VIDEODRIVER=dummy`), résultat copié dans `build/video/ecrans-<langue>` (écrans du cadre
+   dessinés par son propre code) ;
+3. `python tools/video/make_video.py build/video <langue>` (Pillow + ffmpeg). Textes : en
+   français dans `make_video.py`, traduits dans `tools/video/locales/<langue>.json` (mêmes
+   diapositives, dans le même ordre).
 
 ## Travailler depuis VS Code
 

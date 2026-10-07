@@ -10,9 +10,7 @@ iCloud album that the frame follows on its own. Built to be set up at a relative
 forgotten: it joins the Wi-Fi through a QR code, is driven with the TV remote, and is updated
 remotely.
 
-> The video tutorial is in French; the frame and its management page speak 7 languages.
-
-https://github.com/user-attachments/assets/5c049a34-5ee3-4dbe-9e44-6fbbceeaa3bd
+▶ [Watch the video tutorial (English)](docs/video/cadre-photo-mode-d-emploi-en.mp4)
 
 ## What it does
 

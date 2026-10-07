@@ -11,9 +11,7 @@ iCloud-Album, dem der Rahmen von selbst folgt. Gemacht, um bei Angehörigen aufg
 vergessen zu werden: Er verbindet sich per QR-Code mit dem WLAN, wird mit der
 TV-Fernbedienung gesteuert und aus der Ferne aktualisiert.
 
-> Das Erklärvideo ist auf Französisch; der Rahmen und seine Verwaltungsseite sprechen 7 Sprachen.
-
-https://github.com/user-attachments/assets/5c049a34-5ee3-4dbe-9e44-6fbbceeaa3bd
+▶ [Das Erklärvideo ansehen (Deutsch)](docs/video/cadre-photo-mode-d-emploi-de.mp4)
 
 ## Was er kann
 

@@ -10,9 +10,7 @@ partilha-as num álbum do iCloud que a moldura acompanha sozinha. Pensada para s
 casa de um familiar e depois esquecida: liga-se ao Wi-Fi com um código QR, controla-se com o
 comando da televisão e atualiza-se à distância.
 
-> O vídeo de apresentação está em francês; a moldura e a sua página de gestão falam 7 línguas.
-
-https://github.com/user-attachments/assets/5c049a34-5ee3-4dbe-9e44-6fbbceeaa3bd
+▶ [Ver o vídeo de apresentação (português)](docs/video/cadre-photo-mode-d-emploi-pt.mp4)
 
 ## O que faz
 

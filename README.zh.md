@@ -8,9 +8,7 @@
 无需注册账号；也可以把照片放进 iCloud 共享相簿，相框会自动同步。专为放在亲人家中、装好就
 不用管而设计：扫二维码即可连接 Wi-Fi，用电视遥控器操作，并可远程更新。
 
-> 介绍视频目前为法语；相框和管理页面支持 7 种语言。
-
-https://github.com/user-attachments/assets/5c049a34-5ee3-4dbe-9e44-6fbbceeaa3bd
+▶ [观看介绍视频（中文）](docs/video/cadre-photo-mode-d-emploi-zh.mp4)
 
 ## 功能
 

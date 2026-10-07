@@ -10,9 +10,7 @@ album iCloud partajat pe care rama îl urmărește singură. Gândită pentru a 
 rude și apoi uitată: se conectează la Wi-Fi printr-un cod QR, se comandă cu telecomanda
 televizorului și se actualizează de la distanță.
 
-> Videoclipul de prezentare este în franceză; rama și pagina de administrare vorbesc 7 limbi.
-
-https://github.com/user-attachments/assets/5c049a34-5ee3-4dbe-9e44-6fbbceeaa3bd
+▶ [Vizionați videoclipul de prezentare (română)](docs/video/cadre-photo-mode-d-emploi-ro.mp4)
 
 ## Ce știe să facă
 

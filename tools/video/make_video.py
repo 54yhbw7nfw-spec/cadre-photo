@@ -171,17 +171,25 @@ def slides(lang):
             for (_, visuals, _, _), (title, bullets, narration) in zip(SLIDES, texts)]
 
 
+CLOSING = "，。、：；！？）」』”’》%"  # jamais en début de ligne (chinois)
+OPENING = "（「『“‘《"                # jamais en fin de ligne
+
+
 def wrap(d, text, f, width):
-    """Lignes de text tenant dans width pixels : par mots, ou par caractères (chinois)."""
-    units = list(text) if not " " in text.strip() or any(ord(c) >= 0x2E80 for c in text) \
-        else text.split(" ")
-    sep = "" if units == list(text) else " "
+    """Lignes de text tenant dans width pixels : par mots, ou par caractères (chinois), sans
+    ponctuation fermante en début de ligne ni ouvrante en fin de ligne."""
+    by_char = any(ord(c) >= 0x2E80 for c in text)
+    units = list(text) if by_char else text.split(" ")
+    sep = "" if by_char else " "
     lines, line = [], ""
     for u in units:
         trial = (line + sep + u) if line else u
-        if d.textlength(trial, font=f) > width and line:
+        if d.textlength(trial, font=f) > width and line and u not in CLOSING:
+            carry = ""
+            while line and line[-1] in OPENING:
+                carry, line = line[-1] + carry, line[:-1]
             lines.append(line)
-            line = u.lstrip()
+            line = (carry + u).lstrip()
         else:
             line = trial
     return lines + [line]
@@ -277,9 +285,20 @@ def render_slide(base, lang, title, visuals, bullets, path):
 
 
 def speak(text, path, lang):
-    """Voix neuronale de Microsoft (celle de la lecture à voix haute d'Edge) : MP3."""
+    """Voix neuronale de Microsoft (celle de la lecture à voix haute d'Edge) : MP3, refait
+    seulement si le texte ou la voix ont changé (texte gardé à côté, en .txt)."""
+    said = os.path.splitext(path)[0] + ".txt"
+    key = VOICES[lang] + "\n" + text
+    try:
+        with open(said, encoding="utf-8") as f:
+            if f.read() == key and os.path.exists(path):
+                return
+    except OSError:
+        pass
     subprocess.run([sys.executable, "-m", "edge_tts", "--voice", VOICES[lang], "--text", text,
                     "--write-media", path], check=True)
+    with open(said, "w", encoding="utf-8") as f:
+        f.write(key)
 
 
 def duration(path):
@@ -289,6 +308,7 @@ def duration(path):
 
 
 def main(base, lang="fr"):
+    sys.stdout.reconfigure(encoding="utf-8")  # titres roumains, chinois : console Windows
     work = os.path.join(base, "slides-" + lang)
     os.makedirs(work, exist_ok=True)
     segments = []

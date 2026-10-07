@@ -10,9 +10,7 @@ tomaron. La familia añade fotos desde el móvil, sin aplicación ni cuenta, o l
 olvidarse: se conecta al Wi-Fi con un código QR, se maneja con el mando de la tele y se
 actualiza a distancia.
 
-> El vídeo tutorial está en francés; el marco y su página de gestión hablan 7 idiomas.
-
-https://github.com/user-attachments/assets/5c049a34-5ee3-4dbe-9e44-6fbbceeaa3bd
+▶ [Ver el vídeo tutorial (español)](docs/video/cadre-photo-mode-d-emploi-es.mp4)
 
 ## Qué hace
 

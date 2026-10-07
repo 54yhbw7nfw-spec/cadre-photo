@@ -27,7 +27,8 @@ PORT = 8766
 WAIT = 15  # s laissées à la page pour charger photos et réglages
 CITY = "Niort"  # ville de la météo montrée sur les captures
 
-BLUR = "color: transparent !important; text-shadow: 0 0 8px rgba(0, 0, 0, .55) !important;"
+# Flou fort : illisible même agrandi dans la vidéo.
+BLUR = "color: transparent !important; text-shadow: 0 0 16px rgba(0, 0, 0, .7) !important;"
 USER_CSS = f"""
 #icloud-form input[name=url], #wifi-state, #wifi-result, #wifi-saved .grow,
 #wifi-visible .grow {{ {BLUR} }}
@@ -76,20 +77,22 @@ def main(base, out, lang="fr"):
         f.write(USER_CSS)
     city = weather_city(base, CITY)
     frame_lang = frame_language(base, lang)
-    server = http.server.ThreadingHTTPServer(("127.0.0.1", PORT), Handler)
-    server.pages = {}
-    threading.Thread(target=server.serve_forever, daemon=True).start()
-    for name, path, w, h, y in SHOTS:
-        key = "/" + name
-        server.pages[key] = PAGE.format(url=base + path, w=w, full=h + y, y=y)
-        dest = os.path.abspath(os.path.join(out, name))
-        subprocess.run([FIREFOX, "--headless", "--no-remote", "--profile", profile,
-                        "--window-size", f"{w},{h}", "--screenshot", dest,
-                        f"http://127.0.0.1:{PORT}{key}"], capture_output=True, timeout=120)
-        print(name, "ok" if os.path.exists(dest) else "ÉCHEC")
-    server.shutdown()
-    weather_city(base, city)
-    frame_language(base, frame_lang)
+    try:  # le cadre retrouve sa ville et sa langue, même après une erreur
+        server = http.server.ThreadingHTTPServer(("127.0.0.1", PORT), Handler)
+        server.pages = {}
+        threading.Thread(target=server.serve_forever, daemon=True).start()
+        for name, path, w, h, y in SHOTS:
+            key = "/" + name
+            server.pages[key] = PAGE.format(url=base + path, w=w, full=h + y, y=y)
+            dest = os.path.abspath(os.path.join(out, name))
+            subprocess.run([FIREFOX, "--headless", "--no-remote", "--profile", profile,
+                            "--window-size", f"{w},{h}", "--screenshot", dest,
+                            f"http://127.0.0.1:{PORT}{key}"], capture_output=True, timeout=120)
+            print(name, "ok" if os.path.exists(dest) else "ÉCHEC")
+        server.shutdown()
+    finally:
+        weather_city(base, city)
+        frame_language(base, frame_lang)
 
 
 def frame_language(base, lang):
