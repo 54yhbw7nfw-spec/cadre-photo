@@ -27,8 +27,8 @@ cahier des charges : [cahier-des-charges.md](cahier-des-charges.md) ; mise à jo
 | 17. Choix des photos affichées (source, période) | livré par mise à jour signée, à tester |
 | 18. Heure et météo (Open-Meteo), icônes dessinées | livré par mise à jour signée, à tester |
 | 19. Mise à jour depuis un lien (release GitHub), sur demande | ✅ cas d'erreur testés ; release à tester |
-| 20. Traduction : admin et écrans en 7 langues (fr, en, es, de, pt, ro, zh) | ✅ testé sur le Pi (écrans rendus dans chaque langue, admin en chinois) |
-| Mode d'emploi vidéo (7 langues) | ✅ `docs/video/`, à refaire après une évolution visible |
+| 20. Traduction : admin et écrans en 9 langues (fr, en, es, de, pt, ro, ru, ar, zh) | ✅ testé sur le Pi (écrans rendus dans chaque langue, admin en chinois) |
+| Mode d'emploi vidéo (9 langues) | ✅ `docs/video/`, à refaire après une évolution visible |
 
 ## Reste à faire / idées
 
@@ -111,9 +111,9 @@ effet au redémarrage, protégée par `cadre-net-rollback`.
 ## Mode d'emploi vidéo
 
 Une vidéo par langue dans `docs/video/` : `cadre-photo-mode-d-emploi.mp4` (français) et
-`cadre-photo-mode-d-emploi-<langue>.mp4` (en, es, de, pt, ro, zh) ; copies de `build/video/…`,
+`cadre-photo-mode-d-emploi-<langue>.mp4` (en, es, de, pt, ro, ru, ar, zh) ; copies de `build/video/…`,
 ~5 min, 18 diapositives commentées, voix neuronales Microsoft via `edge-tts` (Denise, Sonia,
-Elvira, Katja, Raquel, Alina, Xiaoxiao ; Internet requis). Pour les refaire, sur le PC, pour
+Elvira, Katja, Raquel, Alina, Svetlana, Zariyah, Xiaoxiao ; Internet requis). Pour les refaire, sur le PC, pour
 chaque langue :
 1. `python tools/video/shots.py http://<ip du cadre> build/video/shots-<langue> <langue>`
    (captures de l'admin, Firefox sans fenêtre ; le temps des captures, la langue du cadre et la
@@ -350,7 +350,7 @@ Mesuré : rapport complet de la journée en 4 s, 2 900 lignes, 360 Ko.
 ## Langues
 
 Admin et écrans du cadre en français, anglais, espagnol, allemand, portugais (Portugal),
-roumain et chinois (mandarin simplifié). Le texte français du code sert de clé :
+roumain, russe, arabe et chinois (mandarin simplifié). Le texte français du code sert de clé :
 `cadre/locales/<langue>.json` contient les traductions (`cadre/i18n.py`).
 
 - **Page de gestion** : langue choisie en haut de la page (cookie `lang`), sinon celle du
@@ -364,6 +364,11 @@ roumain et chinois (mandarin simplifié). Le texte français du code sert de cl�
   `i18n.message`, y compris ceux à parties variables (la clé `{…}` sert de modèle).
 - Chinois : police WenQuanYi Micro Hei (`fonts-wqy-microhei`), choisie dès qu'un texte contient
   des caractères chinois. Sur le QR code, une ligne trop longue pour sa colonne est réduite.
+- Arabe : écrit de droite à gauche (`dir="rtl"` sur les pages ; à droite sur le QR code) ;
+  pygame ne sachant ni lier les lettres ni écrire de droite à gauche, le texte arabe est dessiné
+  par Pillow (raqm) avec DejaVu Sans (`fonts-dejavu-core`), `display.ShapedFont`.
+- Pluriels : une traduction peut être une liste de formes (russe : 3, arabe : 6), choisie par
+  `i18n.plural_index` (et `pluralIndex` dans les pages).
 - Ajout ou changement d'un texte : `python tools/i18n_check.py` liste ce qui manque dans chaque
   langue ; les messages des services sont à déclarer dans sa liste `MESSAGES`.
 

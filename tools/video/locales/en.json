@@ -9,7 +9,7 @@
    "If it knows no network, for example at someone else's home, the frame creates its own Wi-Fi, called Cadre Photo Setup. Scan this QR code with your phone to join it. The password changes at every start and stays on the screen."],
   ["Choosing the Wi-Fi", ["The page opens on its own", "Choose the network, type its password", "“Connect”"],
    "The setup page then opens on its own on the phone. Choose the home Wi-Fi, type its password and tap Connect. The frame joins the home network, and the QR code of the management page appears on the TV."],
-  ["The management page", ["QR code on the TV, or http://cadre.local", "Transition, delay, shuffle", "Settings by theme: slideshow, photos, screen", "7 languages: page and frame"],
+  ["The management page", ["QR code on the TV, or http://cadre.local", "Transition, delay, shuffle", "Settings by theme: slideshow, photos, screen", "9 languages: page and frame"],
    "To manage the frame, scan the QR code shown on the TV, or type cadre dot local in the browser of a phone or computer on the same Wi-Fi. At the top of the page are the settings: the transition between photos, how long each one stays, shuffle, the date and place on the photos, and sleep at night. They are grouped by theme: the slideshow, what appears on the photos, and the screen. The page language is chosen at the top right, and the frame's language in the screen settings."],
   ["Adding photos", ["Drop the photos, or tap to choose them", "Visible within seconds", "Select, then “Delete selection”"],
    "To add photos, drop them in the dotted area, or tap it to choose them on your phone. They appear in the gallery and in the slideshow a few seconds later. To remove some, select them, then tap Delete selection."],

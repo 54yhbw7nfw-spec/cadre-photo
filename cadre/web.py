@@ -303,6 +303,7 @@ def page_language():
 def i18n_context():
     lang = getattr(g, "lang", i18n.DEFAULT)
     return {"_": lambda text, **values: i18n.gettext(text, lang, **values), "lang": lang,
+            "dir": "rtl" if lang in i18n.RTL else "ltr",
             "langs": i18n.LANGS, "locale": i18n.LOCALES[lang],
             "js_catalog": i18n.js_catalog(lang)}
 

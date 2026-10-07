@@ -1,6 +1,6 @@
 # Cadre photo
 
-[Français](README.md) · [English](README.en.md) · [Español](README.es.md) · [Deutsch](README.de.md) · [Português](README.pt.md) · **Română** · [中文](README.zh.md)
+[Français](README.md) · [English](README.en.md) · [Español](README.es.md) · [Deutsch](README.de.md) · [Português](README.pt.md) · **Română** · [Русский](README.ru.md) · [العربية](README.ar.md) · [中文](README.zh.md)
 
 **Transformați orice televizor într-o ramă foto de familie, cu un Raspberry Pi de 20 €.**
 
@@ -34,8 +34,8 @@ https://github.com/user-attachments/assets/eedc4615-3018-4efd-9de2-80cc99e5dfb8
 - **Favorite, poze ascunse, alegerea a ceea ce rulează** (album, trimiteri, perioadă).
 - **Actualizare de la distanță** în două clicuri, semnată de dumneavoastră, cu revenire automată
   la versiunea anterioară dacă ceva nu merge; raport de diagnostic care vă poate fi trimis.
-- **7 limbi**: pagina de administrare și ecranele ramei în franceză, engleză, spaniolă,
-  germană, portugheză, română și chineză.
+- **9 limbi**: pagina de administrare și ecranele ramei în franceză, engleză, spaniolă,
+  germană, portugheză, română, rusă, arabă și chineză.
 - **Confidențialitate**: totul rămâne pe ramă, fără cont și fără serviciu online obligatoriu.
 
 | Configurarea Wi-Fi | Mesaj de la familie |

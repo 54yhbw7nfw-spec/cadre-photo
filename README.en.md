@@ -1,6 +1,6 @@
 # Cadre photo
 
-[Français](README.md) · **English** · [Español](README.es.md) · [Deutsch](README.de.md) · [Português](README.pt.md) · [Română](README.ro.md) · [中文](README.zh.md)
+[Français](README.md) · **English** · [Español](README.es.md) · [Deutsch](README.de.md) · [Português](README.pt.md) · [Română](README.ro.md) · [Русский](README.ru.md) · [العربية](README.ar.md) · [中文](README.zh.md)
 
 **Turn any TV into a family photo frame, with a €20 Raspberry Pi.**
 
@@ -37,8 +37,8 @@ https://github.com/user-attachments/assets/c21e93ef-faa0-494b-abfe-0f3351bc6d45
 - **Favourites, hidden photos, choice of what plays** (album, uploads, period).
 - **Remote update** in two clicks, signed by you, with automatic return to the previous version
   if anything goes wrong; diagnostic report sent to you.
-- **7 languages**: management page and frame screens in French, English, Spanish, German,
-  Portuguese, Romanian and Chinese.
+- **9 languages**: management page and frame screens in French, English, Spanish, German,
+  Portuguese, Romanian, Russian, Arabic and Chinese.
 - **Privacy first**: everything stays on the frame, no account or online service required.
 
 | Wi-Fi setup | Family message |

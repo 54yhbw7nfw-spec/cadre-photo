@@ -1,6 +1,6 @@
 # Cadre photo
 
-[Français](README.md) · [English](README.en.md) · [Español](README.es.md) · [Deutsch](README.de.md) · **Português** · [Română](README.ro.md) · [中文](README.zh.md)
+[Français](README.md) · [English](README.en.md) · [Español](README.es.md) · [Deutsch](README.de.md) · **Português** · [Română](README.ro.md) · [Русский](README.ru.md) · [العربية](README.ar.md) · [中文](README.zh.md)
 
 **Transforme qualquer televisor numa moldura de fotografias de família, com um Raspberry Pi de 20 €.**
 
@@ -38,8 +38,8 @@ https://github.com/user-attachments/assets/38ade30c-4ee2-4553-86c4-8b9763bcd0fb
 - **Favoritas, fotografias ocultas, escolha do que passa** (álbum, envios, período).
 - **Atualização à distância** em dois cliques, assinada por si, com regresso automático à versão
   anterior se algo correr mal; relatório de diagnóstico que lhe podem enviar.
-- **7 línguas**: página de gestão e ecrãs da moldura em francês, inglês, espanhol, alemão,
-  português, romeno e chinês.
+- **9 línguas**: página de gestão e ecrãs da moldura em francês, inglês, espanhol, alemão,
+  português, romeno, russo, árabe e chinês.
 - **Privacidade**: tudo fica na moldura, sem conta nem serviço online obrigatório.
 
 | Configuração do Wi-Fi | Mensagem da família |

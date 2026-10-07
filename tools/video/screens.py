@@ -2,7 +2,7 @@
 
 Usage (sur le Pi) : cd /opt/cadre && SDL_VIDEODRIVER=dummy python3 /chemin/screens.py <sortie> [langue]
 Les méthodes de dessin de Display sont appelées sans écran : texture() renvoie la Surface.
-Langue des écrans : fr par défaut (en, es, de, pt, ro, zh : cadre/locales).
+Langue des écrans : fr par défaut (en, es, de, pt, ro, ru, ar, zh : cadre/locales).
 """
 import json
 import os
@@ -23,6 +23,8 @@ MESSAGES = {
     "de": "Alles Gute zum Geburtstag, Oma! Dicke Umarmung von der ganzen Familie",
     "pt": "Parabéns, avó! Um grande beijinho de toda a família",
     "ro": "La mulți ani, bunico! Te pupăm cu drag, toată familia",
+    "ru": "С днём рождения, бабушка! Обнимаем, вся семья",
+    "ar": "عيد ميلاد سعيد يا جدتي! مع حب العائلة كلها",
     "zh": "奶奶生日快乐！全家人都爱您",
 }
 

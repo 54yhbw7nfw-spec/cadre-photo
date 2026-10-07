@@ -1,6 +1,6 @@
 # Cadre photo
 
-[Français](README.md) · [English](README.en.md) · [Español](README.es.md) · **Deutsch** · [Português](README.pt.md) · [Română](README.ro.md) · [中文](README.zh.md)
+[Français](README.md) · [English](README.en.md) · [Español](README.es.md) · **Deutsch** · [Português](README.pt.md) · [Română](README.ro.md) · [Русский](README.ru.md) · [العربية](README.ar.md) · [中文](README.zh.md)
 
 **Verwandeln Sie jeden Fernseher in einen digitalen Familien-Bilderrahmen – mit einem Raspberry
 Pi für 20 €.**
@@ -36,8 +36,8 @@ https://github.com/user-attachments/assets/a8b461aa-8c9c-4914-9142-d1d3fda74f1f
 - **Favoriten, ausgeblendete Fotos, Auswahl der gezeigten Fotos** (Album, Uploads, Zeitraum).
 - **Fern-Update** mit zwei Klicks, von Ihnen signiert, mit automatischer Rückkehr zur vorherigen
   Version bei Problemen; Diagnosebericht, den man Ihnen schicken kann.
-- **7 Sprachen**: Verwaltungsseite und Bildschirme des Rahmens auf Französisch, Englisch,
-  Spanisch, Deutsch, Portugiesisch, Rumänisch und Chinesisch.
+- **9 Sprachen**: Verwaltungsseite und Bildschirme des Rahmens auf Französisch, Englisch,
+  Spanisch, Deutsch, Portugiesisch, Rumänisch, Russisch, Arabisch und Chinesisch.
 - **Datenschutz**: Alles bleibt auf dem Rahmen, kein Konto und kein Online-Dienst nötig.
 
 | WLAN-Einrichtung | Nachricht der Familie |

@@ -33,10 +33,14 @@ LINES = 4
 LINE_H = 30
 FONT_DIR = "/usr/share/fonts/truetype/freefont"
 CJK_FONT = "/usr/share/fonts/truetype/wqy/wqy-microhei.ttc"  # FreeSans n'a pas le chinois
+ARABIC_FONTS = {"FreeSans.ttf": "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",  # ni l'arabe
+                "FreeSansBold.ttf": "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf"}
 
 
 def font(name, size, text=""):
+    arabic = any(0x0590 <= ord(c) <= 0x08FF or 0xFB1D <= ord(c) <= 0xFEFF for c in text)
     path = (CJK_FONT if any(ord(c) >= 0x2E80 for c in text) and os.path.exists(CJK_FONT)
+            else ARABIC_FONTS[name] if arabic and os.path.exists(ARABIC_FONTS[name])
             else os.path.join(FONT_DIR, name))
     try:
         return ImageFont.truetype(path, size)

@@ -1,6 +1,6 @@
 # Cadre photo
 
-[Français](README.md) · [English](README.en.md) · **Español** · [Deutsch](README.de.md) · [Português](README.pt.md) · [Română](README.ro.md) · [中文](README.zh.md)
+[Français](README.md) · [English](README.en.md) · **Español** · [Deutsch](README.de.md) · [Português](README.pt.md) · [Română](README.ro.md) · [Русский](README.ru.md) · [العربية](README.ar.md) · [中文](README.zh.md)
 
 **Convierte cualquier televisor en un marco de fotos familiar, con una Raspberry Pi de 20 €.**
 
@@ -36,8 +36,8 @@ https://github.com/user-attachments/assets/3c9c3b45-1680-46d4-b0f2-a077d93b124f
 - **Favoritas, fotos ocultas, elección de lo que se muestra** (álbum, envíos, periodo).
 - **Actualización a distancia** en dos clics, firmada por ti, con vuelta automática a la versión
   anterior si algo falla; informe de diagnóstico que te pueden enviar.
-- **7 idiomas**: página de gestión y pantallas del marco en francés, inglés, español, alemán,
-  portugués, rumano y chino.
+- **9 idiomas**: página de gestión y pantallas del marco en francés, inglés, español, alemán,
+  portugués, rumano, ruso, árabe y chino.
 - **Privacidad**: todo se queda en el marco, sin cuenta ni servicio en línea obligatorio.
 
 | Configuración del Wi-Fi | Mensaje de la familia |

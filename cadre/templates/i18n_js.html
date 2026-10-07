@@ -3,11 +3,28 @@
 const I18N = {{ js_catalog|tojson }}, LANG = "{{ lang }}", LOCALE = "{{ locale }}";
 function t(text, values = {}) {
   let s = I18N[text] ?? text;
+  if (Array.isArray(s)) s = s[0];  // formes du pluriel, sans nombre
   for (const [k, v] of Object.entries(values)) s = s.replaceAll(`{${k}}`, v);
   return s;
 }
-// Singulier ou pluriel (comme i18n.ngettext) : en français 0 et 1 sont au singulier.
+// Singulier ou pluriel (comme i18n.ngettext) : en français 0 et 1 sont au singulier ; liste de
+// formes (russe, arabe) choisie comme i18n.plural_index.
+function pluralIndex(n) {
+  if (LANG === "ru") {
+    if (n % 10 === 1 && n % 100 !== 11) return 0;
+    return n % 10 >= 2 && n % 10 <= 4 && !(n % 100 >= 12 && n % 100 <= 14) ? 1 : 2;
+  }
+  if (LANG === "ar") {
+    if (n <= 2) return n;
+    return n % 100 >= 3 && n % 100 <= 10 ? 3 : n % 100 >= 11 ? 4 : 5;
+  }
+  return n === 1 ? 0 : 1;
+}
 function tn(one, many, n, values = {}) {
-  return t((LANG === "fr" ? n <= 1 : n === 1) ? one : many, {n, ...values});
+  const key = (LANG === "fr" ? n <= 1 : n === 1) ? one : many, forms = I18N[key];
+  if (!Array.isArray(forms)) return t(key, {n, ...values});
+  let s = forms[Math.min(pluralIndex(n), forms.length - 1)];
+  for (const [k, v] of Object.entries({n, ...values})) s = s.replaceAll(`{${k}}`, v);
+  return s;
 }
 </script>

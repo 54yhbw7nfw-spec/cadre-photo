@@ -4,6 +4,9 @@ Le texte français du code sert de clé : cadre/locales/<langue>.json associe ch
 français à sa traduction (le français n'a pas de fichier). Les parties variables s'écrivent
 {nom} dans la clé comme dans la traduction.
 
+Pluriels : une traduction peut être une liste de formes, choisie par plural_index (russe :
+3 formes, arabe : 6) ; sinon singulier / pluriel des deux clés françaises (ngettext).
+
 Les messages fabriqués par les services (erreurs de mise à jour, d'iCloud, du Wi-Fi…) restent
 en français dans le code et dans les fichiers d'état ; message() les traduit au moment de les
 montrer, y compris ceux à parties variables (« version {v} retirée : {raison} ») : la clé sert
@@ -17,11 +20,12 @@ import re
 import threading
 
 LANGS = {"fr": "Français", "en": "English", "es": "Español", "de": "Deutsch",
-         "pt": "Português", "ro": "Română", "zh": "中文"}
+         "pt": "Português", "ro": "Română", "ru": "Русский", "ar": "العربية", "zh": "中文"}
+RTL = {"ar"}  # écrites de droite à gauche
 DEFAULT = "fr"
 # Pour les dates du navigateur (toLocaleString) et l'attribut lang des pages.
 LOCALES = {"fr": "fr-FR", "en": "en-GB", "es": "es-ES", "de": "de-DE", "pt": "pt-PT",
-           "ro": "ro-RO", "zh": "zh-CN"}
+           "ro": "ro-RO", "ru": "ru-RU", "ar": "ar", "zh": "zh-CN"}
 LOCALES_DIR = os.path.join(os.path.dirname(__file__), "locales")
 
 MONTHS_FR = ("janvier", "février", "mars", "avril", "mai", "juin", "juillet", "août",
@@ -60,13 +64,34 @@ def fill(text, values):
 
 def gettext(text, lang, **values):
     """Traduction de text (clé française), parties variables remplies."""
-    return fill(catalog(lang).get(text, text) if lang != DEFAULT else text, values)
+    value = catalog(lang).get(text, text) if lang != DEFAULT else text
+    if isinstance(value, list):  # formes du pluriel, sans nombre : la première
+        value = value[0]
+    return fill(value, values)
+
+
+def plural_index(lang, n):
+    """Forme du pluriel à prendre dans une liste de formes (règles CLDR)."""
+    if lang == "ru":  # 1, 21… / 2-4, 22-24… / 0, 5-20, 25…
+        if n % 10 == 1 and n % 100 != 11:
+            return 0
+        return 1 if 2 <= n % 10 <= 4 and not 12 <= n % 100 <= 14 else 2
+    if lang == "ar":  # 0 / 1 / 2 / 3-10 / 11-99 / 100…
+        if n <= 2:
+            return n
+        return 3 if 3 <= n % 100 <= 10 else 4 if 11 <= n % 100 else 5
+    return 0 if n == 1 else 1
 
 
 def ngettext(one, many, n, lang, **values):
     """Singulier ou pluriel : en français 0 et 1 sont au singulier, ailleurs seul 1 l'est
-    (le chinois ne fait pas de différence : ses deux traductions sont identiques)."""
-    single = n <= 1 if valid(lang) == DEFAULT else n == 1
+    (le chinois ne fait pas de différence : ses deux traductions sont identiques) ; une liste
+    de formes (russe, arabe) est choisie par plural_index."""
+    lang = valid(lang)
+    single = n <= 1 if lang == DEFAULT else n == 1
+    value = catalog(lang).get(one if single else many) if lang != DEFAULT else None
+    if isinstance(value, list):
+        return fill(value[min(plural_index(lang, n), len(value) - 1)], {"n": n, **values})
     return gettext(one if single else many, lang, n=n, **values)
 
 

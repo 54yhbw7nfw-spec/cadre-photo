@@ -5,7 +5,7 @@ est donc affichée dans un cadre (iframe) d'une page locale dont le « load » e
 une image servie lentement.
 
 Usage : python tools/video/shots.py http://<ip du cadre> build/video/shots [langue]
-La langue (fr, en, es, de, pt, ro, zh ; fr par défaut) est celle que Firefox demande à la page
+La langue (fr, en, es, de, pt, ro, ru, ar, zh ; fr par défaut) est celle que Firefox demande à la page
 (Accept-Language) : un profil Firefox par langue.
 
 Données personnelles floutées par une feuille de style du profil (userContent.css), quelle que

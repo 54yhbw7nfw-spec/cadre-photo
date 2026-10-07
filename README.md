@@ -1,6 +1,6 @@
 # Cadre photo
 
-**Français** · [English](README.en.md) · [Español](README.es.md) · [Deutsch](README.de.md) · [Português](README.pt.md) · [Română](README.ro.md) · [中文](README.zh.md)
+**Français** · [English](README.en.md) · [Español](README.es.md) · [Deutsch](README.de.md) · [Português](README.pt.md) · [Română](README.ro.md) · [Русский](README.ru.md) · [العربية](README.ar.md) · [中文](README.zh.md)
 
 **Transformez n'importe quelle télé en cadre photo familial, avec un Raspberry Pi à 20 €.**
 
@@ -38,8 +38,8 @@ https://github.com/user-attachments/assets/bcbb4fcc-ea57-4c54-a6ad-acc80952d96a
 - **Favoris, photos masquées, choix de ce qui défile** (album, envois, période).
 - **Mise à jour à distance** en deux clics, signée par vous, avec retour automatique à la
   version précédente en cas de problème ; rapport de diagnostic à vous envoyer.
-- **En 7 langues** : page de gestion et écrans du cadre en français, anglais, espagnol,
-  allemand, portugais, roumain et chinois.
+- **En 9 langues** : page de gestion et écrans du cadre en français, anglais, espagnol,
+  allemand, portugais, roumain, russe, arabe et chinois.
 - **Respect de la vie privée** : tout reste sur le cadre, aucun compte ni service en ligne
   obligatoire.
 

@@ -38,7 +38,7 @@ _fr_codes = None
 _cities = None
 
 
-ISO_LANGS = {"zh": "zh_CN"}  # langue du cadre -> catalogue d'iso-codes
+ISO_LANGS = {"zh": "zh_CN"}  # ar, ru, … : catalogues du même nom  # langue du cadre -> catalogue d'iso-codes
 
 
 def _iso_entries():
@@ -83,7 +83,9 @@ def localize(place, lang):
         return place
     head, sep, country = place.rpartition(", ")
     code = _french_codes().get(country)
-    return f"{head}{sep}{country_names(lang).get(code, country)}" if code else place
+    if not code:
+        return place
+    return f"{head}{'، ' if sep and lang == 'ar' else sep}{country_names(lang).get(code, country)}"
 
 
 def online(lat, lon):

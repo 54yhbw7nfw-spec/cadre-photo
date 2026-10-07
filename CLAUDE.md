@@ -14,7 +14,7 @@
 - Hors de la maison, le Pi n'est pas à l'adresse de l'alias `cadre` : `ssh -i ~/.ssh/id_ed25519_cadre
   cadre@<ip>`, et pour deploy.sh `CADRE_HOST=cadre@<ip>` avec un `ssh` qui ajoute la clé.
 - Une évolution visible (écran, admin) : mettre à jour docs/technique.md, le cahier des charges si
-  besoin, les README si elle mérite d'être mise en avant, et refaire les vidéos des 7 langues (`tools/video/`, voir
+  besoin, les README si elle mérite d'être mise en avant, et refaire les vidéos des 9 langues (`tools/video/`, voir
   docs/technique.md) puis les copier dans docs/video/.
 - Textes visibles (admin, écrans du cadre, messages d'erreur) : le français du code sert de clé ;
   ajouter la traduction dans les 6 fichiers `cadre/locales/*.json` et vérifier avec

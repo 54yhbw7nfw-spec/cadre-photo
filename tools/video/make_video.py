@@ -1,7 +1,7 @@
 """Mode d'emploi vidéo du cadre : diapositives commentées (voix neuronale) en MP4, par langue.
 
 Prérequis (PC Windows) : ffmpeg, Pillow, edge-tts (pip install edge-tts, Internet), et les visuels
-de la langue (fr, en, es, de, pt, ro, zh) :
+de la langue (fr, en, es, de, pt, ro, ru, ar, zh) :
   python tools/video/shots.py http://<ip du cadre> build/video/shots-<langue> <langue>
     captures de l'admin (dont admin-complet.png, page entière, découpée par section :
     « fichier#n » ou « #n-m ») ;
@@ -28,7 +28,8 @@ FONTS = r"C:\Windows\Fonts"
 # Voix neuronales Microsoft (edge-tts), une par langue.
 VOICES = {"fr": "fr-FR-DeniseNeural", "en": "en-GB-SoniaNeural", "es": "es-ES-ElviraNeural",
           "de": "de-DE-KatjaNeural", "pt": "pt-PT-RaquelNeural", "ro": "ro-RO-AlinaNeural",
-          "zh": "zh-CN-XiaoxiaoNeural"}
+          "ru": "ru-RU-SvetlanaNeural", "ar": "ar-SA-ZariyahNeural", "zh": "zh-CN-XiaoxiaoNeural"}
+RTL = {"ar"}  # titre et points clés alignés à droite, écrits de droite à gauche
 # Polices (titre, texte) : Segoe UI n'a pas le chinois.
 FACES = {"zh": ("msyhbd.ttc", "msyh.ttc")}
 PAUSE = 0.9  # s de silence après chaque narration
@@ -65,7 +66,7 @@ SLIDES = [
      "maison, et le QR code de la page de gestion s'affiche à la télé."),
     ("La page de gestion", ["shots/admin-complet.png#0"],
      ["QR code de la télé, ou http://cadre.local", "Transition, durée, ordre aléatoire",
-      "Réglages par thème : diaporama, photos, écran", "7 langues : page et cadre"],
+      "Réglages par thème : diaporama, photos, écran", "9 langues : page et cadre"],
      "Pour gérer le cadre, scannez le QR code affiché à la télé, ou tapez cadre point local "
      "dans le navigateur d'un téléphone ou d'un ordinateur connecté au même Wi-Fi. En haut de "
      "la page se trouvent les réglages : la transition entre les photos, la durée "
@@ -175,7 +176,7 @@ CLOSING = "，。、：；！？）」』”’》%"  # jamais en début de lign
 OPENING = "（「『“‘《"                # jamais en fin de ligne
 
 
-def wrap(d, text, f, width):
+def wrap(d, text, f, width, direction=None):
     """Lignes de text tenant dans width pixels : par mots, ou par caractères (chinois), sans
     ponctuation fermante en début de ligne ni ouvrante en fin de ligne."""
     by_char = any(ord(c) >= 0x2E80 for c in text)
@@ -184,7 +185,7 @@ def wrap(d, text, f, width):
     lines, line = [], ""
     for u in units:
         trial = (line + sep + u) if line else u
-        if d.textlength(trial, font=f) > width and line and u not in CLOSING:
+        if d.textlength(trial, font=f, direction=direction) > width and line and u not in CLOSING:
             carry = ""
             while line and line[-1] in OPENING:
                 carry, line = line[-1] + carry, line[:-1]
@@ -253,10 +254,17 @@ def load_visual(base, name, lang):
 
 def render_slide(base, lang, title, visuals, bullets, path):
     title_face, text_face = FACES.get(lang, ("seguisb.ttf", "segoeui.ttf"))
+    rtl = lang in RTL
+    direction = "rtl" if rtl else None
     img = Image.new("RGBA", (W, H), BG + (255,))
     d = ImageDraw.Draw(img)
-    d.text((90, 70), title, font=font(title_face, 64), fill=TEXT)
-    d.rectangle((90, 178, 210, 184), fill=ACCENT)
+    if rtl:
+        d.text((W - 90, 70), title, font=font(title_face, 64), fill=TEXT, anchor="ra",
+               direction=direction)
+        d.rectangle((W - 210, 178, W - 90, 184), fill=ACCENT)
+    else:
+        d.text((90, 70), title, font=font(title_face, 64), fill=TEXT)
+        d.rectangle((90, 178, 210, 184), fill=ACCENT)
     area_w = 1180 if bullets else W - 180
     area_h = H - 290
     pics = [load_visual(base, v, lang) for v in visuals]
@@ -274,11 +282,16 @@ def render_slide(base, lang, title, visuals, bullets, path):
         f = font(text_face, 40)
         y = 300
         for b in bullets:
-            d.ellipse((1335, y + 20, 1349, y + 34), fill=ACCENT)
+            # Puce à gauche, ou à droite pour l'arabe (texte aligné sur elle).
+            dot = 1821 if rtl else 1335
+            d.ellipse((dot, y + 20, dot + 14, y + 34), fill=ACCENT)
             # Guillemets collés à leur mot (espace insécable : pas de coupure de ligne).
             b = b.replace("« ", "« ").replace(" »", " »")
-            for ln in wrap(d, b, f, 470):
-                d.text((1370, y), ln, font=f, fill=TEXT)
+            for ln in wrap(d, b, f, 470, direction):
+                if rtl:
+                    d.text((1800, y), ln, font=f, fill=TEXT, anchor="ra", direction=direction)
+                else:
+                    d.text((1370, y), ln, font=f, fill=TEXT)
                 y += 54
             y += 34
     img.convert("RGB").save(path)

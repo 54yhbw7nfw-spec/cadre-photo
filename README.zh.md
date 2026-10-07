@@ -1,6 +1,6 @@
 # Cadre photo
 
-[Français](README.md) · [English](README.en.md) · [Español](README.es.md) · [Deutsch](README.de.md) · [Português](README.pt.md) · [Română](README.ro.md) · **中文**
+[Français](README.md) · [English](README.en.md) · [Español](README.es.md) · [Deutsch](README.de.md) · [Português](README.pt.md) · [Română](README.ro.md) · [Русский](README.ru.md) · [العربية](README.ar.md) · **中文**
 
 **用一块 20 欧元的树莓派，把任何电视变成家庭电子相框。**
 
@@ -31,7 +31,7 @@ https://github.com/user-attachments/assets/12e50fe5-4032-40d1-83ee-bc1701f18a0b
 - **收藏、隐藏照片、选择轮播内容**（相簿、上传的照片、时间段）。
 - **远程更新**：点击两下即可完成，由您本人签名，出现问题时自动恢复到上一版本；可生成诊断
   报告发送给您。
-- **7 种语言**：管理页面和相框屏幕支持法语、英语、西班牙语、德语、葡萄牙语、罗马尼亚语和中文。
+- **9 种语言**：管理页面和相框屏幕支持法语、英语、西班牙语、德语、葡萄牙语、罗马尼亚语、俄语、阿拉伯语和中文。
 - **注重隐私**：所有内容都保存在相框中，无需账号，也不依赖任何在线服务。
 
 | Wi-Fi 设置 | 家人留言 |

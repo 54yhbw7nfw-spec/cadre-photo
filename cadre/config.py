@@ -35,7 +35,7 @@ DEFAULTS = {"transition": "random", "delay": 10, "shuffle": True, "keep_original
             "sleep": False, "sleep_start": "23:00", "sleep_end": "07:00",
             "source": "all", "period_from": "", "period_to": "", "show_clock": False,
             "show_weather": False, "language": "fr"}
-LANGUAGES = ("fr", "en", "es", "de", "pt", "ro", "zh")  # langue des écrans du cadre (i18n.LANGS)
+LANGUAGES = ("fr", "en", "es", "de", "pt", "ro", "ru", "ar", "zh")  # langue des écrans du cadre (i18n.LANGS)
 SOURCES = ("all", "icloud", "uploads", "favorites")  # photos affichées par le diaporama
 TIME_RE = re.compile(r"^([01][0-9]|2[0-3]):[0-5][0-9]$")
 

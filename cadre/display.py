@@ -26,7 +26,7 @@ os.environ.setdefault("PYGAME_HIDE_SUPPORT_PROMPT", "1")
 import pygame  # noqa: E402
 import qrcode  # noqa: E402
 from pygame._sdl2.video import Renderer, Texture, Window  # noqa: E402
-from PIL import Image, ImageOps  # noqa: E402
+from PIL import Image, ImageDraw, ImageFont, ImageOps  # noqa: E402
 
 from . import config, i18n, places, weather  # noqa: E402
 
@@ -44,6 +44,9 @@ MUTED = (160, 160, 165)
 ACCENT = (110, 170, 255)
 CJK_FONT = "/usr/share/fonts/truetype/wqy/wqy-microhei.ttc"  # paquet fonts-wqy-microhei
 CJK_SCALE = 0.68  # la police par défaut de pygame est réduite d'autant : tailles visuelles égales
+# Arabe : pygame ne sait ni lier les lettres ni écrire de droite à gauche ; Pillow le fait (raqm).
+ARABIC_FONT = "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf"  # fonts-dejavu-core
+ARABIC_SCALE = 0.6
 SLEEP_CHECK = 5.0  # secondes entre deux vérifications pendant la veille
 MESSAGE_EVERY = 5  # mode « écran » : une carte toutes les N photos
 MEMORY_EVERY = 4   # « Ce jour-là » : un souvenir toutes les N photos
@@ -207,14 +210,42 @@ def photo_date(name, lang=i18n.DEFAULT):
 _fonts = {}
 
 
+def is_arabic(text):
+    return any(0x0590 <= ord(c) <= 0x08FF or 0xFB1D <= ord(c) <= 0xFEFF for c in text)
+
+
+class ShapedFont:
+    """Texte arabe (et ce qui l'entoure) dessiné par Pillow + raqm : lettres liées, sens de
+    lecture ; même interface que pygame.font.Font (size, render)."""
+
+    def __init__(self, path, size):
+        self.font = ImageFont.truetype(path, size)
+
+    def size(self, text):
+        ascent, descent = self.font.getmetrics()
+        # Sens de droite à gauche imposé : un lieu latin en tête (« Rochefort، فرنسا · … »)
+        # mettrait sinon toute la ligne dans le sens du latin.
+        return max(1, round(self.font.getlength(text, direction="rtl"))), ascent + descent
+
+    def render(self, text, antialias, color):
+        img = Image.new("RGBA", self.size(text), (0, 0, 0, 0))
+        ImageDraw.Draw(img).text((0, 0), text, font=self.font, fill=tuple(color[:3]) + (255,),
+                                 direction="rtl")
+        return pygame.image.frombytes(img.tobytes(), img.size, "RGBA")
+
+
 def font(size, text=""):
     """Police par défaut de pygame (latin, grec, cyrillique) ; WenQuanYi Micro Hei pour un texte
-    qui contient du chinois (écrans en chinois, ou message écrit en chinois)."""
-    cjk = any(ord(c) >= 0x2E80 for c in text) and os.path.exists(CJK_FONT)
-    if (cjk, size) not in _fonts:
-        _fonts[cjk, size] = (pygame.font.Font(CJK_FONT, round(size * CJK_SCALE)) if cjk
-                             else pygame.font.Font(None, size))
-    return _fonts[cjk, size]
+    qui contient du chinois (écrans en chinois, ou message écrit en chinois) ; DejaVu Sans
+    dessinée par Pillow pour l'arabe."""
+    kind = ("cjk" if any(ord(c) >= 0x2E80 for c in text) and os.path.exists(CJK_FONT)
+            else "ar" if is_arabic(text) and os.path.exists(ARABIC_FONT) else "")
+    if (kind, size) not in _fonts:
+        _fonts[kind, size] = (
+            pygame.font.Font(CJK_FONT, round(size * CJK_SCALE)) if kind == "cjk"
+            else ShapedFont(ARABIC_FONT, round(size * ARABIC_SCALE)) if kind == "ar"
+            else pygame.font.Font(None, size))
+    return _fonts[kind, size]
 
 
 def render(text, size, color):
@@ -487,7 +518,9 @@ class Display:
                 size = size_pt  # texte trop long pour la colonne (selon la langue) : réduit
                 while font(size, text).size(text)[0] > room and size > 24:
                     size -= 2
-                surf.blit(render(text, size, color), (x, y + (size_pt - size) // 2))
+                img = render(text, size, color)
+                left = x + room - img.get_width() if self.lang in i18n.RTL else x  # arabe : à droite
+                surf.blit(img, (left, y + (size_pt - size) // 2))
             y += int(size_pt * 1.15)
         return self.texture(surf)
 

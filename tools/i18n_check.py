@@ -112,7 +112,12 @@ def main():
             cat = json.load(f)
         missing = sorted(keys - set(cat))
         extra = sorted(set(cat) - keys - SPECIAL)
-        wrong = sorted(k for k in keys & set(cat) if placeholders(k) != placeholders(cat[k]))
+        # Formes du pluriel (liste) : chacune garde au moins les variables de la clé, {n} pouvant
+        # manquer (« одна фотография », « صورة واحدة »).
+        wrong = sorted(k for k in keys & set(cat) if any(
+            set(placeholders(v)) - {"n"} != set(placeholders(k)) - {"n"}
+            for v in (cat[k] if isinstance(cat[k], list) else [cat[k]]))
+            or (not isinstance(cat[k], list) and placeholders(k) != placeholders(cat[k])))
         absent = sorted(SPECIAL - set(cat))
         print(f"{lang} : {len(cat)} textes, {len(missing)} manquants, {len(extra)} en trop, "
               f"{len(wrong)} variables différentes" + (f", sans {', '.join(absent)}" if absent else ""))

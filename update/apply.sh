@@ -10,4 +10,10 @@ if ! dpkg -s fonts-wqy-microhei >/dev/null 2>&1; then
         || { apt-get update && apt-get install -y --no-install-recommends fonts-wqy-microhei; } \
         || echo "police chinoise non installée"
 fi
+# 20261007 : police arabe (DejaVu Sans, écrans en arabe), même principe.
+if ! dpkg -s fonts-dejavu-core >/dev/null 2>&1; then
+    apt-get install -y --no-install-recommends fonts-dejavu-core \
+        || { apt-get update && apt-get install -y --no-install-recommends fonts-dejavu-core; } \
+        || echo "police arabe non installée"
+fi
 exit 0
