@@ -1,0 +1,13 @@
+{# Traductions pour les scripts de la page : t(texte en français, {variable: valeur}). #}
+<script>
+const I18N = {{ js_catalog|tojson }}, LANG = "{{ lang }}", LOCALE = "{{ locale }}";
+function t(text, values = {}) {
+  let s = I18N[text] ?? text;
+  for (const [k, v] of Object.entries(values)) s = s.replaceAll(`{${k}}`, v);
+  return s;
+}
+// Singulier ou pluriel (comme i18n.ngettext) : en français 0 et 1 sont au singulier.
+function tn(one, many, n, values = {}) {
+  return t((LANG === "fr" ? n <= 1 : n === 1) ? one : many, {n, ...values});
+}
+</script>

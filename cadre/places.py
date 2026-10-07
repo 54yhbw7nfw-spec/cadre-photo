@@ -5,7 +5,8 @@ au plus, espacées d'au moins 1,1 s (règles d'usage du service). Sans Internet,
 répond pas : villes de plus de 1 000 habitants (GeoNames, CC BY 4.0 : data/villes.tsv.gz),
 chargées une fois en tableaux numpy (~4 Mo, au lieu de ~40 Mo en objets Python) ; noms de pays
 en français par le paquet iso-codes. Calculé une fois à l'arrivée de la photo (admin web ou
-album iCloud) et rangé dans places.json : le diaporama n'a qu'à le lire.
+album iCloud) et rangé dans places.json, en français : le diaporama n'a qu'à le lire, et traduit
+le pays dans la langue du cadre (localize).
 """
 import gettext
 import gzip
@@ -32,23 +33,57 @@ COUNTRY_KM = 200   # hors ligne, plus près : « Pays » seulement ; au-delà (e
 _lock = threading.Lock()
 _online_lock = threading.Lock()
 _last_online = 0.0
-_countries = None
+_countries = {}  # langue -> {code: nom}
+_fr_codes = None
 _cities = None
 
 
+ISO_LANGS = {"zh": "zh_CN"}  # langue du cadre -> catalogue d'iso-codes
+
+
+def _iso_entries():
+    try:
+        with open(ISO_JSON) as f:
+            return json.load(f)["3166-1"]
+    except (OSError, ValueError, KeyError):
+        return []
+
+
+def country_names(lang="fr"):
+    """Code ISO -> nom du pays dans la langue (anglais : noms d'origine d'iso-codes)."""
+    if lang not in _countries:
+        tr = gettext.translation("iso_3166-1", languages=[ISO_LANGS.get(lang, lang)],
+                                 fallback=True)
+        _countries[lang] = {e["alpha_2"]: tr.gettext(e.get("common_name", e["name"]))
+                            for e in _iso_entries()}
+    return _countries[lang]
+
+
 def country_name(code):
-    global _countries
-    if _countries is None:
-        _countries = {}
-        try:
-            with open(ISO_JSON) as f:
-                entries = json.load(f)["3166-1"]
-            fr = gettext.translation("iso_3166-1", languages=["fr"], fallback=True)
-            for e in entries:
-                _countries[e["alpha_2"]] = fr.gettext(e.get("common_name", e["name"]))
-        except (OSError, ValueError, KeyError):
-            pass
-    return _countries.get(code, code)
+    return country_names().get(code, code)
+
+
+def _french_codes():
+    """Nom français du pays (usuel, officiel ; iso-codes et OpenStreetMap) -> code ISO."""
+    global _fr_codes
+    if _fr_codes is None:
+        fr = gettext.translation("iso_3166-1", languages=["fr"], fallback=True)
+        _fr_codes = {}
+        for e in _iso_entries():
+            for key in ("name", "common_name", "official_name"):
+                if e.get(key):
+                    _fr_codes.setdefault(fr.gettext(e[key]), e["alpha_2"])
+    return _fr_codes
+
+
+def localize(place, lang):
+    """« Sallanches, France » (rangé en français) avec le pays dans la langue du cadre ; la
+    commune garde son nom (celui d'OpenStreetMap ou de GeoNames)."""
+    if not place or lang == "fr":
+        return place
+    head, sep, country = place.rpartition(", ")
+    code = _french_codes().get(country)
+    return f"{head}{sep}{country_names(lang).get(code, country)}" if code else place
 
 
 def online(lat, lon):

@@ -23,11 +23,11 @@ import urllib.parse
 import urllib.request
 import uuid
 
-from flask import (Flask, Response, jsonify, redirect, render_template, request, session,
+from flask import (Flask, Response, g, jsonify, redirect, render_template, request, session,
                    send_from_directory)
 from werkzeug.security import check_password_hash, generate_password_hash
 
-from . import config, icloud, imaging, places, update, weather
+from . import config, i18n, icloud, imaging, places, update, weather
 
 log = logging.getLogger("cadre.web")
 
@@ -283,6 +283,47 @@ class IcloudSync:
 
 
 icloud_sync = IcloudSync()
+
+
+# --- Langue des pages ----------------------------------------------------------------------
+# Choix fait dans la page (cookie « lang »), sinon langue du navigateur, sinon celle du cadre.
+# Les messages des services (français) sont traduits à la sortie de l'API.
+
+TRANSLATED_KEYS = ("error", "message", "now")
+
+
+@app.before_request
+def page_language():
+    lang = request.cookies.get("lang", "")
+    g.lang = lang if lang in i18n.LANGS else i18n.best(
+        request.accept_languages.values(), config.load_settings()["language"])
+
+
+@app.context_processor
+def i18n_context():
+    lang = getattr(g, "lang", i18n.DEFAULT)
+    return {"_": lambda text, **values: i18n.gettext(text, lang, **values), "lang": lang,
+            "langs": i18n.LANGS, "locale": i18n.LOCALES[lang],
+            "js_catalog": i18n.js_catalog(lang)}
+
+
+def translate_json(value, lang):
+    if isinstance(value, dict):
+        return {k: i18n.message(v, lang) if k in TRANSLATED_KEYS and isinstance(v, str)
+                else translate_json(v, lang) for k, v in value.items()}
+    if isinstance(value, list):
+        return [translate_json(v, lang) for v in value]
+    return value
+
+
+@app.after_request
+def translate_api(resp):
+    lang = getattr(g, "lang", i18n.DEFAULT)
+    if lang != i18n.DEFAULT and resp.mimetype == "application/json":
+        data = resp.get_json(silent=True)
+        if data is not None:
+            resp.set_data(json.dumps(translate_json(data, lang), ensure_ascii=False))
+    return resp
 
 
 # --- Portail captif -------------------------------------------------------------------------

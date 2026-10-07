@@ -10,7 +10,7 @@ album iCloud partajat pe care rama îl urmărește singură. Gândită pentru a 
 rude și apoi uitată: se conectează la Wi-Fi printr-un cod QR, se comandă cu telecomanda
 televizorului și se actualizează de la distanță.
 
-> Ecranele ramei, pagina de administrare și videoclipul de prezentare sunt în franceză.
+> Videoclipul de prezentare este în franceză; rama și pagina de administrare vorbesc 7 limbi.
 
 https://github.com/user-attachments/assets/5c049a34-5ee3-4dbe-9e44-6fbbceeaa3bd
 
@@ -32,6 +32,8 @@ https://github.com/user-attachments/assets/5c049a34-5ee3-4dbe-9e44-6fbbceeaa3bd
 - **Favorite, poze ascunse, alegerea a ceea ce rulează** (album, trimiteri, perioadă).
 - **Actualizare de la distanță** în două clicuri, semnată de dumneavoastră, cu revenire automată
   la versiunea anterioară dacă ceva nu merge; raport de diagnostic care vă poate fi trimis.
+- **7 limbi**: pagina de administrare și ecranele ramei în franceză, engleză, spaniolă,
+  germană, portugheză, română și chineză.
 - **Confidențialitate**: totul rămâne pe ramă, fără cont și fără serviciu online obligatoriu.
 
 | Configurarea Wi-Fi | Mesaj de la familie |

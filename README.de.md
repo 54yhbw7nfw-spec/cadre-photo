@@ -11,7 +11,7 @@ iCloud-Album, dem der Rahmen von selbst folgt. Gemacht, um bei Angehörigen aufg
 vergessen zu werden: Er verbindet sich per QR-Code mit dem WLAN, wird mit der
 TV-Fernbedienung gesteuert und aus der Ferne aktualisiert.
 
-> Die Bildschirme des Rahmens, seine Verwaltungsseite und das Erklärvideo sind auf Französisch.
+> Das Erklärvideo ist auf Französisch; der Rahmen und seine Verwaltungsseite sprechen 7 Sprachen.
 
 https://github.com/user-attachments/assets/5c049a34-5ee3-4dbe-9e44-6fbbceeaa3bd
 
@@ -34,6 +34,8 @@ https://github.com/user-attachments/assets/5c049a34-5ee3-4dbe-9e44-6fbbceeaa3bd
 - **Favoriten, ausgeblendete Fotos, Auswahl der gezeigten Fotos** (Album, Uploads, Zeitraum).
 - **Fern-Update** mit zwei Klicks, von Ihnen signiert, mit automatischer Rückkehr zur vorherigen
   Version bei Problemen; Diagnosebericht, den man Ihnen schicken kann.
+- **7 Sprachen**: Verwaltungsseite und Bildschirme des Rahmens auf Französisch, Englisch,
+  Spanisch, Deutsch, Portugiesisch, Rumänisch und Chinesisch.
 - **Datenschutz**: Alles bleibt auf dem Rahmen, kein Konto und kein Online-Dienst nötig.
 
 | WLAN-Einrichtung | Nachricht der Familie |

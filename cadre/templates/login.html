@@ -1,27 +1,28 @@
 <!doctype html>
-<html lang="fr">
+<html lang="{{ lang }}">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Cadre photo — Connexion</title>
+<title>{{ _("Cadre photo") }} — {{ _("Connexion") }}</title>
 <link rel="stylesheet" href="/static/style.css">
 </head>
 <body>
 <main class="login">
   <header>
-    <h1>Cadre photo</h1>
+    <h1>{{ _("Cadre photo") }}</h1>
+    {% include "lang_select.html" %}
   </header>
   <form method="post" action="/login" class="wifi-form">
     <input type="hidden" name="next" value="{{ next }}">
-    <label>Utilisateur
+    <label>{{ _("Utilisateur") }}
       <input type="text" name="username" value="admin" autocomplete="username" readonly>
     </label>
-    <label>Mot de passe
+    <label>{{ _("Mot de passe") }}
       <input type="password" name="password" autocomplete="current-password" required autofocus>
     </label>
-    <button type="submit" class="primary">Se connecter</button>
+    <button type="submit" class="primary">{{ _("Se connecter") }}</button>
   </form>
-  {% if error %}<p class="msg error">{{ error }}</p>{% endif %}
+  {% if error %}<p class="msg error">{{ _(error) }}</p>{% endif %}
 </main>
 </body>
 </html>

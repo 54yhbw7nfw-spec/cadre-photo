@@ -4,7 +4,9 @@ Firefox --screenshot photographie dès l'événement « load », avant les appel
 est donc affichée dans un cadre (iframe) d'une page locale dont le « load » est retardé par
 une image servie lentement.
 
-Usage : python tools/video/shots.py http://<ip du cadre> build/video/shots
+Usage : python tools/video/shots.py http://<ip du cadre> build/video/shots [langue]
+La langue (fr, en, es, de, pt, ro, zh ; fr par défaut) est celle que Firefox demande à la page
+(Accept-Language) : un profil Firefox par langue.
 """
 import http.server
 import os
@@ -47,10 +49,12 @@ class Handler(http.server.BaseHTTPRequestHandler):
         pass
 
 
-def main(base, out):
+def main(base, out, lang="fr"):
     os.makedirs(out, exist_ok=True)
-    profile = os.path.abspath(os.path.join(out, "..", "ffprofile"))
+    profile = os.path.abspath(os.path.join(out, "..", "ffprofile-" + lang))
     os.makedirs(profile, exist_ok=True)
+    with open(os.path.join(profile, "user.js"), "w") as f:
+        f.write(f'user_pref("intl.accept_languages", "{lang}");\n')
     server = http.server.ThreadingHTTPServer(("127.0.0.1", PORT), Handler)
     server.pages = {}
     threading.Thread(target=server.serve_forever, daemon=True).start()
@@ -66,4 +70,4 @@ def main(base, out):
 
 
 if __name__ == "__main__":
-    main(sys.argv[1].rstrip("/"), sys.argv[2])
+    main(sys.argv[1].rstrip("/"), *sys.argv[2:4])

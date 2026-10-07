@@ -10,7 +10,7 @@ iCloud album that the frame follows on its own. Built to be set up at a relative
 forgotten: it joins the Wi-Fi through a QR code, is driven with the TV remote, and is updated
 remotely.
 
-> The frame's screens, its management page and the video tutorial are in French.
+> The video tutorial is in French; the frame and its management page speak 7 languages.
 
 https://github.com/user-attachments/assets/5c049a34-5ee3-4dbe-9e44-6fbbceeaa3bd
 
@@ -32,6 +32,8 @@ https://github.com/user-attachments/assets/5c049a34-5ee3-4dbe-9e44-6fbbceeaa3bd
 - **Favourites, hidden photos, choice of what plays** (album, uploads, period).
 - **Remote update** in two clicks, signed by you, with automatic return to the previous version
   if anything goes wrong; diagnostic report sent to you.
+- **7 languages**: management page and frame screens in French, English, Spanish, German,
+  Portuguese, Romanian and Chinese.
 - **Privacy first**: everything stays on the frame, no account or online service required.
 
 | Wi-Fi setup | Family message |

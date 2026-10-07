@@ -14,6 +14,8 @@ import time
 
 from PIL import Image, ImageChops, ImageDraw, ImageFont
 
+from . import config, i18n
+
 FB = "/dev/fb0"
 FB_SYS = "/sys/class/graphics/fb0"
 DISPLAY_READY = b"Affichage KMSDRM"  # message du diaporama une fois l'écran pris
@@ -30,13 +32,21 @@ ACCENT = (110, 170, 255)
 LINES = 4
 LINE_H = 30
 FONT_DIR = "/usr/share/fonts/truetype/freefont"
+CJK_FONT = "/usr/share/fonts/truetype/wqy/wqy-microhei.ttc"  # FreeSans n'a pas le chinois
 
 
-def font(name, size):
+def font(name, size, text=""):
+    path = (CJK_FONT if any(ord(c) >= 0x2E80 for c in text) and os.path.exists(CJK_FONT)
+            else os.path.join(FONT_DIR, name))
     try:
-        return ImageFont.truetype(os.path.join(FONT_DIR, name), size)
+        return ImageFont.truetype(path, size)
     except OSError:
         return ImageFont.load_default()
+
+
+def tr(text):
+    """Texte dans la langue du cadre (réglage lu à chaque écran : il peut avoir changé)."""
+    return i18n.gettext(text, config.load_settings()["language"])
 
 
 def read_sys(name):
@@ -55,7 +65,9 @@ def to_fb(img, bpp):
     return Image.merge("LA", (lo, hi)).tobytes()
 
 
-def background(w, h, subtitle="Démarrage...", hint=""):
+def background(w, h, subtitle=None, hint=""):
+    subtitle = subtitle or tr("Démarrage...")
+    title = tr("Cadre photo")
     img = Image.new("RGB", (w, h), BG)
     d = ImageDraw.Draw(img)
     fw, fh, cy = 180, 120, h // 2 - 130
@@ -65,17 +77,18 @@ def background(w, h, subtitle="Démarrage...", hint=""):
     d.polygon([(x0, y1), (x0 + 45, y0 + 30), (x0 + 80, y1 - 20), (x0 + 105, y0 + 45), (x1, y1)],
               fill=ACCENT)
     d.ellipse((x1 - 30, y0, x1 - 6, y0 + 24), fill=ACCENT)
-    d.text((w // 2, h // 2 + 20), "Cadre photo", font=font("FreeSansBold.ttf", 72), fill=TEXT,
+    d.text((w // 2, h // 2 + 20), title, font=font("FreeSansBold.ttf", 72, title), fill=TEXT,
            anchor="mm")
-    d.text((w // 2, h // 2 + 95), subtitle, font=font("FreeSansBold.ttf", 36), fill=MUTED,
-           anchor="mm")
+    d.text((w // 2, h // 2 + 95), subtitle, font=font("FreeSansBold.ttf", 36, subtitle),
+           fill=MUTED, anchor="mm")
     if hint:
-        d.text((w // 2, h - 80), hint, font=font("FreeSans.ttf", 26), fill=DIM, anchor="mm")
+        d.text((w // 2, h - 80), hint, font=font("FreeSans.ttf", 26, hint), fill=DIM,
+               anchor="mm")
     return img
 
 
 class Screen:
-    def __init__(self, subtitle="Démarrage...", hint=""):
+    def __init__(self, subtitle=None, hint=""):
         self.name = read_sys("name")
         self.w, self.h = (int(v) for v in read_sys("virtual_size").split(","))
         self.bpp = int(read_sys("bits_per_pixel"))
@@ -124,10 +137,10 @@ def shutdown_screen():
     jobs = subprocess.run(["systemctl", "list-jobs", "--no-legend"], capture_output=True,
                           text=True).stdout
     if "reboot.target" in jobs:
-        screen = Screen("Redémarrage...")
+        screen = Screen(tr("Redémarrage..."))
     else:
-        screen = Screen("Extinction...",
-                        "Attendez que la diode verte du cadre s'éteigne avant de le débrancher.")
+        screen = Screen(tr("Extinction..."),
+                        tr("Attendez que la diode verte du cadre s'éteigne avant de le débrancher."))
     screen.close()
     time.sleep(SHUTDOWN_HOLD)  # sinon la fin de l'arrêt suit presque aussitôt
 

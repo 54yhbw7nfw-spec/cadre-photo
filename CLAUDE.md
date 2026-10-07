@@ -16,3 +16,6 @@
 - Une évolution visible (écran, admin) : mettre à jour docs/technique.md, le cahier des charges si
   besoin, le README si elle mérite d'être mise en avant, et refaire la vidéo (`tools/video/`, voir
   docs/technique.md) puis la copier dans docs/video/.
+- Textes visibles (admin, écrans du cadre, messages d'erreur) : le français du code sert de clé ;
+  ajouter la traduction dans les 6 fichiers `cadre/locales/*.json` et vérifier avec
+  `python tools/i18n_check.py` (voir « Langues » dans docs/technique.md).

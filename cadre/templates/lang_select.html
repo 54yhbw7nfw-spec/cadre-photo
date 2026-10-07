@@ -1,0 +1,5 @@
+{# Langue de la page : cookie lu par le serveur (web.page_language), puis rechargement. #}
+<select class="lang" aria-label="Langue / Language"
+        onchange="document.cookie = 'lang=' + this.value + '; path=/; max-age=31536000; SameSite=Lax'; location.reload()">
+  {% for code, name in langs.items() %}<option value="{{ code }}"{% if code == lang %} selected{% endif %}>{{ name }}</option>{% endfor %}
+</select>

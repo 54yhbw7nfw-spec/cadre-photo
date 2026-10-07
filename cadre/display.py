@@ -28,7 +28,7 @@ import qrcode  # noqa: E402
 from pygame._sdl2.video import Renderer, Texture, Window  # noqa: E402
 from PIL import Image, ImageOps  # noqa: E402
 
-from . import config, places, weather  # noqa: E402
+from . import config, i18n, places, weather  # noqa: E402
 
 log = logging.getLogger("cadre.display")
 
@@ -42,8 +42,8 @@ BG = (18, 18, 20)
 TEXT = (235, 235, 235)
 MUTED = (160, 160, 165)
 ACCENT = (110, 170, 255)
-MONTHS = ("janvier", "février", "mars", "avril", "mai", "juin", "juillet", "août", "septembre",
-          "octobre", "novembre", "décembre")
+CJK_FONT = "/usr/share/fonts/truetype/wqy/wqy-microhei.ttc"  # paquet fonts-wqy-microhei
+CJK_SCALE = 0.68  # la police par défaut de pygame est réduite d'autant : tailles visuelles égales
 SLEEP_CHECK = 5.0  # secondes entre deux vérifications pendant la veille
 MESSAGE_EVERY = 5  # mode « écran » : une carte toutes les N photos
 MEMORY_EVERY = 4   # « Ce jour-là » : un souvenir toutes les N photos
@@ -195,13 +195,30 @@ def wrap(font, text, width):
     return lines + ([line] if line else [])
 
 
-def photo_date(name):
+def photo_date(name, lang=i18n.DEFAULT):
     """« 26 septembre 2026 » d'après le nom AAAAMMJJ-HHMMSS_… (date de prise de vue)."""
     try:
         d = datetime.strptime(name[:15], "%Y%m%d-%H%M%S")
     except ValueError:
         return None
-    return f"{d.day} {MONTHS[d.month - 1]} {d.year}"
+    return i18n.date(d, lang)
+
+
+_fonts = {}
+
+
+def font(size, text=""):
+    """Police par défaut de pygame (latin, grec, cyrillique) ; WenQuanYi Micro Hei pour un texte
+    qui contient du chinois (écrans en chinois, ou message écrit en chinois)."""
+    cjk = any(ord(c) >= 0x2E80 for c in text) and os.path.exists(CJK_FONT)
+    if (cjk, size) not in _fonts:
+        _fonts[cjk, size] = (pygame.font.Font(CJK_FONT, round(size * CJK_SCALE)) if cjk
+                             else pygame.font.Font(None, size))
+    return _fonts[cjk, size]
+
+
+def render(text, size, color):
+    return font(size, text).render(text, True, color)
 
 
 def in_sleep_window(settings, now=None):
@@ -340,6 +357,8 @@ def smoothstep(t):
 
 
 class Display:
+    lang = i18n.DEFAULT  # langue des écrans (réglage « Langue du cadre »)
+
     def __init__(self):
         pygame.display.init()
         pygame.font.init()
@@ -355,7 +374,6 @@ class Display:
         self.due_at = 0.0
         self.qr_key = None    # QR code déjà montré (mode + adresse) : pas de répétition
         self.qr_until = 0.0
-        self.date_font = pygame.font.Font(None, 34)
         self.info_until = 0.0  # QR code de l'admin demandé par la touche OK
         self.corner, self.corner_text = None, None  # heure et météo en bas à gauche
         self.keys = queue.Queue()
@@ -367,6 +385,9 @@ class Display:
         signal.signal(signal.SIGINT, self._stop)
         log.info("Affichage %s, sortie %sx%s, rendu logique %sx%s",
                  pygame.display.get_driver(), *self.window.size, W, H)
+
+    def tr(self, text, **values):
+        return i18n.gettext(text, self.lang, **values)
 
     def _stop(self, *_):
         self.running = False
@@ -397,10 +418,10 @@ class Display:
         self.corner = None
         parts = []
         if clock:
-            parts.append(self.date_font.render(clock, True, TEXT))
+            parts.append(render(clock, 34, TEXT))
         if now:
             kind, temp, day = now
-            parts += [weather_icon(kind, day), self.date_font.render(f"{temp} °C", True, TEXT)]
+            parts += [weather_icon(kind, day), render(f"{temp} °C", 34, TEXT)]
         if parts:
             gap = 10
             w = sum(p.get_width() for p in parts) + gap * (len(parts) - 1) + 24
@@ -424,7 +445,7 @@ class Display:
         tex.draw()
         self.draw_corner()
         if badge:  # petit cartouche en haut à gauche (« Pause »)
-            img = self.date_font.render(badge, True, TEXT)
+            img = render(badge, 34, TEXT)
             box = pygame.Surface((img.get_width() + 24, img.get_height() + 12), pygame.SRCALPHA)
             box.fill((0, 0, 0, 160))
             box.blit(img, (12, 6))
@@ -433,10 +454,9 @@ class Display:
 
     def message_texture(self, lines):
         surf = pygame.Surface((W, H))
-        font = pygame.font.Font(None, 64)
         y = H // 2 - len(lines) * 40
         for line in lines:
-            img = font.render(line, True, (220, 220, 220))
+            img = render(line, 64, (220, 220, 220))
             surf.blit(img, ((W - img.get_width()) // 2, y))
             y += 80
         return self.texture(surf)
@@ -461,10 +481,13 @@ class Display:
                 if dark:
                     surf.fill((0, 0, 0), (ox + c * cell, oy + r * cell, cell, cell))
         y = y0 + 30
+        x, room = x0 + box + 70, W - (x0 + box + 70) - 30
         for text, size_pt, color in lines:
             if text:
-                img = pygame.font.Font(None, size_pt).render(text, True, color)
-                surf.blit(img, (x0 + box + 70, y))
+                size = size_pt  # texte trop long pour la colonne (selon la langue) : réduit
+                while font(size, text).size(text)[0] > room and size > 24:
+                    size -= 2
+                surf.blit(render(text, size, color), (x, y + (size_pt - size) // 2))
             y += int(size_pt * 1.15)
         return self.texture(surf)
 
@@ -476,14 +499,14 @@ class Display:
                 v = v.replace(ch, "\\" + ch)
             return v
         return self.qr_texture(f"WIFI:T:WPA;S:{esc(ssid)};P:{esc(password)};;", [
-            ("Configuration du Wi-Fi", 66, TEXT),
+            (self.tr("Configuration du Wi-Fi"), 66, TEXT),
             ("", 20, TEXT),
-            ("1. Scannez le QR code pour rejoindre", 40, MUTED),
-            (f"le réseau {ssid}", 40, MUTED),
-            (f"mot de passe : {password}", 46, ACCENT),
+            (self.tr("1. Scannez le QR code pour rejoindre"), 40, MUTED),
+            (self.tr("le réseau {ssid}", ssid=ssid), 40, MUTED),
+            (self.tr("mot de passe : {password}", password=password), 46, ACCENT),
             ("", 20, TEXT),
-            ("2. La page de configuration s'ouvre.", 40, MUTED),
-            ("Sinon, allez sur", 40, MUTED),
+            (self.tr("2. La page de configuration s'ouvre."), 40, MUTED),
+            (self.tr("Sinon, allez sur"), 40, MUTED),
             (f"http://{ip}", 52, ACCENT),
         ])
 
@@ -510,22 +533,23 @@ class Display:
                 return None
             ip, host = state["ip"], socket.gethostname()
             return key, lambda: self.qr_texture(f"http://{ip}/", [
-                ("Cadre photo", 80, TEXT),
+                (self.tr("Cadre photo"), 80, TEXT),
                 ("", 30, TEXT),
-                ("Ajoutez vos photos :", 46, MUTED),
+                (self.tr("Ajoutez vos photos :"), 46, MUTED),
                 (f"http://{ip}", 64, ACCENT),
-                (f"ou http://{host}.local", 46, MUTED),
+                (self.tr("ou {url}", url=f"http://{host}.local"), 46, MUTED),
                 ("", 40, TEXT),
-                ("Scannez le QR code", 40, MUTED),
-                ("avec votre téléphone", 40, MUTED),
+                (self.tr("Scannez le QR code"), 40, MUTED),
+                (self.tr("avec votre téléphone"), 40, MUTED),
             ])
         if mode in ("reboot", "poweroff"):  # demandé dans l'admin, l'arrêt suit dans 3 s
-            lines = ["Redémarrage..."] if mode == "reboot" else [
-                "Extinction...", "", "Débranchez le cadre quand", "sa diode verte est éteinte"]
+            lines = [self.tr("Redémarrage...")] if mode == "reboot" else [
+                self.tr("Extinction..."), "", self.tr("Débranchez le cadre quand"),
+                self.tr("sa diode verte est éteinte")]
             return (mode,), lambda: self.message_texture(lines)
         if mode == "connecting" and self.qr_key is None:
             # Seulement avant la première connexion : une coupure passagère ne masque pas les photos.
-            return ("connecting",), lambda: self.message_texture(["Connexion au Wi-Fi..."])
+            return ("connecting",), lambda: self.message_texture([self.tr("Connexion au Wi-Fi...")])
         return None
 
     def transition(self, old, new, kind):
@@ -570,12 +594,13 @@ class Display:
     def draw_date(self, surf, name, place=None, show_date=True, prefix=None):
         """Lieu et/ou date de prise de vue en bas à droite de surf, sur un cartouche sombre ;
         prefix : « Il y a 3 ans » pour un souvenir, qui remplace la date (déjà dite)."""
-        text = " · ".join(t for t in (prefix, place,
-                                      photo_date(name) if show_date and not prefix else None)
+        text = " · ".join(t for t in (prefix, place and places.localize(place, self.lang),
+                                      photo_date(name, self.lang) if show_date and not prefix
+                                      else None)
                           if t)
         if not text:
             return
-        img = self.date_font.render(text, True, TEXT)
+        img = render(text, 34, TEXT)
         pad = 10
         box = pygame.Surface((img.get_width() + 2 * pad, img.get_height() + pad), pygame.SRCALPHA)
         box.fill((0, 0, 0, 140))
@@ -585,13 +610,12 @@ class Display:
 
     def draw_banner(self, surf, text):
         """Bandeau en haut de l'écran : le message, sur fond sombre (2 lignes au plus)."""
-        font = pygame.font.Font(None, 54)
-        lines = wrap(font, text, W - 120)[:2]
+        lines = wrap(font(54, text), text, W - 120)[:2]
         height = 30 + 52 * len(lines)
         band = pygame.Surface((W, height), pygame.SRCALPHA)
         band.fill((0, 0, 0, 170))
         for i, line in enumerate(lines):
-            img = font.render(line, True, TEXT)
+            img = render(line, 54, TEXT)
             band.blit(img, ((W - img.get_width()) // 2, 18 + 52 * i))
         surf.blit(band, (0, 0))
         return height
@@ -604,12 +628,11 @@ class Display:
         """Écran du message, entre les photos."""
         surf = pygame.Surface((W, H))
         surf.fill(BG)
-        font = pygame.font.Font(None, 84)
-        lines = wrap(font, text, W - 200)[:5]
+        lines = wrap(font(84, text), text, W - 200)[:5]
         y = (H - 90 * len(lines)) // 2
         pygame.draw.rect(surf, ACCENT, ((W - 120) // 2, y - 60, 120, 8), border_radius=4)
         for line in lines:
-            img = font.render(line, True, TEXT)
+            img = render(line, 84, TEXT)
             surf.blit(img, ((W - img.get_width()) // 2, y))
             y += 90
         return self.texture(surf)
@@ -668,6 +691,10 @@ class Display:
                 if m != settings_mtime:
                     settings_mtime = m
                     settings = config.load_settings()
+                    if settings["language"] != self.lang:
+                        self.lang = settings["language"]
+                        placeholder, upcoming = None, None  # textes refaits dans la langue
+                        self.corner_text, screen_key = None, None
                     photos_mtime = None  # sélection refaite plus bas (masquées, source, période)
                     log.info("Réglages : %s", settings)
                 m = mtime(config.STATE_FILE)
@@ -713,7 +740,7 @@ class Display:
 
             if (self.update_corner(settings["show_clock"], settings["show_weather"], weather_data)
                     and current is not None):
-                self.show(current, badge="Pause" if paused else None)
+                self.show(current, badge=self.tr("Pause") if paused else None)
 
             if in_sleep_window(settings):
                 if not asleep:
@@ -754,7 +781,7 @@ class Display:
                     self.info_until, paused, self.due_at = 0.0, False, 0.0
                 elif code in PAUSE_KEYS and current is not None and not screen_key:
                     paused = not paused
-                    self.show(current, badge="Pause" if paused else None)
+                    self.show(current, badge=self.tr("Pause") if paused else None)
                     if not paused:
                         self.due_at = 0.0
                 log.info("Télécommande : touche %d", code)
@@ -786,10 +813,11 @@ class Display:
                 if name is None:
                     if placeholder is None:
                         placeholder = self.message_texture(
-                            ["Aucune photo ne correspond à la sélection",
-                             "Voir les réglages de la page de gestion"] if all_names else
-                            ["Aucune photo",
-                             f"Ajoutez-en sur http://{socket.gethostname()}.local"])
+                            [self.tr("Aucune photo ne correspond à la sélection"),
+                             self.tr("Voir les réglages de la page de gestion")] if all_names else
+                            [self.tr("Aucune photo"),
+                             self.tr("Ajoutez-en sur {url}",
+                                     url=f"http://{socket.gethostname()}.local")])
                         self.transition(current, placeholder, "fade")
                         current = placeholder
                     self.idle(POLL_INTERVAL)
@@ -800,7 +828,8 @@ class Display:
                 tex = self.prepare(name, settings["show_date"],
                                    photo_places.get(name) if settings["show_place"] else None,
                                    text if message["mode"] == "banner" else None,
-                                   f"Il y a {ago} an{'s' if ago > 1 else ''}" if ago else None,
+                                   i18n.ngettext("Il y a {n} an", "Il y a {n} ans", ago, self.lang)
+                                   if ago else None,
                                    new)
                 if tex is None:
                     playlist.forget(name)

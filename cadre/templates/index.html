@@ -1,130 +1,132 @@
 <!doctype html>
-<html lang="fr">
+<html lang="{{ lang }}">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Cadre photo</title>
+<title>{{ _("Cadre photo") }}</title>
 <link rel="stylesheet" href="/static/style.css">
 </head>
 <body>
 <main>
   <header>
-    <h1>Cadre photo</h1>
+    <h1>{{ _("Cadre photo") }}</h1>
     <span class="muted" id="count"></span>
     <span class="muted" id="disk"></span>
+    {% include "lang_select.html" %}
   </header>
-  <p id="disk-full" class="banner" hidden>La carte SD est presque pleine : supprimez des photos
-    pour pouvoir en ajouter (une marge est gardée pour le système).</p>
-  <p id="wifi-banner" class="banner" hidden>Le cadre n'est connecté à aucun réseau Wi-Fi.
-    Merci de <a href="#wifi">configurer un réseau Wi-Fi</a> pour une meilleure expérience.</p>
+  <p id="disk-full" class="banner" hidden>{{ _("La carte SD est presque pleine : supprimez des photos pour pouvoir en ajouter (une marge est gardée pour le système).") }}</p>
+  <p id="wifi-banner" class="banner" hidden>{{ _("Le cadre n'est connecté à aucun réseau Wi-Fi.") }}
+    {{ _('Merci de <a href="#wifi">configurer un réseau Wi-Fi</a> pour une meilleure expérience.')|safe }}</p>
 
   <section>
-    <h2>Réglages du diaporama</h2>
+    <h2>{{ _("Réglages du diaporama") }}</h2>
     <form class="settings" id="settings" onsubmit="return false">
       <fieldset>
-        <legend>Diaporama</legend>
-        <label>Transition
+        <legend>{{ _("Diaporama") }}</legend>
+        <label>{{ _("Transition") }}
           <select name="transition">
-            <option value="random">Aléatoire</option>
-            <option value="fade">Fondu</option>
-            <option value="slide_left">Glissement vers la gauche</option>
-            <option value="slide_right">Glissement vers la droite</option>
-            <option value="slide_up">Glissement vers le haut</option>
-            <option value="slide_down">Glissement vers le bas</option>
-            <option value="wipe">Volet</option>
-            <option value="none">Aucune</option>
+            <option value="random">{{ _("Aléatoire") }}</option>
+            <option value="fade">{{ _("Fondu") }}</option>
+            <option value="slide_left">{{ _("Glissement vers la gauche") }}</option>
+            <option value="slide_right">{{ _("Glissement vers la droite") }}</option>
+            <option value="slide_up">{{ _("Glissement vers le haut") }}</option>
+            <option value="slide_down">{{ _("Glissement vers le bas") }}</option>
+            <option value="wipe">{{ _("Volet") }}</option>
+            <option value="none">{{ _("Aucune") }}</option>
           </select>
         </label>
-        <label>Délai <input type="number" name="delay" min="2" max="3600" step="1"> s</label>
-        <label><input type="checkbox" name="shuffle"> Ordre aléatoire</label>
-        <label>Photos affichées
+        <label>{{ _("Délai") }} <input type="number" name="delay" min="2" max="3600" step="1"> s</label>
+        <label><input type="checkbox" name="shuffle"> {{ _("Ordre aléatoire") }}</label>
+        <label>{{ _("Photos affichées") }}
           <select name="source">
-            <option value="all">Toutes</option>
-            <option value="icloud">Album iCloud seulement</option>
-            <option value="uploads">Photos envoyées seulement</option>
-            <option value="favorites">Favoris seulement</option>
+            <option value="all">{{ _("Toutes") }}</option>
+            <option value="icloud">{{ _("Album iCloud seulement") }}</option>
+            <option value="uploads">{{ _("Photos envoyées seulement") }}</option>
+            <option value="favorites">{{ _("Favoris seulement") }}</option>
           </select>
         </label>
-        <label>prises du <input type="date" name="period_from"> au
+        <label>{{ _("prises du") }} <input type="date" name="period_from"> {{ _("au") }}
           <input type="date" name="period_to"></label>
       </fieldset>
       <fieldset>
-        <legend>Sur les photos</legend>
-        <label><input type="checkbox" name="show_date"> Date</label>
-        <label><input type="checkbox" name="show_place"> Lieu</label>
-        <label><input type="checkbox" name="memories"> Souvenirs « ce jour-là »</label>
-        <label><input type="checkbox" name="highlight_new"> Nouveautés à l'honneur</label>
+        <legend>{{ _("Sur les photos") }}</legend>
+        <label><input type="checkbox" name="show_date"> {{ _("Date") }}</label>
+        <label><input type="checkbox" name="show_place"> {{ _("Lieu") }}</label>
+        <label><input type="checkbox" name="memories"> {{ _("Souvenirs « ce jour-là »") }}</label>
+        <label><input type="checkbox" name="highlight_new"> {{ _("Nouveautés à l'honneur") }}</label>
       </fieldset>
       <fieldset>
-        <legend>Écran</legend>
-        <label><input type="checkbox" name="show_clock"> Heure</label>
-        <label><input type="checkbox" name="show_weather"> Météo</label>
-        <label>Ville <input type="text" name="weather_city" placeholder="automatique" size="14">
+        <legend>{{ _("Écran") }}</legend>
+        <label>{{ _("Langue du cadre") }}
+          <select name="language">
+            {% for code, name in langs.items() %}<option value="{{ code }}">{{ name }}</option>{% endfor %}
+          </select>
+        </label>
+        <label><input type="checkbox" name="show_clock"> {{ _("Heure") }}</label>
+        <label><input type="checkbox" name="show_weather"> {{ _("Météo") }}</label>
+        <label>{{ _("Ville") }} <input type="text" name="weather_city" placeholder="{{ _("automatique") }}" size="14">
           <button type="button" id="weather-ok">OK</button></label>
         <span id="weather-state" class="muted small"></span>
-        <label><input type="checkbox" name="sleep"> Veille de
-          <input type="time" name="sleep_start" required> à
+        <label><input type="checkbox" name="sleep"> {{ _("Veille de") }}
+          <input type="time" name="sleep_start" required> {{ _("à") }}
           <input type="time" name="sleep_end" required></label>
       </fieldset>
       <fieldset>
-        <legend>Envois</legend>
-        <label><input type="checkbox" name="keep_originals"> Conserver les originaux</label>
+        <legend>{{ _("Envois") }}</legend>
+        <label><input type="checkbox" name="keep_originals"> {{ _("Conserver les originaux") }}</label>
       </fieldset>
-      <span id="saved">Enregistré ✓</span>
+      <span id="saved">{{ _("Enregistré ✓") }}</span>
     </form>
   </section>
 
   <section id="message">
-    <h2>Message sur le cadre</h2>
+    <h2>{{ _("Message sur le cadre") }}</h2>
     <form id="msg-form" class="wifi-form" onsubmit="return false">
-      <label style="flex:1">Message
-        <input type="text" name="text" maxlength="140" placeholder="Bon anniversaire Mamie !">
+      <label style="flex:1">{{ _("Message") }}
+        <input type="text" name="text" maxlength="140" placeholder="{{ _("Bon anniversaire Mamie !") }}">
       </label>
-      <label>À partir du
+      <label>{{ _("À partir du") }}
         <input type="date" name="since">
       </label>
-      <label>Jusqu'au (inclus)
+      <label>{{ _("Jusqu'au (inclus)") }}
         <input type="date" name="until">
       </label>
-      <label>Affichage
+      <label>{{ _("Affichage") }}
         <select name="mode">
-          <option value="banner">Bandeau en haut des photos</option>
-          <option value="screen">Écran entre les photos (toutes les 5)</option>
+          <option value="banner">{{ _("Bandeau en haut des photos") }}</option>
+          <option value="screen">{{ _("Écran entre les photos (toutes les 5)") }}</option>
         </select>
       </label>
-      <button type="button" id="msg-show" class="primary">Afficher</button>
-      <button type="button" id="msg-clear">Retirer</button>
+      <button type="button" id="msg-show" class="primary">{{ _("Afficher") }}</button>
+      <button type="button" id="msg-clear">{{ _("Retirer") }}</button>
     </form>
     <p id="msg-state" class="muted small"></p>
   </section>
 
   <section>
-    <h2>Album iCloud partagé</h2>
+    <h2>{{ _("Album iCloud partagé") }}</h2>
     <form id="icloud-form" class="wifi-form" autocomplete="off">
-      <label style="flex:1">Lien de l'album
+      <label style="flex:1">{{ _("Lien de l'album") }}
         <input type="text" name="url" placeholder="https://photos.icloud.com/shared/album/…">
       </label>
-      <button type="submit" class="primary">Enregistrer</button>
-      <button type="button" id="icloud-sync">Synchroniser maintenant</button>
+      <button type="submit" class="primary">{{ _("Enregistrer") }}</button>
+      <button type="button" id="icloud-sync">{{ _("Synchroniser maintenant") }}</button>
     </form>
     <p id="icloud-state" class="muted small"></p>
-    <p class="muted small">Sur l'iPhone, dans Photos : ouvrir l'album partagé, toucher l'icône des
-      personnes, activer « Site web public » puis copier le lien. Le cadre se synchronise toutes
-      les 30 minutes : les photos ajoutées à l'album arrivent, celles retirées disparaissent.
-      Laisser vide pour ne plus suivre d'album.</p>
+    <p class="muted small">{{ _("Sur l'iPhone, dans Photos : ouvrir l'album partagé, toucher l'icône des personnes, activer « Site web public » puis copier le lien. Le cadre se synchronise toutes les 30 minutes : les photos ajoutées à l'album arrivent, celles retirées disparaissent. Laisser vide pour ne plus suivre d'album.") }}</p>
   </section>
 
   <section>
-    <h2>Ajouter des photos</h2>
+    <h2>{{ _("Ajouter des photos") }}</h2>
     <div id="drop" tabindex="0" role="button">
-      <strong>Glissez vos photos ici</strong> ou cliquez pour les choisir<br>
-      <span class="muted">JPEG, PNG, WebP — réduites par le navigateur avant l'envoi, puis adaptées à l'écran par le cadre</span>
+      {{ _("<strong>Glissez vos photos ici</strong> ou cliquez pour les choisir")|safe }}<br>
+      <span class="muted">{{ _("JPEG, PNG, WebP — réduites par le navigateur avant l'envoi, puis adaptées à l'écran par le cadre") }}</span>
     </div>
     <input type="file" id="picker" accept="image/*" multiple hidden>
     <div id="progress">
-      <div class="bar-label"><span>Envoi</span><span id="up-text"></span></div>
+      <div class="bar-label"><span>{{ _("Envoi") }}</span><span id="up-text"></span></div>
       <div class="bar"><div id="up-bar"></div></div>
-      <div class="bar-label"><span>Traitement sur le cadre</span><span id="proc-text"></span></div>
+      <div class="bar-label"><span>{{ _("Traitement sur le cadre") }}</span><span id="proc-text"></span></div>
       <div class="bar"><div id="proc-bar"></div></div>
       <ul id="errors"></ul>
     </div>
@@ -132,101 +134,96 @@
 
   <section>
     <div class="toolbar">
-      <h2 style="margin:0">Photos</h2>
-      <span class="legend small muted"><span class="swatch"></span> album iCloud</span>
+      <h2 style="margin:0">{{ _("Photos") }}</h2>
+      <span class="legend small muted"><span class="swatch"></span> {{ _("album iCloud") }}</span>
       <span class="spacer"></span>
-      <button id="select-page">Tout sélectionner (page)</button>
-      <button id="select-none" disabled>Désélectionner</button>
-      <button id="delete-sel" class="danger" disabled>Supprimer la sélection</button>
+      <button id="select-page">{{ _("Tout sélectionner (page)") }}</button>
+      <button id="select-none" disabled>{{ _("Désélectionner") }}</button>
+      <button id="delete-sel" class="danger" disabled>{{ _("Supprimer la sélection") }}</button>
     </div>
     <div id="grid"></div>
-    <p id="empty" class="muted" hidden>Aucune photo pour l'instant.</p>
+    <p id="empty" class="muted" hidden>{{ _("Aucune photo pour l'instant.") }}</p>
     <div class="pager">
-      <button id="prev">‹ Précédente</button>
+      <button id="prev">‹ {{ _("Précédente") }}</button>
       <span id="page-info" class="muted"></span>
-      <button id="next">Suivante ›</button>
+      <button id="next">{{ _("Suivante") }} ›</button>
     </div>
   </section>
 
   {% include "wifi_panel.html" %}
 
   <section id="update">
-    <h2>Mise à jour</h2>
+    <h2>{{ _("Mise à jour") }}</h2>
     <p id="upd-state" class="small"></p>
     <pre id="upd-notes" class="small muted" hidden></pre>
     <form id="upd-link" class="wifi-form" onsubmit="return false">
-      <label style="flex:1">Adresse des mises à jour
+      <label style="flex:1">{{ _("Adresse des mises à jour") }}
         <input type="text" name="url" spellcheck="false">
       </label>
-      <button type="button" id="upd-check" class="primary">Rechercher une mise à jour</button>
+      <button type="button" id="upd-check" class="primary">{{ _("Rechercher une mise à jour") }}</button>
     </form>
     <p id="upd-found" class="small" hidden></p>
     <div class="toolbar" style="margin-top:12px">
-      <button type="button" id="upd-install" class="primary" hidden>Installer cette version</button>
+      <button type="button" id="upd-install" class="primary" hidden>{{ _("Installer cette version") }}</button>
       <input type="file" id="upd-file" accept=".cadre" hidden>
-      <button type="button" id="upd-pick">Installer depuis un fichier…</button>
-      <button type="button" id="upd-rollback" hidden>Revenir à la version précédente</button>
+      <button type="button" id="upd-pick">{{ _("Installer depuis un fichier…") }}</button>
+      <button type="button" id="upd-rollback" hidden>{{ _("Revenir à la version précédente") }}</button>
     </div>
-    <p class="muted small">Mise à jour depuis l'adresse ci-dessus, ou depuis un fichier « .cadre »
-      reçu de la personne qui s'occupe du cadre. Rien ne s'installe sans votre accord ; le fichier
-      est vérifié (signature) avant l'installation et, si le cadre ne repart pas correctement,
-      l'ancienne version revient toute seule au bout de 3 minutes.</p>
+    <p class="muted small">{{ _("Mise à jour depuis l'adresse ci-dessus, ou depuis un fichier « .cadre » reçu de la personne qui s'occupe du cadre. Rien ne s'installe sans votre accord ; le fichier est vérifié (signature) avant l'installation et, si le cadre ne repart pas correctement, l'ancienne version revient toute seule au bout de 3 minutes.") }}</p>
   </section>
 
   <section id="diagnostic">
-    <h2>Diagnostic</h2>
+    <h2>{{ _("Diagnostic") }}</h2>
     <form id="report-form" class="settings" onsubmit="return false">
-      <label><input type="checkbox" name="info" checked> Informations système</label>
-      <label><input type="checkbox" name="display" checked> Diaporama</label>
-      <label><input type="checkbox" name="web" checked> Admin et album iCloud</label>
-      <label><input type="checkbox" name="network" checked> Réseau</label>
-      <label><input type="checkbox" name="system"> Système (erreurs)</label>
-      <label><input type="checkbox" name="previous_boot"> Démarrage précédent</label>
-      <label>Période
+      <label><input type="checkbox" name="info" checked> {{ _("Informations système") }}</label>
+      <label><input type="checkbox" name="display" checked> {{ _("Diaporama") }}</label>
+      <label><input type="checkbox" name="web" checked> {{ _("Admin et album iCloud") }}</label>
+      <label><input type="checkbox" name="network" checked> {{ _("Réseau") }}</label>
+      <label><input type="checkbox" name="system"> {{ _("Système (erreurs)") }}</label>
+      <label><input type="checkbox" name="previous_boot"> {{ _("Démarrage précédent") }}</label>
+      <label>{{ _("Période") }}
         <select name="period">
-          <option value="1h">Dernière heure</option>
-          <option value="today" selected>Aujourd'hui</option>
-          <option value="3d">3 derniers jours</option>
+          <option value="1h">{{ _("Dernière heure") }}</option>
+          <option value="today" selected>{{ _("Aujourd'hui") }}</option>
+          <option value="3d">{{ _("3 derniers jours") }}</option>
         </select>
       </label>
-      <button type="button" id="report-get" class="primary">Télécharger le rapport</button>
+      <button type="button" id="report-get" class="primary">{{ _("Télécharger le rapport") }}</button>
     </form>
-    <p class="muted small">Fichier texte à envoyer à la personne qui s'occupe du cadre en cas de
-      problème. Les mots de passe et le lien de l'album iCloud en sont retirés.
-      « Démarrage précédent » sert après un plantage ou un redémarrage inattendu.</p>
+    <p class="muted small">{{ _("Fichier texte à envoyer à la personne qui s'occupe du cadre en cas de problème. Les mots de passe et le lien de l'album iCloud en sont retirés. « Démarrage précédent » sert après un plantage ou un redémarrage inattendu.") }}</p>
   </section>
 
   <section id="power">
-    <h2>Cadre</h2>
+    <h2>{{ _("Cadre") }}</h2>
     <div class="toolbar">
-      <button type="button" id="reboot">Redémarrer</button>
-      <button type="button" id="poweroff" class="danger">Éteindre</button>
+      <button type="button" id="reboot">{{ _("Redémarrer") }}</button>
+      <button type="button" id="poweroff" class="danger">{{ _("Éteindre") }}</button>
     </div>
     <p id="power-msg" class="msg"></p>
   </section>
 
   <section id="password">
-    <h2>Mot de passe de l'admin</h2>
+    <h2>{{ _("Mot de passe de l'admin") }}</h2>
     <p id="pw-state" class="muted small"></p>
     <form id="pw-form" class="wifi-form" autocomplete="off">
       <input type="text" name="username" value="admin" autocomplete="username" hidden>
-      <label id="pw-current-label">Mot de passe actuel
+      <label id="pw-current-label">{{ _("Mot de passe actuel") }}
         <input type="password" name="current" autocomplete="current-password">
       </label>
-      <label>Nouveau mot de passe
+      <label>{{ _("Nouveau mot de passe") }}
         <input type="password" name="new" autocomplete="new-password" minlength="6">
       </label>
-      <label>Confirmation
+      <label>{{ _("Confirmation") }}
         <input type="password" name="confirm" autocomplete="new-password">
       </label>
-      <button type="submit" class="primary">Enregistrer</button>
+      <button type="submit" class="primary">{{ _("Enregistrer") }}</button>
     </form>
-    <p class="muted small">Utilisateur : admin. Laisser le nouveau mot de passe vide pour supprimer
-      la protection. Le portail Wi-Fi du hotspot reste toujours accessible.</p>
-    <p id="pw-logout" hidden><a href="/logout">Se déconnecter</a></p>
+    <p class="muted small">{{ _("Utilisateur : admin. Laisser le nouveau mot de passe vide pour supprimer la protection. Le portail Wi-Fi du hotspot reste toujours accessible.") }}</p>
+    <p id="pw-logout" hidden><a href="/logout">{{ _("Se déconnecter") }}</a></p>
   </section>
 </main>
 
+{% include "i18n_js.html" %}
 <script>
 const $ = (s) => document.querySelector(s);
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -258,11 +255,12 @@ async function loadSettings() {
   form.sleep.checked = s.sleep;
   form.sleep_start.value = s.sleep_start;
   form.sleep_end.value = s.sleep_end;
+  form.language.value = s.language;
 }
 /* Ville de la météo : cherchée par le cadre (Open-Meteo), enregistrée à part des réglages. */
 function showWeather(w) {
   $("#weather-state").textContent = w.error ? w.error
-    : w.name ? `${w.auto ? "Position automatique : " : ""}${w.name}${w.country ? ", " + w.country : ""}${w.now ? " · " + w.now : ""}`
+    : w.name ? `${w.auto ? t("Position automatique : ") : ""}${w.name}${w.country ? ", " + w.country : ""}${w.now ? " · " + w.now : ""}`
     : "";
 }
 async function loadWeather() {
@@ -274,7 +272,7 @@ let weatherCity = null;  // dernière ville envoyée : pas de recherche en doubl
 async function saveWeather() {
   if (form.weather_city.value === weatherCity) return;
   weatherCity = form.weather_city.value;
-  $("#weather-state").textContent = "Recherche…";
+  $("#weather-state").textContent = t("Recherche…");
   const r = await fetch("/api/weather", {method: "POST", headers: {"Content-Type": "application/json"},
                                           body: JSON.stringify({city: weatherCity})});
   showWeather(await r.json());
@@ -303,6 +301,7 @@ form.addEventListener("change", async (e) => {
     sleep: form.sleep.checked,
     sleep_start: form.sleep_start.value,
     sleep_end: form.sleep_end.value,
+    language: form.language.value,
   });
   form.sleep_start.value = s.sleep_start;
   form.sleep_end.value = s.sleep_end;
@@ -322,10 +321,10 @@ async function loadPage(p = page) {
   const data = await api(`/api/photos?page=${p}&per=${PER_PAGE}`);
   page = data.page; pages = data.pages; items = data.items; cloud = new Set(data.cloud);
   favorites = new Set(data.favorites); hiddenSet = new Set(data.hidden);
-  $("#count").textContent = `${data.total} photo${data.total > 1 ? "s" : ""}`;
+  $("#count").textContent = tn("{n} photo", "{n} photos", data.total);
   showDisk(data.disk);
   $("#empty").hidden = data.total > 0;
-  $("#page-info").textContent = `Page ${page} / ${pages}`;
+  $("#page-info").textContent = t("Page {page} / {pages}", {page, pages});
   $("#prev").disabled = page <= 1;
   $("#next").disabled = page >= pages;
   const grid = $("#grid");
@@ -339,11 +338,11 @@ function tile(name) {
     + (favorites.has(name) ? " fav" : "") + (hiddenSet.has(name) ? " hid" : "");
   el.dataset.name = name;
   el.innerHTML = `<img alt="" src="/thumbs/${name}"><span class="check"></span>
-    <span class="flag">★</span><span class="hidden-label">masquée</span>
-    <span class="actions"><a href="/photos/${name}" target="_blank" title="Voir">⤢</a>
-    <button data-act="fav" title="Favori : revient plus souvent">★</button>
-    <button data-act="hide" title="Masquer du diaporama (sans supprimer)">👁</button>
-    <button data-act="del" title="Supprimer">🗑</button></span>`;
+    <span class="flag">★</span><span class="hidden-label">${t("masquée")}</span>
+    <span class="actions"><a href="/photos/${name}" target="_blank" title="${t("Voir")}">⤢</a>
+    <button data-act="fav" title="${t("Favori : revient plus souvent")}">★</button>
+    <button data-act="hide" title="${t("Masquer du diaporama (sans supprimer)")}">👁</button>
+    <button data-act="del" title="${t("Supprimer")}">🗑</button></span>`;
   el.addEventListener("click", async (e) => {
     if (e.target.closest("a")) return;
     const act = e.target.closest("button")?.dataset.act;
@@ -369,11 +368,11 @@ function updateSelection() {
   const n = selected.size;
   $("#delete-sel").disabled = n === 0;
   $("#select-none").disabled = n === 0;
-  $("#delete-sel").textContent = n ? `Supprimer la sélection (${n})` : "Supprimer la sélection";
+  $("#delete-sel").textContent = n ? t("Supprimer la sélection ({n})", {n}) : t("Supprimer la sélection");
 }
 
 async function removePhotos(names) {
-  const msg = names.length === 1 ? "Supprimer cette photo ?" : `Supprimer ${names.length} photos ?`;
+  const msg = names.length === 1 ? t("Supprimer cette photo ?") : t("Supprimer {n} photos ?", {n: names.length});
   if (!confirm(msg)) return;
   await api("/api/delete", {names});
   names.forEach((n) => selected.delete(n));
@@ -483,8 +482,8 @@ function readGps(v, t, u16, u32, gpsIfd) {
 
 function showDisk(d) {
   if (!d) return;
-  const gb = (d.free / 1e9).toLocaleString("fr-FR", {maximumFractionDigits: 1});
-  $("#disk").textContent = `· ${Math.round(d.free_pct)} % libre (${gb} Go)`;
+  const gb = (d.free / 1e9).toLocaleString(LOCALE, {maximumFractionDigits: 1});
+  $("#disk").textContent = "· " + t("{pct} % libre ({gb} Go)", {pct: Math.round(d.free_pct), gb});
   $("#disk-full").hidden = !d.full;
 }
 
@@ -600,14 +599,14 @@ async function runBatch() {
       const status = await send(file, prep, drawUpload);
       if (status === 200) break;
       if (status === 503) { await sleep(1500); continue; }       // file du cadre pleine
-      if (status === 413) { addError(file.name, "fichier trop volumineux"); break; }
+      if (status === 413) { addError(file.name, t("fichier trop volumineux")); break; }
       if (status === 507) {  // inutile d'envoyer la suite
-        addError(file.name, "carte SD pleine : envoi arrêté");
+        addError(file.name, t("carte SD pleine : envoi arrêté"));
         diskFull = true;
         break;
       }
       // Wi-Fi faible : coupures passagères fréquentes, on insiste avec des pauses croissantes.
-      if (++tries >= 6) { addError(file.name, `échec de l'envoi (${status || "réseau"})`); break; }
+      if (++tries >= 6) { addError(file.name, t("échec de l'envoi ({why})", {why: status || t("réseau")})); break; }
       await sleep(Math.min(15000, 1000 * 2 ** tries));
     }
     batch.sent++;
@@ -637,7 +636,7 @@ async function pollStatus() {
     batch.lastError = st.queue.failed;
     if (Date.now() - lastRefresh > 4000 || (!batch.running && st.queue.pending === 0)) {
       lastRefresh = Date.now();
-      if (page === 1) loadPage(1); else $("#count").textContent = `${st.count} photos`;
+      if (page === 1) loadPage(1); else $("#count").textContent = tn("{n} photo", "{n} photos", st.count);
       showDisk(st.disk);
     }
     if (!batch.running && st.queue.pending === 0) return;
@@ -646,7 +645,7 @@ async function pollStatus() {
 
 function addError(file, error) {
   const li = document.createElement("li");
-  li.textContent = `${file} : ${error}`;
+  li.textContent = t("{file} : {error}", {file, error});
   $("#errors").append(li);
 }
 
@@ -656,13 +655,14 @@ async function loadIcloud(fillInput) {
   const s = await api("/api/icloud");
   if (fillInput) icloudForm.url.value = s.url;
   const when = s.last_sync && new Date(s.last_sync * 1000)
-    .toLocaleString("fr-FR", {dateStyle: "short", timeStyle: "short"});
+    .toLocaleString(LOCALE, {dateStyle: "short", timeStyle: "short"});
   const box = $("#icloud-state");
   box.className = "small " + (s.error && !s.running ? "msg error" : "muted");
-  box.textContent = !s.url ? "Aucun album suivi."
-    : s.running ? `Synchronisation en cours${s.progress ? ` (${s.progress})` : ""}…`
-    : [`${s.title ? `« ${s.title} » : ` : ""}${s.count} photo${s.count > 1 ? "s" : ""} sur le cadre`,
-       when ? `dernière synchronisation ${when}` : "première synchronisation dans un instant",
+  box.textContent = !s.url ? t("Aucun album suivi.")
+    : s.running ? t("Synchronisation en cours") + (s.progress ? ` (${s.progress})` : "") + "…"
+    : [(s.title ? t("« {title} » : ", {title: s.title}) : "")
+         + tn("{n} photo sur le cadre", "{n} photos sur le cadre", s.count),
+       when ? t("dernière synchronisation {when}", {when}) : t("première synchronisation dans un instant"),
        s.error].filter(Boolean).join(" · ");
   return s;
 }
@@ -682,7 +682,7 @@ icloudForm.onsubmit = async (e) => {
   const cur = await api("/api/icloud");
   if (url === cur.url) return;
   if (cur.url && cur.count &&
-      !confirm(`Les ${cur.count} photos de l'album actuel seront retirées du cadre.`)) return;
+      !confirm(t("Les {n} photos de l'album actuel seront retirées du cadre.", {n: cur.count}))) return;
   const r = await fetch("/api/icloud", {
     method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify({url}),
   });
@@ -703,15 +703,15 @@ $("#icloud-sync").onclick = async () => {
 const pwForm = $("#pw-form");
 async function loadPassword() {
   const s = await api("/api/password");
-  $("#pw-state").textContent = s.enabled ? "L'admin est protégé par un mot de passe."
-    : "L'admin n'est pas protégé : toute personne sur le réseau peut gérer les photos.";
+  $("#pw-state").textContent = s.enabled ? t("L'admin est protégé par un mot de passe.")
+    : t("L'admin n'est pas protégé : toute personne sur le réseau peut gérer les photos.");
   $("#pw-current-label").hidden = !s.enabled;
   $("#pw-logout").hidden = !s.enabled;
 }
 pwForm.onsubmit = async (e) => {
   e.preventDefault();
-  if (pwForm.new.value !== pwForm.confirm.value) { alert("La confirmation ne correspond pas."); return; }
-  if (!pwForm.new.value && !confirm("Supprimer le mot de passe de l'admin ?")) return;
+  if (pwForm.new.value !== pwForm.confirm.value) { alert(t("La confirmation ne correspond pas.")); return; }
+  if (!pwForm.new.value && !confirm(t("Supprimer le mot de passe de l'admin ?"))) return;
   const r = await fetch("/api/password", {
     method: "POST", headers: {"Content-Type": "application/json"},
     body: JSON.stringify({current: pwForm.current.value, new: pwForm.new.value}),
@@ -719,21 +719,22 @@ pwForm.onsubmit = async (e) => {
   const s = await r.json();
   if (!r.ok) { alert(s.error); return; }
   pwForm.reset();
-  alert(s.enabled ? "Mot de passe enregistré." : "Mot de passe supprimé.");
+  alert(s.enabled ? t("Mot de passe enregistré.") : t("Mot de passe supprimé."));
   loadPassword();
 };
 
 /* ---- Mise à jour à distance ---- */
-const UPD_LABELS = {installing: "installation en cours", pending: "vérification en cours",
-                    ok: "installée et vérifiée", rolled_back: "annulée, ancienne version remise",
-                    error: "refusée"};
+const UPD_LABELS = {installing: t("installation en cours"), pending: t("vérification en cours"),
+                    ok: t("installée et vérifiée"), rolled_back: t("annulée, ancienne version remise"),
+                    error: t("refusée")};
 async function loadUpdate() {
   const s = await api("/api/update");
   const box = $("#upd-state");
-  const last = s.state ? ` · dernière mise à jour ${s.version || ""} : ${UPD_LABELS[s.state] || s.state}`
+  const last = s.state ? " · " + t("dernière mise à jour {version} : {state}",
+                                     {version: s.version || "", state: UPD_LABELS[s.state] || s.state})
     + (s.message && s.state !== "ok" ? ` (${s.message})` : "") : "";
   box.className = "small " + (["rolled_back", "error"].includes(s.state) ? "msg error" : "muted");
-  box.textContent = `Version installée : ${s.current || "inconnue"}${last}`;
+  box.textContent = t("Version installée : {version}", {version: s.current || t("inconnue")}) + last;
   $("#upd-notes").hidden = !(s.notes && s.state === "ok");
   $("#upd-notes").textContent = s.notes || "";
   $("#upd-rollback").hidden = !s.previous;
@@ -752,16 +753,16 @@ async function pollUpdate() {
     if (s && ["ok", "rolled_back", "error"].includes(s.state)) {
       $("#upd-pick").disabled = false;
       box.className = "msg " + (s.state === "ok" ? "ok" : "error");
-      box.textContent = s.state === "ok" ? `✓ Version ${s.version} installée et vérifiée.`
-        : s.state === "rolled_back" ? `✗ Mise à jour annulée, ancienne version remise : ${s.message}`
-        : `✗ Mise à jour refusée : ${s.message}`;
+      box.textContent = s.state === "ok" ? "✓ " + t("Version {version} installée et vérifiée.", {version: s.version})
+        : s.state === "rolled_back" ? "✗ " + t("Mise à jour annulée, ancienne version remise : {why}", {why: s.message})
+        : "✗ " + t("Mise à jour refusée : {why}", {why: s.message});
       return;
     }
     const left = Math.max(0, GUARD_WAIT - Math.round((Date.now() - start) / 1000));
     box.className = "small muted";
-    box.textContent = left ? `Installation : redémarrage des services, vérification automatique ` +
-      `dans ${Math.floor(left / 60)} min ${String(left % 60).padStart(2, "0")} s…`
-      : "Vérification en cours…";
+    box.textContent = left ? t("Installation : redémarrage des services, vérification automatique dans {min} min {s} s…",
+                               {min: Math.floor(left / 60), s: String(left % 60).padStart(2, "0")})
+      : t("Vérification en cours…");
     await sleep(3000);
   }
 }
@@ -769,11 +770,11 @@ async function pollUpdate() {
 async function checkUpdate() {
   const btn = $("#upd-check"), found = $("#upd-found");
   btn.disabled = true;
-  btn.textContent = "Recherche…";
+  btn.textContent = t("Recherche…");
   $("#upd-install").hidden = true;
   found.hidden = false;
   found.className = "small muted";
-  found.textContent = "Téléchargement et vérification depuis l'adresse… (quelques secondes)";
+  found.textContent = t("Téléchargement et vérification depuis l'adresse… (quelques secondes)");
   try {
     const r = await (await fetch("/api/update/check", {
       method: "POST", headers: {"Content-Type": "application/json"},
@@ -785,36 +786,35 @@ async function checkUpdate() {
       found.textContent = "✗ " + r.error;
     } else if (!r.newer) {
       found.className = "msg ok";
-      found.textContent = `✓ Le cadre est à jour (version disponible : ${r.version}).`;
+      found.textContent = "✓ " + t("Le cadre est à jour (version disponible : {version}).", {version: r.version});
     } else {
       found.className = "msg";
-      found.textContent = `Version ${r.version} disponible` + (r.notes ? ` : ${r.notes}` : ".")
-        + " Touchez « Installer cette version ».";
+      found.textContent = t("Version {version} disponible", {version: r.version}) + (r.notes ? ` : ${r.notes}` : ".")
+        + " " + t("Touchez « Installer cette version ».");
       $("#upd-install").hidden = false;
     }
   } catch {
     found.hidden = false;
     found.className = "small msg error";
-    found.textContent = "Le cadre ne répond pas.";
+    found.textContent = t("Le cadre ne répond pas.");
   } finally {
     btn.disabled = false;
-    btn.textContent = "Rechercher une mise à jour";
+    btn.textContent = t("Rechercher une mise à jour");
   }
 }
 $("#upd-check").onclick = checkUpdate;
 $("#upd-install").onclick = async () => {
-  if (!confirm("Installer cette version ?\nLe diaporama s'interrompt une minute environ.")) return;
+  if (!confirm(t("Installer cette version ?") + "\n" + t("Le diaporama s'interrompt une minute environ."))) return;
   $("#upd-install").hidden = true;
   $("#upd-found").hidden = true;
   $("#upd-state").className = "small muted";
-  $("#upd-state").textContent = "Installation…";
+  $("#upd-state").textContent = t("Installation…");
   try {
     const r = await (await fetch("/api/update/pending", {method: "POST"})).json();
-    if (!r.ok) { alert("Mise à jour refusée : " + r.error); loadUpdate(); return; }
-    $("#upd-state").textContent = `Version ${r.version} installée : redémarrage des services, ` +
-      "puis vérification (environ 3 minutes). Gardez cette page ouverte.";
+    if (!r.ok) { alert(t("Mise à jour refusée : {why}", {why: r.error})); loadUpdate(); return; }
+    $("#upd-state").textContent = t("Version {version} installée : redémarrage des services, puis vérification (environ 3 minutes). Gardez cette page ouverte.", {version: r.version});
   } catch {
-    $("#upd-state").textContent = "Installation en cours…";
+    $("#upd-state").textContent = t("Installation en cours…");
   }
   pollUpdate();
 };
@@ -823,33 +823,32 @@ $("#upd-pick").onclick = () => $("#upd-file").click();
 $("#upd-file").onchange = async (e) => {
   const file = e.target.files[0];
   e.target.value = "";
-  if (!file || !confirm(`Installer la mise à jour « ${file.name} » ?\n` +
-                        "Le diaporama s'interrompt une minute environ.")) return;
+  if (!file || !confirm(t("Installer la mise à jour « {file} » ?", {file: file.name}) + "\n" +
+                        t("Le diaporama s'interrompt une minute environ."))) return;
   $("#upd-pick").disabled = true;
   $("#upd-state").className = "small muted";
-  $("#upd-state").textContent = "Envoi et vérification du fichier…";
+  $("#upd-state").textContent = t("Envoi et vérification du fichier…");
   const fd = new FormData();
   fd.append("file", file);
   try {
     const r = await (await fetch("/api/update", {method: "POST", body: fd})).json();
     if (!r.ok) {
-      alert("Mise à jour refusée : " + r.error);
+      alert(t("Mise à jour refusée : {why}", {why: r.error}));
       $("#upd-pick").disabled = false;
       loadUpdate();
       return;
     }
-    $("#upd-state").textContent = `Version ${r.version} installée : redémarrage des services, ` +
-      "puis vérification (environ 3 minutes). Gardez cette page ouverte.";
+    $("#upd-state").textContent = t("Version {version} installée : redémarrage des services, puis vérification (environ 3 minutes). Gardez cette page ouverte.", {version: r.version});
   } catch {
-    $("#upd-state").textContent = "Installation en cours…";
+    $("#upd-state").textContent = t("Installation en cours…");
   }
   pollUpdate();
 };
 $("#upd-rollback").onclick = async () => {
-  if (!confirm("Revenir à la version précédente du cadre ?")) return;
+  if (!confirm(t("Revenir à la version précédente du cadre ?"))) return;
   const r = await (await fetch("/api/update/rollback", {method: "POST"})).json();
   if (!r.ok) { alert(r.error); return; }
-  $("#upd-state").textContent = "Retour à la version précédente : redémarrage des services…";
+  $("#upd-state").textContent = t("Retour à la version précédente : redémarrage des services…");
   pollUpdate();
 };
 
@@ -857,7 +856,7 @@ $("#upd-rollback").onclick = async () => {
 $("#report-get").onclick = async () => {
   const f = $("#report-form"), btn = $("#report-get");
   btn.disabled = true;
-  btn.textContent = "Préparation…";
+  btn.textContent = t("Préparation…");
   try {
     const r = await fetch("/api/report", {
       method: "POST", headers: {"Content-Type": "application/json"},
@@ -874,10 +873,10 @@ $("#report-get").onclick = async () => {
     a.click();
     setTimeout(() => URL.revokeObjectURL(a.href), 10000);
   } catch (e) {
-    alert("Rapport impossible : " + e.message);
+    alert(t("Rapport impossible : {why}", {why: e.message}));
   } finally {
     btn.disabled = false;
-    btn.textContent = "Télécharger le rapport";
+    btn.textContent = t("Télécharger le rapport");
   }
 };
 
@@ -899,8 +898,8 @@ async function followPower(action) {
   // Attend la coupure du cadre, puis son retour (redémarrage : la page se recharge seule).
   const box = $("#power-msg"), start = Date.now();
   const elapsed = () => {
-    const t = Math.round((Date.now() - start) / 1000);
-    return `${Math.floor(t / 60)} min ${String(t % 60).padStart(2, "0")} s`;
+    const sec = Math.round((Date.now() - start) / 1000);
+    return `${Math.floor(sec / 60)} min ${String(sec % 60).padStart(2, "0")} s`;
   };
   let down = false;
   while (Date.now() - start < 6 * 60 * 1000) {
@@ -908,37 +907,35 @@ async function followPower(action) {
     if (!up) down = true;
     if (action === "poweroff" && down) {
       box.className = "msg ok";
-      box.textContent = "✓ Le cadre est éteint : débranchez-le quand sa diode verte est éteinte.";
+      box.textContent = "✓ " + t("Le cadre est éteint : débranchez-le quand sa diode verte est éteinte.");
       return;
     }
     if (action === "reboot" && down && up) {
-      box.textContent = "✓ Le cadre a redémarré : rechargement de la page…";
+      box.textContent = "✓ " + t("Le cadre a redémarré : rechargement de la page…");
       setTimeout(() => location.reload(), 2000);
       return;
     }
     box.className = "msg";
     box.textContent = action === "reboot"
-      ? `Redémarrage en cours (${elapsed()}) : le cadre revient en 2 minutes environ, ` +
-        "cette page se rechargera toute seule."
-      : `Extinction en cours (${elapsed()})…`;
+      ? t("Redémarrage en cours ({time}) : le cadre revient en 2 minutes environ, cette page se rechargera toute seule.", {time: elapsed()})
+      : t("Extinction en cours ({time})…", {time: elapsed()});
     await sleep(3000);
   }
   box.className = "msg error";
-  box.textContent = "✗ Le cadre ne répond toujours pas : vérifiez qu'il est branché et que ce " +
-    "téléphone ou cet ordinateur est sur le même Wi-Fi, puis rechargez la page.";
+  box.textContent = "✗ " + t("Le cadre ne répond toujours pas : vérifiez qu'il est branché et que ce téléphone ou cet ordinateur est sur le même Wi-Fi, puis rechargez la page.");
 }
 async function power(action, question) {
   if (!confirm(question)) return;
   try {
     const r = await api(`/api/power/${action}`, {});
     if (!r.ok) { alert(r.error); return; }
-  } catch { alert("Le cadre ne répond pas."); return; }
+  } catch { alert(t("Le cadre ne répond pas.")); return; }
   document.querySelectorAll("#power button").forEach((b) => { b.disabled = true; });
   followPower(action);
 }
-$("#reboot").onclick = () => power("reboot", "Redémarrer le cadre ? Il revient dans 2 minutes environ.");
+$("#reboot").onclick = () => power("reboot", t("Redémarrer le cadre ? Il revient dans 2 minutes environ."));
 $("#poweroff").onclick = () => power("poweroff",
-  "Éteindre le cadre ? Il faudra le débrancher puis le rebrancher pour le rallumer.");
+  t("Éteindre le cadre ? Il faudra le débrancher puis le rebrancher pour le rallumer."));
 
 loadPassword();
 /* ---- Message sur le cadre ---- */
@@ -950,13 +947,13 @@ function localToday() {
 }
 function showMessageState(m) {
   const today = localToday();
-  const fr = (day) => new Date(day + "T12:00").toLocaleDateString("fr-FR");
-  const where = m.mode === "screen" ? "entre les photos" : "en bandeau sur les photos";
-  const end = m.until ? `jusqu'au ${fr(m.until)} inclus` : "sans date de fin";
-  $("#msg-state").textContent = !m.text ? "Aucun message affiché."
-    : m.until && m.until < today ? `Message terminé le ${fr(m.until)}.`
-    : m.since && m.since > today ? `Message prévu à partir du ${fr(m.since)}, ${end}, ${where}.`
-    : `Message affiché ${end}, ${where}.`;
+  const day = (d) => new Date(d + "T12:00").toLocaleDateString(LOCALE);
+  const where = m.mode === "screen" ? t("entre les photos") : t("en bandeau sur les photos");
+  const end = m.until ? t("jusqu'au {date} inclus", {date: day(m.until)}) : t("sans date de fin");
+  $("#msg-state").textContent = !m.text ? t("Aucun message affiché.")
+    : m.until && m.until < today ? t("Message terminé le {date}.", {date: day(m.until)})
+    : m.since && m.since > today ? t("Message prévu à partir du {date}, {end}, {where}.", {date: day(m.since), end, where})
+    : t("Message affiché {end}, {where}.", {end, where});
 }
 async function loadMessage() {
   const m = await api("/api/message");
@@ -974,7 +971,7 @@ async function saveMessage(body) {
 $("#msg-show").onclick = () => {
   if (!msgForm.text.value.trim()) { msgForm.text.focus(); return; }
   if (msgForm.since.value && msgForm.until.value && msgForm.until.value < msgForm.since.value) {
-    alert("La date de fin est avant la date de début.");
+    alert(t("La date de fin est avant la date de début."));
     return;
   }
   saveMessage({text: msgForm.text.value, since: msgForm.since.value, until: msgForm.until.value,

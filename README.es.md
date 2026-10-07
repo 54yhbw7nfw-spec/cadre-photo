@@ -10,7 +10,7 @@ tomaron. La familia añade fotos desde el móvil, sin aplicación ni cuenta, o l
 olvidarse: se conecta al Wi-Fi con un código QR, se maneja con el mando de la tele y se
 actualiza a distancia.
 
-> Las pantallas del marco, su página de gestión y el vídeo tutorial están en francés.
+> El vídeo tutorial está en francés; el marco y su página de gestión hablan 7 idiomas.
 
 https://github.com/user-attachments/assets/5c049a34-5ee3-4dbe-9e44-6fbbceeaa3bd
 
@@ -34,6 +34,8 @@ https://github.com/user-attachments/assets/5c049a34-5ee3-4dbe-9e44-6fbbceeaa3bd
 - **Favoritas, fotos ocultas, elección de lo que se muestra** (álbum, envíos, periodo).
 - **Actualización a distancia** en dos clics, firmada por ti, con vuelta automática a la versión
   anterior si algo falla; informe de diagnóstico que te pueden enviar.
+- **7 idiomas**: página de gestión y pantallas del marco en francés, inglés, español, alemán,
+  portugués, rumano y chino.
 - **Privacidad**: todo se queda en el marco, sin cuenta ni servicio en línea obligatorio.
 
 | Configuración del Wi-Fi | Mensaje de la familia |

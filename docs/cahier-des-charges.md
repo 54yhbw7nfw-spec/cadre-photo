@@ -55,6 +55,8 @@
 - Mise à jour à distance par fichier signé (clé SSH du développeur), retour arrière automatique.
 - Message de la famille affiché sur le cadre (bandeau ou écran), entre deux dates
   (préparé à l'avance si besoin).
+- Admin et écrans du cadre en français, anglais, espagnol, allemand, portugais, roumain et
+  chinois (langue de l'admin : celle du navigateur ou choisie ; langue du cadre : réglage).
 - Souvenirs « ce jour-là » et nouvelles photos mises en avant (pictogramme « nouveau »).
 - Favoris et photos masquées, choix des photos affichées (source, période), heure et météo.
 - Mode d'emploi vidéo (diapositives commentées) pour la famille.

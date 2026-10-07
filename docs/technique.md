@@ -27,6 +27,7 @@ cahier des charges : [cahier-des-charges.md](cahier-des-charges.md) ; mise à jo
 | 17. Choix des photos affichées (source, période) | livré par mise à jour signée, à tester |
 | 18. Heure et météo (Open-Meteo), icônes dessinées | livré par mise à jour signée, à tester |
 | 19. Mise à jour depuis un lien (release GitHub), sur demande | ✅ cas d'erreur testés ; release à tester |
+| 20. Traduction : admin et écrans en 7 langues (fr, en, es, de, pt, ro, zh) | ✅ testé sur le Pi (écrans rendus dans chaque langue, admin en chinois) |
 | Mode d'emploi vidéo | ✅ `build/video/cadre-photo-mode-d-emploi.mp4`, à refaire après une évolution visible |
 
 ## Reste à faire / idées
@@ -111,8 +112,8 @@ effet au redémarrage, protégée par `cadre-net-rollback`.
 
 `docs/video/cadre-photo-mode-d-emploi.mp4` (copie de `build/video/…`, ~5 min, 18 diapositives commentées, voix neuronale
 Microsoft « Denise » via `edge-tts`, Internet requis). Pour la refaire, sur le PC :
-1. `python tools/video/shots.py http://<ip du cadre> build/video/shots` (captures de l'admin,
-   Firefox sans fenêtre) ;
+1. `python tools/video/shots.py http://<ip du cadre> build/video/shots [langue]` (captures de
+   l'admin, Firefox sans fenêtre, page dans la langue demandée) ;
 2. `tools/video/screens.py` lancé sur le Pi (`PYTHONPATH=/opt/cadre SDL_VIDEODRIVER=dummy`),
    résultat copié dans `build/video/screens` (écrans du cadre dessinés par son propre code) ;
 3. `python tools/video/make_video.py build/video` (Pillow + ffmpeg). Le lien réel de l'album
@@ -167,6 +168,8 @@ pour déployer) :
   `/usr/lib/systemd/journald.conf.d/40-rpi-volatile-storage.conf`) :
   `/etc/systemd/journald.conf.d/50-cadre-persistent.conf` = `[Journal]` `Storage=persistent`
   `SystemMaxUse=50M`, et dossier `/var/log/journal`.
+- Paquet `fonts-wqy-microhei` (police chinoise, 5 Mo) : écrans en chinois, ou message écrit en
+  chinois. Posé sur les cadres déjà installés par `update/apply.sh`.
 
 ## Démarrage et QR code
 
@@ -336,6 +339,26 @@ Fabriqué par `cadre-net` (root, commande `report` : journal système complet), 
 plus par rubrique. Retirés : lien de l'album iCloud, `psk`/`password`/`mot de passe` = valeur ;
 les mots de passe Wi-Fi, du hotspot et de l'admin ne sont jamais journalisés.
 Mesuré : rapport complet de la journée en 4 s, 2 900 lignes, 360 Ko.
+
+## Langues
+
+Admin et écrans du cadre en français, anglais, espagnol, allemand, portugais (Portugal),
+roumain et chinois (mandarin simplifié). Le texte français du code sert de clé :
+`cadre/locales/<langue>.json` contient les traductions (`cadre/i18n.py`).
+
+- **Page de gestion** : langue choisie en haut de la page (cookie `lang`), sinon celle du
+  navigateur, sinon celle du cadre. Textes des pages : `{{ _("…") }}` ; des scripts : `t("…")`,
+  `tn("singulier", "pluriel", n)` (`templates/i18n_js.html`).
+- **Écrans du cadre** (démarrage, QR codes, hotspot, extinction, « Il y a 2 ans », dates, pays
+  du lieu) : réglage « Langue du cadre » (section Écran). Pays traduit à l'affichage par
+  iso-codes (`places.localize`) : le lieu reste rangé en français dans `places.json`.
+- **Messages des services** (erreurs de mise à jour, d'iCloud, du Wi-Fi, météo) : français dans
+  le code et les fichiers d'état, traduits à la sortie de l'API (`web.translate_api`) par
+  `i18n.message`, y compris ceux à parties variables (la clé `{…}` sert de modèle).
+- Chinois : police WenQuanYi Micro Hei (`fonts-wqy-microhei`), choisie dès qu'un texte contient
+  des caractères chinois. Sur le QR code, une ligne trop longue pour sa colonne est réduite.
+- Ajout ou changement d'un texte : `python tools/i18n_check.py` liste ce qui manque dans chaque
+  langue ; les messages des services sont à déclarer dans sa liste `MESSAGES`.
 
 ## Lieu des photos
 
