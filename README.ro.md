@@ -12,7 +12,7 @@ televizorului și se actualizează de la distanță.
 
 
 
-Uploading cadre-photo-mode-d-emploi-ro.mp4…
+https://github.com/user-attachments/assets/eedc4615-3018-4efd-9de2-80cc99e5dfb8
 
 
 
