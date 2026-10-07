@@ -7,7 +7,7 @@ Conflicts=getty@tty1.service
 Type=simple
 User=cadre
 Group=cadre
-SupplementaryGroups=video render input
+SupplementaryGroups=video render input audio
 Environment=CADRE_DATA=/var/lib/cadre
 Environment=SDL_VIDEODRIVER=kmsdrm
 Environment=PYTHONUNBUFFERED=1

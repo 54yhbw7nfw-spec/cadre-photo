@@ -128,3 +128,9 @@ button.primary { background: var(--accent); border-color: var(--accent); color: 
 .msg.ok { color: var(--ok); }
 .msg.error { color: var(--danger); }
 .small { font-size: 13px; }
+
+/* Couverture d'une vidéo : pictogramme ▶ au centre de la miniature. */
+.tile .play { display: none; position: absolute; left: 50%; top: 50%; width: 34px; height: 34px;
+  margin: -17px 0 0 -17px; border-radius: 50%; background: rgba(0, 0, 0, .55); color: #fff;
+  font-size: 15px; line-height: 34px; text-align: center; pointer-events: none; }
+.tile.video .play { display: block; }

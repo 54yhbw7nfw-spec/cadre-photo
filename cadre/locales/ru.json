@@ -306,5 +306,8 @@
   "Éteindre": "Выключить",
   "Éteindre le cadre ? Il faudra le débrancher puis le rebrancher pour le rallumer.": "Выключить рамку? Чтобы снова включить её, нужно будет отключить её от сети и включить заново.",
   "à": "до",
-  "échec de l'envoi ({why})": "ошибка отправки ({why})"
+  "échec de l'envoi ({why})": "ошибка отправки ({why})",
+  "Vidéos": "Видео",
+  "Son des vidéos": "Звук видео",
+  "Vidéo": "Видео"
 }

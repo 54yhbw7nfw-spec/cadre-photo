@@ -306,5 +306,8 @@
   "Éteindre": "Oprește",
   "Éteindre le cadre ? Il faudra le débrancher puis le rebrancher pour le rallumer.": "Opriți rama? Va trebui scoasă din priză și băgată la loc pentru a o reporni.",
   "à": "la",
-  "échec de l'envoi ({why})": "trimitere eșuată ({why})"
+  "échec de l'envoi ({why})": "trimitere eșuată ({why})",
+  "Vidéos": "Videoclipuri",
+  "Son des vidéos": "Sunetul videoclipurilor",
+  "Vidéo": "Videoclip"
 }

@@ -13,7 +13,7 @@ from datetime import datetime
 
 from PIL import Image, ImageOps
 
-from . import config, places
+from . import config, places, videos
 
 # Au-delà : refus (bombe de décompression, RAM du Pi).
 Image.MAX_IMAGE_PIXELS = 60_000_000
@@ -142,10 +142,12 @@ def process(src, keep_original=False, original_name="", taken="", sig=""):
 
 
 def delete(name):
-    """Supprime une photo, sa miniature, son original éventuel et son lieu. True si trouvée."""
+    """Supprime une photo, sa miniature, son original éventuel, son lieu et sa vidéo (si c'est
+    une couverture). True si trouvée."""
     if not NAME_RE.match(name):
         return False
     places.remove(name)
+    videos.delete(name)
     config.forget_flags(name)
     found = False
     for path in (os.path.join(config.PHOTOS_DIR, name), os.path.join(config.THUMBS_DIR, name)):

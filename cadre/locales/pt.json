@@ -306,5 +306,8 @@
   "Éteindre": "Desligar",
   "Éteindre le cadre ? Il faudra le débrancher puis le rebrancher pour le rallumer.": "Desligar a moldura? Será preciso retirar a ficha e voltar a ligá-la para a acender.",
   "à": "às",
-  "échec de l'envoi ({why})": "falha no envio ({why})"
+  "échec de l'envoi ({why})": "falha no envio ({why})",
+  "Vidéos": "Vídeos",
+  "Son des vidéos": "Som dos vídeos",
+  "Vidéo": "Vídeo"
 }

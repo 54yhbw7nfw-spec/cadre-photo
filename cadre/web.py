@@ -17,6 +17,7 @@ import json
 import logging
 import os
 import socket
+import subprocess
 import threading
 import time
 import urllib.parse
@@ -27,7 +28,7 @@ from flask import (Flask, Response, g, jsonify, redirect, render_template, reque
                    send_from_directory)
 from werkzeug.security import check_password_hash, generate_password_hash
 
-from . import config, i18n, icloud, imaging, places, update, weather
+from . import config, i18n, icloud, imaging, places, update, videos, weather
 
 log = logging.getLogger("cadre.web")
 
@@ -133,6 +134,7 @@ def disk_status():
 ICLOUD_EVERY = 30 * 60
 ICLOUD_FIRST_DELAY = 120  # s après le lancement : le diaporama et le Wi-Fi d'abord
 ICLOUD_MAX_BYTES = 40 * 1024 * 1024
+VIDEO_MAX_BYTES = 200 * 1024 * 1024
 
 
 class IcloudSync:
@@ -259,21 +261,25 @@ class IcloudSync:
     def add(self, photo):
         path = os.path.join(config.INCOMING_DIR, "icloud-" + uuid.uuid4().hex)
         try:
-            req = urllib.request.Request(photo["url"],
-                                         headers={"User-Agent": icloud.HEADERS["User-Agent"]})
-            with urllib.request.urlopen(req, timeout=60) as r, open(path, "wb") as f:
-                size = 0
-                while chunk := r.read(1 << 16):
-                    size += len(chunk)
-                    if size > ICLOUD_MAX_BYTES:
-                        raise OSError("fichier trop volumineux")
-                    f.write(chunk)
+            download(photo["url"], path, ICLOUD_MAX_BYTES)
             taken = photo["taken"].strftime("%Y:%m:%d %H:%M:%S") if photo["taken"] else ""
             with process_lock:
                 name, _ = imaging.process(path, False, "icloud.jpg", taken,
                                           "icloud:" + photo["id"])
             if photo.get("position"):
                 places.set_place(name, *photo["position"])
+            if photo.get("video") and not videos.is_video(name):
+                # Vidéo : téléchargée sur la carte (trop grosse pour la RAM), préparée ensuite
+                # par video_worker ; la couverture s'affiche comme une photo en attendant.
+                os.makedirs(config.VIDEOS_DIR, exist_ok=True)
+                tmp = os.path.join(config.VIDEOS_DIR, ".dl-" + uuid.uuid4().hex)
+                try:
+                    download(photo["video"], tmp, VIDEO_MAX_BYTES)
+                    os.replace(tmp, videos.source_path(name))
+                finally:
+                    if os.path.exists(tmp):
+                        os.unlink(tmp)
+                video_wake.set()
             return name
         finally:
             try:
@@ -283,6 +289,39 @@ class IcloudSync:
 
 
 icloud_sync = IcloudSync()
+
+
+def download(url, dest, limit):
+    req = urllib.request.Request(url, headers={"User-Agent": icloud.HEADERS["User-Agent"]})
+    with urllib.request.urlopen(req, timeout=60) as r, open(dest, "wb") as f:
+        size = 0
+        while chunk := r.read(1 << 16):
+            size += len(chunk)
+            if size > limit:
+                raise OSError("fichier trop volumineux")
+            f.write(chunk)
+
+
+# --- Vidéos : préparation en tâche de fond ---------------------------------------------------
+
+video_wake = threading.Event()
+
+
+def video_worker():
+    """Redresse les vidéos reçues, une à la fois, à la priorité la plus basse (cadre.videos)."""
+    videos.clean_leftovers()
+    while True:
+        for name in videos.pending():
+            if not os.path.exists(os.path.join(config.PHOTOS_DIR, name)):
+                videos.delete(name)  # couverture supprimée entre-temps
+                continue
+            try:
+                videos.convert(name)
+            except (OSError, ValueError, subprocess.SubprocessError) as exc:
+                log.warning("Vidéo %s : %s", name, exc)
+                videos.delete(name)
+        video_wake.wait(600)
+        video_wake.clear()
 
 
 # --- Langue des pages ----------------------------------------------------------------------
@@ -525,6 +564,7 @@ def photos():
     fav, hidden = set(flags["favorites"]), set(flags["hidden"])
     return jsonify(total=len(names), page=page, pages=pages, disk=disk_status(),
                    items=items, cloud=[n for n in items if n in cloud],
+                   videos=[n for n in items if videos.is_video(n)],
                    favorites=[n for n in items if n in fav],
                    hidden=[n for n in items if n in hidden])
 
@@ -753,7 +793,8 @@ def main():
 
     logging.basicConfig(level=logging.INFO, format="%(levelname)s %(message)s")
     logging.getLogger("waitress.queue").setLevel(logging.ERROR)
-    for d in (config.PHOTOS_DIR, config.THUMBS_DIR, config.ORIGINALS_DIR, config.INCOMING_DIR):
+    for d in (config.PHOTOS_DIR, config.THUMBS_DIR, config.ORIGINALS_DIR, config.INCOMING_DIR,
+              config.VIDEOS_DIR):
         os.makedirs(d, exist_ok=True)
     for leftover in os.listdir(config.INCOMING_DIR):
         os.unlink(os.path.join(config.INCOMING_DIR, leftover))
@@ -761,6 +802,7 @@ def main():
     queue.start()
     icloud_sync.start()
     threading.Thread(target=weather_loop, name="météo", daemon=True).start()
+    threading.Thread(target=video_worker, name="vidéos", daemon=True).start()
 
     from waitress import serve
     log.info("Admin web sur le port %d", args.port)

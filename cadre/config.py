@@ -8,6 +8,7 @@ DATA_DIR = os.environ.get("CADRE_DATA", "/var/lib/cadre")
 PHOTOS_DIR = os.path.join(DATA_DIR, "photos")
 THUMBS_DIR = os.path.join(DATA_DIR, "thumbs")
 ORIGINALS_DIR = os.path.join(DATA_DIR, "originals")
+VIDEOS_DIR = os.path.join(DATA_DIR, "videos")  # vidéos de l'album (cadre.videos)
 SETTINGS_FILE = os.path.join(DATA_DIR, "settings.json")
 AUTH_FILE = os.path.join(DATA_DIR, "auth.json")
 ICLOUD_FILE = os.path.join(DATA_DIR, "icloud.json")
@@ -34,7 +35,7 @@ DEFAULTS = {"transition": "random", "delay": 10, "shuffle": True, "keep_original
             "show_date": True, "show_place": False, "memories": True, "highlight_new": True,
             "sleep": False, "sleep_start": "23:00", "sleep_end": "07:00",
             "source": "all", "period_from": "", "period_to": "", "show_clock": False,
-            "show_weather": False, "language": "fr"}
+            "show_weather": False, "language": "fr", "videos": True, "video_sound": True}
 LANGUAGES = ("fr", "en", "es", "de", "pt", "ro", "ru", "ar", "zh")  # langue des écrans du cadre (i18n.LANGS)
 SOURCES = ("all", "icloud", "uploads", "favorites")  # photos affichées par le diaporama
 TIME_RE = re.compile(r"^([01][0-9]|2[0-3]):[0-5][0-9]$")
@@ -62,7 +63,7 @@ def validate_settings(raw):
     except (TypeError, ValueError):
         pass
     for key in ("shuffle", "keep_originals", "show_date", "show_place", "memories",
-                "highlight_new", "sleep", "show_clock", "show_weather"):
+                "highlight_new", "sleep", "show_clock", "show_weather", "videos", "video_sound"):
         if isinstance(raw.get(key), bool):
             s[key] = raw[key]
     for key in ("sleep_start", "sleep_end"):

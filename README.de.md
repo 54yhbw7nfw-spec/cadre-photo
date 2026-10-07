@@ -25,7 +25,8 @@ https://github.com/user-attachments/assets/a8b461aa-8c9c-4914-9142-d1d3fda74f1f
   eingepasst; Datum, Ort (« Sallanches, France ») und Erinnerungen « vor 2 Jahren ».
 - **Fotos vom Handy hinzufügen**: QR-Code auf dem Fernseher scannen, Fotos auswählen, fertig.
   Die Fotos werden vor dem Senden verkleinert: schnell, auch bei schwachem WLAN.
-- **Geteiltes iCloud-Album**: Link einfügen, der Rahmen synchronisiert alle 30 Minuten.
+- **Geteiltes iCloud-Album**: Link einfügen, der Rahmen synchronisiert alle 30 Minuten,
+  Videos inklusive (mit Ton).
 - **Ohne Tastatur**: Ohne bekanntes WLAN öffnet der Rahmen ein eigenes Netz und zeigt einen
   QR-Code; das Heim-WLAN wählt man am Handy.
 - **TV-Fernbedienung** (HDMI-CEC): nächstes und vorheriges Foto, Pause, QR-Code.

@@ -29,7 +29,8 @@ https://github.com/user-attachments/assets/bcbb4fcc-ea57-4c54-a6ad-acc80952d96a
   cadrées ; date, lieu (« Sallanches, France ») et souvenirs « Il y a 2 ans ».
 - **Ajout de photos depuis le téléphone** : on scanne le QR code affiché à l'écran, on choisit
   ses photos, c'est tout. Les photos sont réduites avant l'envoi : rapide, même en Wi-Fi faible.
-- **Album iCloud partagé** : collez le lien, le cadre se synchronise toutes les 30 minutes.
+- **Album iCloud partagé** : collez le lien, le cadre se synchronise toutes les 30 minutes,
+  vidéos comprises (avec le son).
 - **Installation sans clavier** : sans Wi-Fi connu, le cadre crée son propre réseau et affiche un
   QR code ; on choisit le Wi-Fi de la maison depuis son téléphone.
 - **Télécommande de la télé** (HDMI-CEC) : photo suivante, précédente, pause, QR code.

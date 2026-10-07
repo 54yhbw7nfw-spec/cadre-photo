@@ -25,6 +25,7 @@ HEADERS = {"Content-Type": "text/plain;charset=UTF-8", "Origin": "https://www.ic
 CK = "/database/1/com.apple.photos.cloud/production"
 CK_HOST = "https://ckdatabasews.icloud.com"
 READABLE = {"public.jpeg", "public.png"}  # originaux décodables tels quels par Pillow
+VIDEO_MAX_MS = 2 * 60 * 1000  # vidéos plus longues ignorées (redressement : ~15 min par minute)
 MAX_SIDE = 2560  # ancien format : plus grande version ne dépassant pas cette taille
 
 CLOUDKIT_RE = re.compile(r"^https://(?:photos|www|share)\.icloud\.com/(?:shared/album|photos)/"
@@ -108,10 +109,19 @@ def _cloudkit(code):
             continue
         f = r["fields"]
         master = masters.get(f.get("masterRef", {}).get("value", {}).get("recordName"))
-        if master is None or f.get("duration", {}).get("value"):
-            continue  # fichier absent ou vidéo
+        if master is None:
+            continue  # fichier absent
+        video = None
+        if f.get("duration", {}).get("value"):
+            # Vidéo : version moyenne d'Apple (H.264 720p, même si l'original est en HEVC),
+            # avec son image de couverture comme « photo ».
+            res_video = master.get("resVidMedRes") or master.get("resVidSmallRes")
+            if (f["duration"]["value"] > VIDEO_MAX_MS or not res_video
+                    or "resJPEGMedRes" not in master):
+                continue
+            video = res_video["value"]["downloadURL"].replace("${f}", "video.mp4")
         # Version retouchée, sinon JPEG intermédiaire d'Apple (HEIC), sinon original lisible.
-        if "resJPEGFullRes" in f:
+        if "resJPEGFullRes" in f and not video:
             res = f["resJPEGFullRes"]
         elif "resJPEGMedRes" in master:
             res = master["resJPEGMedRes"]
@@ -126,7 +136,7 @@ def _cloudkit(code):
                      + offset).replace(tzinfo=None)
         photos.append({"id": r["recordName"],
                        "url": res["value"]["downloadURL"].replace("${f}", "photo.jpg"),
-                       "taken": taken, "position": _position(f)})
+                       "taken": taken, "position": _position(f), "video": video})
     return title, photos
 
 

@@ -25,7 +25,8 @@ https://github.com/user-attachments/assets/3c9c3b45-1680-46d4-b0f2-a077d93b124f
   años ».
 - **Añadir fotos desde el móvil**: escanea el código QR que aparece en la tele, elige tus fotos
   y listo. Las fotos se reducen antes de enviarlas: rápido incluso con Wi-Fi débil.
-- **Álbum compartido de iCloud**: pega el enlace, el marco se sincroniza cada 30 minutos.
+- **Álbum compartido de iCloud**: pega el enlace, el marco se sincroniza cada 30 minutos,
+  vídeos incluidos (con sonido).
 - **Sin teclado**: sin un Wi-Fi conocido, el marco crea su propia red y muestra un código QR;
   eliges el Wi-Fi de casa desde el móvil.
 - **Mando de la tele** (HDMI-CEC): foto siguiente y anterior, pausa, código QR.

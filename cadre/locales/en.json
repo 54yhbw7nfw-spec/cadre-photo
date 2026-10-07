@@ -306,5 +306,8 @@
   "Éteindre": "Shut down",
   "Éteindre le cadre ? Il faudra le débrancher puis le rebrancher pour le rallumer.": "Shut down the frame? You will need to unplug it and plug it back in to turn it on again.",
   "à": "to",
-  "échec de l'envoi ({why})": "upload failed ({why})"
+  "échec de l'envoi ({why})": "upload failed ({why})",
+  "Vidéos": "Videos",
+  "Son des vidéos": "Video sound",
+  "Vidéo": "Video"
 }

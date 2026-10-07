@@ -306,5 +306,8 @@
   "Éteindre": "关机",
   "Éteindre le cadre ? Il faudra le débrancher puis le rebrancher pour le rallumer.": "关闭相框？之后需要拔掉电源再重新插上才能开机。",
   "à": "到",
-  "échec de l'envoi ({why})": "上传失败（{why}）"
+  "échec de l'envoi ({why})": "上传失败（{why}）",
+  "Vidéos": "视频",
+  "Son des vidéos": "视频声音",
+  "Vidéo": "视频"
 }

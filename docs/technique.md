@@ -28,6 +28,7 @@ cahier des charges : [cahier-des-charges.md](cahier-des-charges.md) ; mise à jo
 | 18. Heure et météo (Open-Meteo), icônes dessinées | livré par mise à jour signée, à tester |
 | 19. Mise à jour depuis un lien (release GitHub), sur demande | ✅ cas d'erreur testés ; release à tester |
 | 20. Traduction : admin et écrans en 9 langues (fr, en, es, de, pt, ro, ru, ar, zh) | ✅ testé sur le Pi (écrans rendus dans chaque langue, admin en chinois) |
+| 21. Vidéos de l'album iCloud (lecture matérielle, redressement des vidéos portrait) | ✅ testé sur la télé (3 vidéos, portrait et paysage) |
 | Mode d'emploi vidéo (9 langues) | ✅ `docs/video/`, à refaire après une évolution visible |
 
 ## Reste à faire / idées
@@ -175,6 +176,7 @@ pour déployer) :
   `/usr/lib/systemd/journald.conf.d/40-rpi-volatile-storage.conf`) :
   `/etc/systemd/journald.conf.d/50-cadre-persistent.conf` = `[Journal]` `Storage=persistent`
   `SystemMaxUse=50M`, et dossier `/var/log/journal`.
+- Paquets vidéo : `ffmpeg`, GStreamer et ses liaisons Python (voir « Vidéos »), ~100 Mo.
 - Paquet `fonts-wqy-microhei` (police chinoise, 5 Mo) : écrans en chinois, ou message écrit en
   chinois. Posé sur les cadres déjà installés par `update/apply.sh`.
 
@@ -371,6 +373,36 @@ roumain, russe, arabe et chinois (mandarin simplifié). Le texte français du co
   `i18n.plural_index` (et `pluralIndex` dans les pages).
 - Ajout ou changement d'un texte : `python tools/i18n_check.py` liste ce qui manque dans chaque
   langue ; les messages des services sont à déclarer dans sa liste `MESSAGES`.
+
+## Vidéos
+
+Vidéos de l'album iCloud (2 min au plus) : Apple fournit pour chacune une version H.264 720p
+(`resVidMedRes`), même quand l'original est en HEVC, et une image de couverture. La couverture
+est une photo comme les autres (galerie, date, lieu, favoris, masquage, souvenirs) ; la vidéo
+est rangée à côté, `videos/<nom de la couverture>.mp4` (`cadre/videos.py`). Réglages
+« Vidéos » et « Son des vidéos » ; pictogramme ▶ dans la galerie.
+
+- **Lecture** (`cadre/videoplay.py`, un processus par vidéo, lancé à l'avance) : GStreamer,
+  `v4l2h264dec` (décodeur matériel) puis `kmssink` (affichage direct par le contrôleur d'écran,
+  sans copie par le processeur). Le diaporama lui prête son descripteur DRM : pas d'écran à
+  céder. Avec `skip-vsync=true` : sinon kmssink lit aussi les événements « image affichée » du
+  diaporama (même descripteur) et plante. La vidéo est préparée pendant la photo précédente
+  (`show-preroll-frame=false`), la couverture s'affiche, puis la vidéo démarre aussitôt.
+  Télécommande : flèches, OK, retour = arrêt ; haut / bas = pause. Si le lecteur plante quand
+  même, le diaporama redémarre (3 s) plutôt que de rester bloqué. Mesuré : lecteur 20 à 35 % de
+  CPU et 50 Mo pendant la lecture, diaporama au repos.
+- **Préparation** : le contrôleur d'écran ne sait pas tourner de 90°. Chaque vidéo est réduite,
+  tournée si besoin (matrice d'affichage du fichier) et mise sur fond noir en 1280x720 une fois, à
+  son arrivée, par ffmpeg (`h264_v4l2m2m`, priorité 19 ; ~10 min par minute de vidéo). Même une
+  vidéo en paysage est réencodée : telle qu'iCloud la fournit (pistes de métadonnées, images B),
+  elle faisait planter le lecteur. Pendant ce temps, le décodeur matériel est pris : les vidéos s'affichent comme des
+  photos (couverture).
+- **Écartés** : lecture du fichier iCloud tel quel (plantages) ; mpv (sur ce processeur graphique, chaque image repasse par le processeur : demi-
+  vitesse à 90 % de CPU, ou écran noir) ; redressement par GStreamer (`v4l2h264enc` : image
+  rose ou noire) ; enchaîner deux vidéos dans le même processus GStreamer (plantage).
+- Paquets : `ffmpeg python3-gi gir1.2-gstreamer-1.0 gir1.2-gst-plugins-base-1.0
+  gstreamer1.0-plugins-good gstreamer1.0-plugins-bad gstreamer1.0-libav gstreamer1.0-alsa`
+  (~100 Mo) ; le service du diaporama a le groupe `audio`.
 
 ## Lieu des photos
 

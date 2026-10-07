@@ -27,7 +27,8 @@ https://github.com/user-attachments/assets/c21e93ef-faa0-494b-abfe-0f3351bc6d45
   date, place (« Sallanches, France ») and memories « 2 years ago ».
 - **Add photos from a phone**: scan the QR code shown on the TV, pick your photos, done. Photos
   are resized before upload: fast, even on weak Wi-Fi.
-- **Shared iCloud album**: paste the link, the frame syncs every 30 minutes.
+- **Shared iCloud album**: paste the link, the frame syncs every 30 minutes, videos
+  included (with sound).
 - **No keyboard needed**: without a known Wi-Fi, the frame creates its own network and shows a
   QR code; choose the home Wi-Fi from your phone.
 - **TV remote** (HDMI-CEC): next and previous photo, pause, QR code.

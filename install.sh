@@ -75,7 +75,8 @@ step "Paquets"
 PKGS="python3-pygame python3-pil libegl1 libegl-mesa0 libgles2 libgl1-mesa-dri
       python3-flask python3-waitress python3-qrcode python3-numpy iw
       network-manager dnsmasq-base wpasupplicant avahi-daemon iso-codes fonts-wqy-microhei
-      fonts-dejavu-core"
+      fonts-dejavu-core ffmpeg python3-gi gir1.2-gstreamer-1.0 gir1.2-gst-plugins-base-1.0
+      gstreamer1.0-plugins-good gstreamer1.0-plugins-bad gstreamer1.0-libav gstreamer1.0-alsa"
 MISSING=""
 for p in $PKGS; do
     dpkg-query -W -f='${Status}' "$p" 2>/dev/null | grep -q "ok installed" || MISSING="$MISSING $p"

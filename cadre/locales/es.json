@@ -306,5 +306,8 @@
   "Éteindre": "Apagar",
   "Éteindre le cadre ? Il faudra le débrancher puis le rebrancher pour le rallumer.": "¿Apagar el marco? Habrá que desenchufarlo y volver a enchufarlo para encenderlo.",
   "à": "a",
-  "échec de l'envoi ({why})": "fallo del envío ({why})"
+  "échec de l'envoi ({why})": "fallo del envío ({why})",
+  "Vidéos": "Vídeos",
+  "Son des vidéos": "Sonido de los vídeos",
+  "Vidéo": "Vídeo"
 }

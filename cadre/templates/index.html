@@ -37,6 +37,8 @@
         </label>
         <label>{{ _("Délai") }} <input type="number" name="delay" min="2" max="3600" step="1"> s</label>
         <label><input type="checkbox" name="shuffle"> {{ _("Ordre aléatoire") }}</label>
+        <label><input type="checkbox" name="videos"> {{ _("Vidéos") }}</label>
+        <label><input type="checkbox" name="video_sound"> {{ _("Son des vidéos") }}</label>
         <label>{{ _("Photos affichées") }}
           <select name="source">
             <option value="all">{{ _("Toutes") }}</option>
@@ -242,6 +244,8 @@ async function loadSettings() {
   form.transition.value = s.transition;
   form.delay.value = s.delay;
   form.shuffle.checked = s.shuffle;
+  form.videos.checked = s.videos;
+  form.video_sound.checked = s.video_sound;
   form.keep_originals.checked = s.keep_originals;
   form.show_date.checked = s.show_date;
   form.show_place.checked = s.show_place;
@@ -288,6 +292,8 @@ form.addEventListener("change", async (e) => {
     transition: form.transition.value,
     delay: parseInt(form.delay.value, 10) || 10,
     shuffle: form.shuffle.checked,
+    videos: form.videos.checked,
+    video_sound: form.video_sound.checked,
     keep_originals: form.keep_originals.checked,
     show_date: form.show_date.checked,
     show_place: form.show_place.checked,
@@ -314,12 +320,14 @@ form.addEventListener("change", async (e) => {
 const PER_PAGE = 48;
 let page = 1, pages = 1, items = [];
 let cloud = new Set();  // photos venant de l'album iCloud (liseré)
+let videoSet = new Set();  // couvertures de vidéos (pictogramme ▶)
 let favorites = new Set(), hiddenSet = new Set();  // favoris, photos masquées du diaporama
 const selected = new Set();
 
 async function loadPage(p = page) {
   const data = await api(`/api/photos?page=${p}&per=${PER_PAGE}`);
   page = data.page; pages = data.pages; items = data.items; cloud = new Set(data.cloud);
+  videoSet = new Set(data.videos);
   favorites = new Set(data.favorites); hiddenSet = new Set(data.hidden);
   $("#count").textContent = tn("{n} photo", "{n} photos", data.total);
   showDisk(data.disk);
@@ -335,9 +343,11 @@ async function loadPage(p = page) {
 function tile(name) {
   const el = document.createElement("div");
   el.className = "tile" + (selected.has(name) ? " sel" : "") + (cloud.has(name) ? " cloud" : "")
-    + (favorites.has(name) ? " fav" : "") + (hiddenSet.has(name) ? " hid" : "");
+    + (favorites.has(name) ? " fav" : "") + (hiddenSet.has(name) ? " hid" : "")
+    + (videoSet.has(name) ? " video" : "");
   el.dataset.name = name;
   el.innerHTML = `<img alt="" src="/thumbs/${name}"><span class="check"></span>
+    <span class="play" title="${t("Vidéo")}">▶</span>
     <span class="flag">★</span><span class="hidden-label">${t("masquée")}</span>
     <span class="actions"><a href="/photos/${name}" target="_blank" title="${t("Voir")}">⤢</a>
     <button data-act="fav" title="${t("Favori : revient plus souvent")}">★</button>

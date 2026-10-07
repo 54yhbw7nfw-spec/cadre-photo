@@ -16,4 +16,13 @@ if ! dpkg -s fonts-dejavu-core >/dev/null 2>&1; then
         || { apt-get update && apt-get install -y --no-install-recommends fonts-dejavu-core; } \
         || echo "police arabe non installée"
 fi
+# 20261007 : vidéos de l'album (lecture GStreamer, redressement ffmpeg, ~100 Mo). Sans
+# Internet, la mise à jour continue : les vidéos restent alors affichées comme des photos.
+VIDEO_PKGS="ffmpeg python3-gi gir1.2-gstreamer-1.0 gir1.2-gst-plugins-base-1.0
+  gstreamer1.0-plugins-good gstreamer1.0-plugins-bad gstreamer1.0-libav gstreamer1.0-alsa"
+if ! dpkg -s $VIDEO_PKGS >/dev/null 2>&1; then
+    apt-get install -y --no-install-recommends $VIDEO_PKGS \
+        || { apt-get update && apt-get install -y --no-install-recommends $VIDEO_PKGS; } \
+        || echo "paquets vidéo non installés"
+fi
 exit 0

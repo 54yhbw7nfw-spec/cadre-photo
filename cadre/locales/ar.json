@@ -306,5 +306,8 @@
   "Éteindre": "إيقاف التشغيل",
   "Éteindre le cadre ? Il faudra le débrancher puis le rebrancher pour le rallumer.": "إيقاف تشغيل الإطار؟ لإعادة تشغيله يجب فصله عن الكهرباء ثم توصيله من جديد.",
   "à": "إلى",
-  "échec de l'envoi ({why})": "فشل الإرسال ({why})"
+  "échec de l'envoi ({why})": "فشل الإرسال ({why})",
+  "Vidéos": "مقاطع الفيديو",
+  "Son des vidéos": "صوت مقاطع الفيديو",
+  "Vidéo": "فيديو"
 }

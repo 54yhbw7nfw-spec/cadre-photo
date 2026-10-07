@@ -24,7 +24,8 @@ https://github.com/user-attachments/assets/eedc4615-3018-4efd-9de2-80cc99e5dfb8
   orizontale bine încadrate; data, locul (« Sallanches, France ») și amintiri « acum 2 ani ».
 - **Poze adăugate de pe telefon**: scanați codul QR afișat pe televizor, alegeți pozele și gata.
   Pozele sunt micșorate înainte de trimitere: rapid, chiar și cu Wi-Fi slab.
-- **Album iCloud partajat**: lipiți linkul, rama se sincronizează la fiecare 30 de minute.
+- **Album iCloud partajat**: lipiți linkul, rama se sincronizează la fiecare 30 de minute,
+  inclusiv videoclipurile (cu sunet).
 - **Fără tastatură**: fără o rețea Wi-Fi cunoscută, rama își creează propria rețea și afișează
   un cod QR; alegeți Wi-Fi-ul casei de pe telefon.
 - **Telecomanda televizorului** (HDMI-CEC): poza următoare și cea anterioară, pauză, cod QR.

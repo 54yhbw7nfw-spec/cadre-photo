@@ -15,6 +15,7 @@ import signal
 import socket
 import struct
 import subprocess
+import sys
 import threading
 import time
 from datetime import datetime
@@ -28,7 +29,7 @@ import qrcode  # noqa: E402
 from pygame._sdl2.video import Renderer, Texture, Window  # noqa: E402
 from PIL import Image, ImageDraw, ImageFont, ImageOps  # noqa: E402
 
-from . import config, i18n, places, weather  # noqa: E402
+from . import config, i18n, places, videos, weather  # noqa: E402
 
 log = logging.getLogger("cadre.display")
 
@@ -51,6 +52,8 @@ SLEEP_CHECK = 5.0  # secondes entre deux vérifications pendant la veille
 MESSAGE_EVERY = 5  # mode « écran » : une carte toutes les N photos
 MEMORY_EVERY = 4   # « Ce jour-là » : un souvenir toutes les N photos
 NEW_FOR = 24 * 3600  # « Nouveau » : photo arrivée depuis moins de 24 h
+VIDEO_READY_WAIT = 30  # s : préparation de la vidéo au-delà de laquelle on y renonce
+AFTER_VIDEO = 2.0      # s de couverture après la vidéo, avant la photo suivante
 
 
 def years_ago(name, today=None):
@@ -416,6 +419,119 @@ class Display:
         signal.signal(signal.SIGINT, self._stop)
         log.info("Affichage %s, sortie %sx%s, rendu logique %sx%s",
                  pygame.display.get_driver(), *self.window.size, W, H)
+
+    # --- Vidéos (cadre.videoplay : un processus par vidéo, lancé à l'avance) ----------------
+
+    player = None
+    player_name = None  # vidéo en cours de préparation dans player
+
+    def drm_fd(self):
+        """Descripteur DRM ouvert par SDL : prêté au lecteur, qui pilote alors l'écran avec le
+        même droit que le diaporama (rien à céder ni à reprendre)."""
+        fds = []
+        for fd in os.listdir("/proc/self/fd"):
+            try:
+                if os.path.realpath(f"/proc/self/fd/{fd}").startswith("/dev/dri/card"):
+                    fds.append(int(fd))
+            except OSError:
+                pass
+        return min(fds) if fds else None
+
+    def spare_player(self):
+        """Lecteur prêt à l'emploi (GStreamer chargé, ~3 s) ; None si impossible."""
+        if self.player is not None and self.player.poll() is None and self.player_name is None:
+            return self.player
+        self.close_player()
+        fd = self.drm_fd()
+        if fd is None:
+            return None
+        self.player = subprocess.Popen(
+            [sys.executable, "-X", "faulthandler", "-m", "cadre.videoplay", "--fd", str(fd)],
+            cwd=os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+            stdin=subprocess.PIPE, stdout=subprocess.PIPE, text=True, pass_fds=[fd])
+        self.player_out = queue.Queue()
+
+        def read(p, out):
+            for line in p.stdout:
+                out.put(line.strip())
+            out.put("exit")
+        threading.Thread(target=read, args=(self.player, self.player_out), daemon=True).start()
+        return self.player
+
+    def player_send(self, cmd):
+        try:
+            self.player.stdin.write(cmd + "\n")
+            self.player.stdin.flush()
+            return True
+        except (OSError, AttributeError, ValueError):
+            return False
+
+    def close_player(self):
+        p, self.player, self.player_name = self.player, None, None
+        if p is None:
+            return
+        try:
+            p.stdin.close()
+        except OSError:
+            pass
+        try:
+            p.wait(timeout=5)
+        except subprocess.TimeoutExpired:
+            p.kill()
+            p.wait()
+
+    def load_video(self, name, sound):
+        """Prépare la vidéo de name pendant que la photo actuelle reste affichée."""
+        if self.spare_player() and self.player_send(f"load {1 if sound else 0} {videos.path(name)}"):
+            self.player_name = name
+            log.info("Vidéo %s : préparation", name)
+
+    def play_video(self, name):
+        """Lit la vidéo préparée de name (couverture affichée) ; touches de la télécommande :
+        flèches, OK, retour = arrêt (← : photo précédente), pause / reprise."""
+        if self.player_name != name:
+            return
+        t0 = time.monotonic()
+        line = None
+        while time.monotonic() - t0 < VIDEO_READY_WAIT and self.running:
+            try:
+                line = self.player_out.get(timeout=0.2)
+                break
+            except queue.Empty:
+                pygame.event.pump()
+        if line != "ready":
+            log.warning("Vidéo %s non lue : %s", name, line or "préparation trop longue")
+            self.close_player()
+            return
+        log.info("Vidéo %s : lecture (prête en %.1f s)", name, time.monotonic() - t0)
+        self.player_send("play")
+        paused = False
+        while self.running:
+            try:
+                line = self.player_out.get(timeout=0.2)
+            except queue.Empty:
+                line = None
+            if line is not None:
+                if line == "exit":
+                    # Lecteur planté en pleine lecture : l'écran peut rester bloqué (événement
+                    # DRM perdu) ; on repart de zéro (systemd relance le diaporama en 3 s).
+                    log.error("Vidéo %s : lecteur arrêté brutalement, redémarrage", name)
+                    self.close_player()
+                    raise SystemExit(1)
+                if line != "end":
+                    log.warning("Vidéo %s : %s", name, line)
+                break
+            pygame.event.pump()
+            while not self.keys.empty():
+                code = self.keys.get()
+                if code in PAUSE_KEYS:
+                    paused = not paused
+                    self.player_send("pause" if paused else "resume")
+                elif code in (KEY_RIGHT, KEY_LEFT, KEY_OK, KEY_SELECT, KEY_BACK, KEY_EXIT):
+                    self.player_send("stop")
+                    if code == KEY_LEFT:
+                        self.keys.put(code)  # photo précédente, par la boucle du diaporama
+        self.close_player()
 
     def tr(self, text, **values):
         return i18n.gettext(text, self.lang, **values)
@@ -869,6 +985,11 @@ class Display:
                     next_check = 0.0  # fichier supprimé ? relire le dossier tout de suite
                     continue
                 upcoming = (name, tex)
+                if self.player_name and self.player_name != name:
+                    self.close_player()  # vidéo préparée pour rien (sélection changée…)
+                # Pendant un redressement, le décodeur matériel est pris : couverture seule.
+                if settings["videos"] and videos.ready(name) and not videos.converting():
+                    self.load_video(name, settings["video_sound"])
 
             if (current is None or current is placeholder
                     or (not paused and time.monotonic() >= self.due_at)):
@@ -883,9 +1004,14 @@ class Display:
                 self.transition(current, upcoming[1], settings["transition"])
                 current = upcoming[1]
                 history = (history + [upcoming[0]])[-50:]
-                upcoming = None
+                shown, upcoming = upcoming[0], None
                 placeholder = None
                 self.due_at = time.monotonic() + settings["delay"]
+                if self.player_name == shown:
+                    self.play_video(shown)
+                    self.show(current)  # couverture de nouveau visible
+                    self.due_at = time.monotonic() + AFTER_VIDEO
+                    self.spare_player()  # lecteur suivant chargé pendant les photos
             else:
                 self.idle(POLL_INTERVAL)
 

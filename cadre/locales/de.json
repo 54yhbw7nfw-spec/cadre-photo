@@ -306,5 +306,8 @@
   "Éteindre": "Ausschalten",
   "Éteindre le cadre ? Il faudra le débrancher puis le rebrancher pour le rallumer.": "Den Rahmen ausschalten? Zum Wiedereinschalten muss er aus- und wieder eingesteckt werden.",
   "à": "bis",
-  "échec de l'envoi ({why})": "Hochladen fehlgeschlagen ({why})"
+  "échec de l'envoi ({why})": "Hochladen fehlgeschlagen ({why})",
+  "Vidéos": "Videos",
+  "Son des vidéos": "Ton der Videos",
+  "Vidéo": "Video"
 }

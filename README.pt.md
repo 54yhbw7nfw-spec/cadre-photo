@@ -28,7 +28,8 @@ https://github.com/user-attachments/assets/38ade30c-4ee2-4553-86c4-8b9763bcd0fb
   horizontais bem enquadradas; data, local (« Sallanches, France ») e recordações « há 2 anos ».
 - **Fotografias adicionadas a partir do telemóvel**: leia o código QR mostrado na televisão,
   escolha as fotografias e pronto. São reduzidas antes do envio: rápido, mesmo com Wi-Fi fraco.
-- **Álbum partilhado do iCloud**: cole a ligação, a moldura sincroniza a cada 30 minutos.
+- **Álbum partilhado do iCloud**: cole a ligação, a moldura sincroniza a cada 30 minutos,
+  vídeos incluídos (com som).
 - **Sem teclado**: sem um Wi-Fi conhecido, a moldura cria a sua própria rede e mostra um código
   QR; escolhe-se o Wi-Fi de casa no telemóvel.
 - **Comando da televisão** (HDMI-CEC): fotografia seguinte e anterior, pausa, código QR.
