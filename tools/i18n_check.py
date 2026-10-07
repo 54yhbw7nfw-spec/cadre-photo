@@ -26,6 +26,8 @@ MESSAGES = [
     "photo inconnue", "action inconnue", "service réseau indisponible ({exc})",
     "service météo injoignable ({exc})", "carte SD pleine : synchronisation arrêtée",
     "une photo n'a pas pu être ajoutée ({exc})", "erreur interne ({exc})",
+    # vidéos envoyées (web.py)
+    "vidéo trop longue (2 min au plus)", "vidéo illisible ou format non pris en charge", "vidéo illisible ({exc})",
     # imaging.py
     "image illisible ou format non pris en charge ({exc})",
     "image entièrement noire (réduction du navigateur ratée) : renvoyer la photo, ou cocher « Conserver les originaux »",

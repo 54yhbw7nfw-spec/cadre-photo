@@ -55,7 +55,8 @@
 - Mise à jour à distance par fichier signé (clé SSH du développeur), retour arrière automatique.
 - Message de la famille affiché sur le cadre (bandeau ou écran), entre deux dates
   (préparé à l'avance si besoin).
-- Vidéos de l'album iCloud (2 min au plus) lues dans le diaporama, avec ou sans son.
+- Vidéos de l'album iCloud et vidéos envoyées depuis le téléphone (2 min au plus) lues dans le
+  diaporama, avec ou sans son.
 - Admin et écrans du cadre en français, anglais, espagnol, allemand, portugais, roumain, russe,
   arabe et chinois (langue de l'admin : celle du navigateur ou choisie ; langue du cadre : réglage).
 - Souvenirs « ce jour-là » et nouvelles photos mises en avant (pictogramme « nouveau »).

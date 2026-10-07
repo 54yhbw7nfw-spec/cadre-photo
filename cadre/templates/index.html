@@ -122,14 +122,15 @@
     <h2>{{ _("Ajouter des photos") }}</h2>
     <div id="drop" tabindex="0" role="button">
       {{ _("<strong>Glissez vos photos ici</strong> ou cliquez pour les choisir")|safe }}<br>
-      <span class="muted">{{ _("JPEG, PNG, WebP — réduites par le navigateur avant l'envoi, puis adaptées à l'écran par le cadre") }}</span>
+      <span class="muted">{{ _("Photos (JPEG, PNG, WebP) et vidéos de 2 min au plus — réduites par le navigateur avant l'envoi, puis adaptées à l'écran par le cadre") }}</span>
     </div>
-    <input type="file" id="picker" accept="image/*" multiple hidden>
+    <input type="file" id="picker" accept="image/*,video/*" multiple hidden>
     <div id="progress">
       <div class="bar-label"><span>{{ _("Envoi") }}</span><span id="up-text"></span></div>
       <div class="bar"><div id="up-bar"></div></div>
       <div class="bar-label"><span>{{ _("Traitement sur le cadre") }}</span><span id="proc-text"></span></div>
       <div class="bar"><div id="proc-bar"></div></div>
+      <p id="conv" class="small muted" hidden></p>
       <ul id="errors"></ul>
     </div>
   </section>
@@ -414,7 +415,8 @@ window.addEventListener("drop", (e) => e.preventDefault());
 const batch = {files: [], sent: 0, baseline: null, running: false};
 
 function enqueue(fileList) {
-  const files = [...fileList].filter((f) => f.type.startsWith("image/") || /\.(jpe?g|png|webp)$/i.test(f.name));
+  const files = [...fileList].filter((f) => f.type.startsWith("image/") || isVideo(f)
+                                            || /\.(jpe?g|png|webp)$/i.test(f.name));
   if (!files.length) return;
   if (!batch.running) {
     Object.assign(batch, {files: [], sent: 0, baseline: null});
@@ -500,7 +502,139 @@ function showDisk(d) {
 /* Réduction dans le navigateur à 2x l'écran : ~10x moins de données sur un Wi-Fi faible.
    Le cadre fait ensuite le traitement final (Pillow). */
 const MAX_W = 2560, MAX_H = 1440;
+/* ---- Vidéos : lues telles quelles si H.264, sinon (HEVC des iPhone) converties par le
+   navigateur, qui sait les lire : rejouées dans un canevas et enregistrées (MediaRecorder), en
+   temps réel. Date et lieu de prise de vue lus dans le fichier d'origine (perdus à la
+   conversion). Sans conversion possible, l'original part : le cadre le convertira, lentement. */
+const VIDEO_MAX_S = 120;
+const isVideo = (f) => f.type.startsWith("video/") || /\.(mp4|mov|m4v|webm|3gp)$/i.test(f.name);
+
+function findAtom(u8, name) {
+  const [a, b, c, d] = [...name].map((ch) => ch.charCodeAt(0));
+  for (let i = 4; i + 3 < u8.length; i++) {
+    if (u8[i] === a && u8[i + 1] === b && u8[i + 2] === c && u8[i + 3] === d) return i;
+  }
+  return -1;
+}
+
+function exifDate(d) {
+  const p = (n) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}:${p(d.getMonth() + 1)}:${p(d.getDate())} ` +
+    `${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}`;
+}
+
+/* Codec, date (atome mvhd, secondes depuis 1904, UTC) et position (ISO 6709 des iPhone,
+   « +48.8584+002.2945+035.000/ ») : début et fin du fichier, où se trouvent les métadonnées. */
+async function videoInfo(file) {
+  const part = 4 << 20, parts = [file.slice(0, part)];
+  if (file.size > part) parts.push(file.slice(Math.max(part, file.size - part)));
+  const info = {hevc: false, taken: "", gps: ""};
+  for (const blob of parts) {
+    const u8 = new Uint8Array(await blob.arrayBuffer());
+    info.hevc ||= findAtom(u8, "hvc1") >= 0 || findAtom(u8, "hev1") >= 0;
+    const m = findAtom(u8, "mvhd");
+    if (!info.taken && m >= 0 && m + 20 <= u8.length) {
+      const v = new DataView(u8.buffer, m + 4);
+      const secs = v.getUint8(0) === 1 ? Number(v.getBigUint64(4)) : v.getUint32(4);
+      if (secs > 2082844800 + 86400) info.taken = exifDate(new Date((secs - 2082844800) * 1000));
+    }
+    if (!info.gps) {
+      const g = new TextDecoder("latin1").decode(u8)
+        .match(/([+-]\d{2}\.\d{3,})([+-]\d{3}\.\d{3,})(?:[+-]\d+(?:\.\d+)?)?\//);
+      if (g) info.gps = `${+g[1]},${+g[2]}`;
+    }
+  }
+  return info;
+}
+
+function videoElement(file) {
+  const v = document.createElement("video");
+  v.playsInline = true;
+  v.preload = "auto";
+  v.src = URL.createObjectURL(file);
+  return v;
+}
+
+function videoDuration(file) {
+  return new Promise((resolve) => {
+    const v = videoElement(file);
+    const done = (d) => { URL.revokeObjectURL(v.src); resolve(d); };
+    v.onloadedmetadata = () => done(v.duration);
+    v.onerror = () => done(NaN);  // illisible par ce navigateur : le cadre vérifiera
+    setTimeout(() => done(NaN), 15000);
+  });
+}
+
+function showConversion(name, fraction) {
+  const box = $("#conv");
+  box.hidden = !name;
+  if (name) box.textContent = t("Conversion de « {file} » pour le cadre : {pct} % — gardez cette page ouverte",
+                                {file: name, pct: Math.floor(fraction * 100)});
+}
+
+async function convertVideo(file) {
+  const v = videoElement(file);
+  try {
+    await new Promise((ok, ko) => { v.onloadedmetadata = ok; v.onerror = () => ko(new Error("lecture")); });
+    const scale = Math.min(1280 / v.videoWidth, 720 / v.videoHeight, 1);
+    const canvas = document.createElement("canvas");
+    canvas.width = Math.round(v.videoWidth * scale / 2) * 2;
+    canvas.height = Math.round(v.videoHeight * scale / 2) * 2;
+    const ctx = canvas.getContext("2d");
+    const stream = canvas.captureStream(30);
+    let audio = null;
+    try {  // son capté sans passer par le haut-parleur
+      audio = new AudioContext();
+      const dest = audio.createMediaStreamDestination();
+      audio.createMediaElementSource(v).connect(dest);
+      await audio.resume();
+      dest.stream.getAudioTracks().forEach((tr) => stream.addTrack(tr));
+    } catch { v.muted = true; }
+    const type = ["video/mp4;codecs=avc1,mp4a.40.2", "video/mp4;codecs=avc1", "video/mp4",
+                  "video/webm;codecs=vp8,opus", "video/webm"].find((m) => MediaRecorder.isTypeSupported(m));
+    if (!type) throw new Error("MediaRecorder");
+    const rec = new MediaRecorder(stream, {mimeType: type, videoBitsPerSecond: 4000000});
+    const chunks = [];
+    rec.ondataavailable = (e) => { if (e.data.size) chunks.push(e.data); };
+    const stopped = new Promise((ok) => { rec.onstop = ok; });
+    const draw = () => {
+      ctx.drawImage(v, 0, 0, canvas.width, canvas.height);
+      showConversion(file.name, v.duration ? v.currentTime / v.duration : 0);
+      if (!v.ended) v.requestVideoFrameCallback ? v.requestVideoFrameCallback(draw) : requestAnimationFrame(draw);
+    };
+    rec.start(1000);
+    await v.play();
+    draw();
+    await new Promise((ok) => { v.onended = ok; });
+    rec.stop();
+    await stopped;
+    if (audio) audio.close();
+    const ext = type.startsWith("video/mp4") ? ".mp4" : ".webm";
+    return new File(chunks, file.name.replace(/\.[^.]+$/, "") + ext, {type: type.split(";")[0]});
+  } finally {
+    URL.revokeObjectURL(v.src);
+    showConversion(null);
+  }
+}
+
+async function prepareVideo(file) {
+  const info = await videoInfo(file).catch(() => ({hevc: false, taken: "", gps: ""}));
+  const original = {blob: file, taken: info.taken, gps: info.gps, sig: "", kind: "video"};
+  const duration = await videoDuration(file);
+  if (duration > VIDEO_MAX_S + 2) return {...original, error: t("vidéo trop longue (2 min au plus)")};
+  if (!info.hevc || !window.MediaRecorder || !HTMLCanvasElement.prototype.captureStream ||
+      !Number.isFinite(duration) || !(await canvasTrusted())) return original;
+  try {
+    const blob = await convertVideo(file);
+    return {...original, blob, sig: `${file.name}|${file.size}|${file.lastModified}`};
+  } catch (e) {
+    console.warn("Conversion impossible, original envoyé :", e);
+    return original;
+  }
+}
+
 async function prepare(file, keepOriginal) {
+  if (isVideo(file)) return prepareVideo(file);
   const {taken, gps} = await exifInfo(file).catch(() => ({taken: "", gps: ""}));
   const original = {blob: file, taken, gps, sig: ""};
   if (keepOriginal) return original;
@@ -585,6 +719,7 @@ function send(file, prep, onProgress) {
     fd.append("taken", prep.taken);
     fd.append("sig", prep.sig);
     fd.append("gps", prep.gps);
+    fd.append("kind", prep.kind || "photo");
     fd.append("file", prep.blob, file.name);
     xhr.send(fd);
   });
@@ -602,6 +737,12 @@ async function runBatch() {
   while (batch.sent < batch.files.length && !diskFull) {
     const file = batch.files[batch.sent];
     const prep = await (next && next.file === file ? next.promise : prepare(file, keep));
+    if (prep.error) {  // vidéo trop longue…
+      addError(file.name, prep.error);
+      batch.sent++;
+      drawUpload(0);
+      continue;
+    }
     const following = batch.files[batch.sent + 1];
     next = following ? {file: following, promise: prepare(following, keep)} : null;
     let tries = 0;

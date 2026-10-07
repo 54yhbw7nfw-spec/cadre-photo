@@ -1,7 +1,6 @@
 {
   "@date": "{d}. {month} {y}",
   "@months": ["Januar", "Februar", "März", "April", "Mai", "Juni", "Juli", "August", "September", "Oktober", "November", "Dezember"],
-
   "(actuel)": "(aktuell)",
   "1. Scannez le QR code pour rejoindre": "1. QR-Code scannen, um beizutreten:",
   "2. La page de configuration s'ouvre.": "2. Die Einrichtungsseite öffnet sich.",
@@ -47,6 +46,7 @@
   "Connexion à « {ssid} » en cours. Ce réseau de configuration va disparaître : regardez la télévision. Si la connexion réussit, un QR code vous mène à la gestion des photos. Sinon, le réseau de configuration revient dans une minute environ.": "Verbindung mit „{ssid}“ wird hergestellt. Dieses Einrichtungsnetz verschwindet gleich: Schauen Sie auf den Fernseher. Wenn die Verbindung klappt, führt ein QR-Code zur Fotoverwaltung. Andernfalls ist das Einrichtungsnetz in etwa einer Minute wieder da.",
   "Connexion à « {ssid} »…": "Verbindung mit „{ssid}“…",
   "Conserver les originaux": "Originale behalten",
+  "Conversion de « {file} » pour le cadre : {pct} % — gardez cette page ouverte": "„{file}“ wird für den Rahmen umgewandelt: {pct} % – lassen Sie diese Seite geöffnet",
   "Date": "Datum",
   "Dernière heure": "Letzte Stunde",
   "Diagnostic": "Diagnose",
@@ -85,7 +85,6 @@
   "Installer cette version ?": "Diese Version installieren?",
   "Installer depuis un fichier…": "Aus einer Datei installieren…",
   "Installer la mise à jour « {file} » ?": "Das Update „{file}“ installieren?",
-  "JPEG, PNG, WebP — réduites par le navigateur avant l'envoi, puis adaptées à l'écran par le cadre": "JPEG, PNG, WebP – vom Browser vor dem Hochladen verkleinert, dann vom Rahmen an den Bildschirm angepasst",
   "Jusqu'au (inclus)": "Bis einschließlich",
   "L'admin est protégé par un mot de passe.": "Die Verwaltung ist durch ein Passwort geschützt.",
   "L'admin n'est pas protégé : toute personne sur le réseau peut gérer les photos.": "Die Verwaltung ist nicht geschützt: Jede Person im Netz kann die Fotos verwalten.",
@@ -135,6 +134,7 @@
   "Page {page} / {pages}": "Seite {page} / {pages}",
   "Pause": "Pause",
   "Photos": "Fotos",
+  "Photos (JPEG, PNG, WebP) et vidéos de 2 min au plus — réduites par le navigateur avant l'envoi, puis adaptées à l'écran par le cadre": "Fotos (JPEG, PNG, WebP) und Videos bis 2 Min. – vom Browser vor dem Hochladen verkleinert, dann vom Rahmen an den Bildschirm angepasst",
   "Photos affichées": "Angezeigte Fotos",
   "Photos envoyées seulement": "Nur hochgeladene Fotos",
   "Position automatique : ": "Automatischer Standort: ",
@@ -161,6 +161,7 @@
   "Se déconnecter": "Abmelden",
   "Service réseau indisponible.": "Netzwerkdienst nicht verfügbar.",
   "Sinon, allez sur": "Sonst öffnen Sie",
+  "Son des vidéos": "Ton der Videos",
   "Souvenirs « ce jour-là »": "Erinnerungen „an diesem Tag“",
   "Suivante": "Weiter",
   "Supprimer": "Löschen",
@@ -188,6 +189,8 @@
   "Version {version} disponible": "Version {version} verfügbar",
   "Version {version} installée : redémarrage des services, puis vérification (environ 3 minutes). Gardez cette page ouverte.": "Version {version} installiert: Dienste starten neu, danach Prüfung (etwa 3 Minuten). Lassen Sie diese Seite geöffnet.",
   "Version {version} installée et vérifiée.": "Version {version} installiert und geprüft.",
+  "Vidéo": "Video",
+  "Vidéos": "Videos",
   "Ville": "Stadt",
   "Voir": "Ansehen",
   "Voir les réglages de la page de gestion": "Prüfen Sie die Einstellungen auf der Verwaltungsseite",
@@ -285,6 +288,9 @@
   "version absente du fichier": "Version fehlt in der Datei",
   "version {version} déjà installée ou plus ancienne (installée : {current})": "Version {version} bereits installiert oder älter (installiert: {current})",
   "version {version} retirée : {reason}": "Version {version} entfernt: {reason}",
+  "vidéo illisible ({exc})": "unlesbares Video ({exc})",
+  "vidéo illisible ou format non pris en charge": "unlesbares Video oder nicht unterstütztes Format",
+  "vidéo trop longue (2 min au plus)": "Video zu lang (höchstens 2 Min.)",
   "ville « {city} » introuvable": "Stadt „{city}“ nicht gefunden",
   "vérification après installation : {problem}": "Prüfung nach der Installation: {problem}",
   "vérification en cours": "wird geprüft",
@@ -306,8 +312,5 @@
   "Éteindre": "Ausschalten",
   "Éteindre le cadre ? Il faudra le débrancher puis le rebrancher pour le rallumer.": "Den Rahmen ausschalten? Zum Wiedereinschalten muss er aus- und wieder eingesteckt werden.",
   "à": "bis",
-  "échec de l'envoi ({why})": "Hochladen fehlgeschlagen ({why})",
-  "Vidéos": "Videos",
-  "Son des vidéos": "Ton der Videos",
-  "Vidéo": "Video"
+  "échec de l'envoi ({why})": "Hochladen fehlgeschlagen ({why})"
 }

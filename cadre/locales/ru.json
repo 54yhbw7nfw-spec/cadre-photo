@@ -1,7 +1,6 @@
 {
   "@date": "{d} {month} {y}",
   "@months": ["января", "февраля", "марта", "апреля", "мая", "июня", "июля", "августа", "сентября", "октября", "ноября", "декабря"],
-
   "(actuel)": "(текущая)",
   "1. Scannez le QR code pour rejoindre": "1. Отсканируйте QR-код, чтобы подключиться",
   "2. La page de configuration s'ouvre.": "2. Откроется страница настройки.",
@@ -47,6 +46,7 @@
   "Connexion à « {ssid} » en cours. Ce réseau de configuration va disparaître : regardez la télévision. Si la connexion réussit, un QR code vous mène à la gestion des photos. Sinon, le réseau de configuration revient dans une minute environ.": "Подключение к «{ssid}». Эта сеть настройки сейчас исчезнет: смотрите на телевизор. Если подключение удастся, QR-код приведёт вас к управлению фотографиями. Если нет, сеть настройки вернётся примерно через минуту.",
   "Connexion à « {ssid} »…": "Подключение к «{ssid}»…",
   "Conserver les originaux": "Сохранять оригиналы",
+  "Conversion de « {file} » pour le cadre : {pct} % — gardez cette page ouverte": "Преобразование «{file}» для рамки: {pct} % — не закрывайте эту страницу",
   "Date": "Дата",
   "Dernière heure": "Последний час",
   "Diagnostic": "Диагностика",
@@ -85,7 +85,6 @@
   "Installer cette version ?": "Установить эту версию?",
   "Installer depuis un fichier…": "Установить из файла…",
   "Installer la mise à jour « {file} » ?": "Установить обновление «{file}»?",
-  "JPEG, PNG, WebP — réduites par le navigateur avant l'envoi, puis adaptées à l'écran par le cadre": "JPEG, PNG, WebP — уменьшаются браузером перед отправкой, затем рамка подгоняет их под экран",
   "Jusqu'au (inclus)": "До (включительно)",
   "L'admin est protégé par un mot de passe.": "Страница управления защищена паролем.",
   "L'admin n'est pas protégé : toute personne sur le réseau peut gérer les photos.": "Страница управления не защищена: любой человек в сети может управлять фотографиями.",
@@ -135,6 +134,7 @@
   "Page {page} / {pages}": "Страница {page} / {pages}",
   "Pause": "Пауза",
   "Photos": "Фотографии",
+  "Photos (JPEG, PNG, WebP) et vidéos de 2 min au plus — réduites par le navigateur avant l'envoi, puis adaptées à l'écran par le cadre": "Фотографии (JPEG, PNG, WebP) и видео до 2 мин — уменьшаются браузером перед отправкой, затем рамка подгоняет их под экран",
   "Photos affichées": "Показывать фото",
   "Photos envoyées seulement": "Только загруженные фото",
   "Position automatique : ": "Автоматическое местоположение: ",
@@ -161,6 +161,7 @@
   "Se déconnecter": "Выйти",
   "Service réseau indisponible.": "Сетевая служба недоступна.",
   "Sinon, allez sur": "Или откройте",
+  "Son des vidéos": "Звук видео",
   "Souvenirs « ce jour-là »": "Воспоминания «в этот день»",
   "Suivante": "Вперёд",
   "Supprimer": "Удалить",
@@ -188,6 +189,8 @@
   "Version {version} disponible": "Доступна версия {version}",
   "Version {version} installée : redémarrage des services, puis vérification (environ 3 minutes). Gardez cette page ouverte.": "Версия {version} установлена: перезапуск служб, затем проверка (около 3 минут). Не закрывайте эту страницу.",
   "Version {version} installée et vérifiée.": "Версия {version} установлена и проверена.",
+  "Vidéo": "Видео",
+  "Vidéos": "Видео",
   "Ville": "Город",
   "Voir": "Открыть",
   "Voir les réglages de la page de gestion": "Проверьте настройки на странице управления",
@@ -285,6 +288,9 @@
   "version absente du fichier": "в файле нет версии",
   "version {version} déjà installée ou plus ancienne (installée : {current})": "версия {version} уже установлена или старее (установлена: {current})",
   "version {version} retirée : {reason}": "версия {version} удалена: {reason}",
+  "vidéo illisible ({exc})": "видео не читается ({exc})",
+  "vidéo illisible ou format non pris en charge": "видео не читается или формат не поддерживается",
+  "vidéo trop longue (2 min au plus)": "видео слишком длинное (не более 2 мин)",
   "ville « {city} » introuvable": "город «{city}» не найден",
   "vérification après installation : {problem}": "проверка после установки: {problem}",
   "vérification en cours": "идёт проверка",
@@ -306,8 +312,5 @@
   "Éteindre": "Выключить",
   "Éteindre le cadre ? Il faudra le débrancher puis le rebrancher pour le rallumer.": "Выключить рамку? Чтобы снова включить её, нужно будет отключить её от сети и включить заново.",
   "à": "до",
-  "échec de l'envoi ({why})": "ошибка отправки ({why})",
-  "Vidéos": "Видео",
-  "Son des vidéos": "Звук видео",
-  "Vidéo": "Видео"
+  "échec de l'envoi ({why})": "ошибка отправки ({why})"
 }

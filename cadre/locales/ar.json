@@ -1,7 +1,6 @@
 {
   "@date": "{d} {month} {y}",
   "@months": ["يناير", "فبراير", "مارس", "أبريل", "مايو", "يونيو", "يوليو", "أغسطس", "سبتمبر", "أكتوبر", "نوفمبر", "ديسمبر"],
-
   "(actuel)": "(الحالية)",
   "1. Scannez le QR code pour rejoindre": "1. امسح رمز QR للانضمام إلى",
   "2. La page de configuration s'ouvre.": "2. تُفتح صفحة الإعداد.",
@@ -47,6 +46,7 @@
   "Connexion à « {ssid} » en cours. Ce réseau de configuration va disparaître : regardez la télévision. Si la connexion réussit, un QR code vous mène à la gestion des photos. Sinon, le réseau de configuration revient dans une minute environ.": "جارٍ الاتصال بـ «{ssid}». ستختفي شبكة الإعداد هذه: انظر إلى التلفاز. إذا نجح الاتصال، سيقودك رمز QR إلى إدارة الصور. وإلا فستعود شبكة الإعداد بعد دقيقة تقريبًا.",
   "Connexion à « {ssid} »…": "جارٍ الاتصال بـ «{ssid}»…",
   "Conserver les originaux": "الاحتفاظ بالأصول",
+  "Conversion de « {file} » pour le cadre : {pct} % — gardez cette page ouverte": "جارٍ تحويل «{file}» للإطار: {pct}% — أبقِ هذه الصفحة مفتوحة",
   "Date": "التاريخ",
   "Dernière heure": "آخر ساعة",
   "Diagnostic": "التشخيص",
@@ -85,7 +85,6 @@
   "Installer cette version ?": "تثبيت هذا الإصدار؟",
   "Installer depuis un fichier…": "التثبيت من ملف…",
   "Installer la mise à jour « {file} » ?": "تثبيت التحديث «{file}»؟",
-  "JPEG, PNG, WebP — réduites par le navigateur avant l'envoi, puis adaptées à l'écran par le cadre": "JPEG وPNG وWebP — يصغّرها المتصفح قبل الإرسال، ثم يكيّفها الإطار مع الشاشة",
   "Jusqu'au (inclus)": "حتى (ضمنًا)",
   "L'admin est protégé par un mot de passe.": "صفحة الإدارة محمية بكلمة مرور.",
   "L'admin n'est pas protégé : toute personne sur le réseau peut gérer les photos.": "صفحة الإدارة غير محمية: يمكن لأي شخص على الشبكة إدارة الصور.",
@@ -135,6 +134,7 @@
   "Page {page} / {pages}": "الصفحة {page} / {pages}",
   "Pause": "إيقاف مؤقت",
   "Photos": "الصور",
+  "Photos (JPEG, PNG, WebP) et vidéos de 2 min au plus — réduites par le navigateur avant l'envoi, puis adaptées à l'écran par le cadre": "صور (JPEG وPNG وWebP) ومقاطع فيديو حتى دقيقتين — يصغّرها المتصفح قبل الإرسال، ثم يكيّفها الإطار مع الشاشة",
   "Photos affichées": "الصور المعروضة",
   "Photos envoyées seulement": "الصور المرسلة فقط",
   "Position automatique : ": "الموقع التلقائي: ",
@@ -161,6 +161,7 @@
   "Se déconnecter": "تسجيل الخروج",
   "Service réseau indisponible.": "خدمة الشبكة غير متاحة.",
   "Sinon, allez sur": "أو افتح",
+  "Son des vidéos": "صوت مقاطع الفيديو",
   "Souvenirs « ce jour-là »": "ذكريات «في مثل هذا اليوم»",
   "Suivante": "التالية",
   "Supprimer": "حذف",
@@ -188,6 +189,8 @@
   "Version {version} disponible": "الإصدار {version} متاح",
   "Version {version} installée : redémarrage des services, puis vérification (environ 3 minutes). Gardez cette page ouverte.": "ثُبّت الإصدار {version}: إعادة تشغيل الخدمات ثم التحقق (نحو 3 دقائق). أبقِ هذه الصفحة مفتوحة.",
   "Version {version} installée et vérifiée.": "ثُبّت الإصدار {version} وتم التحقق منه.",
+  "Vidéo": "فيديو",
+  "Vidéos": "مقاطع الفيديو",
   "Ville": "المدينة",
   "Voir": "عرض",
   "Voir les réglages de la page de gestion": "راجع الإعدادات في صفحة الإدارة",
@@ -285,6 +288,9 @@
   "version absente du fichier": "الإصدار غير موجود في الملف",
   "version {version} déjà installée ou plus ancienne (installée : {current})": "الإصدار {version} مثبت بالفعل أو أقدم (المثبت: {current})",
   "version {version} retirée : {reason}": "أُزيل الإصدار {version}: {reason}",
+  "vidéo illisible ({exc})": "فيديو غير مقروء ({exc})",
+  "vidéo illisible ou format non pris en charge": "فيديو غير مقروء أو صيغة غير مدعومة",
+  "vidéo trop longue (2 min au plus)": "الفيديو طويل جدًا (دقيقتان كحد أقصى)",
   "ville « {city} » introuvable": "المدينة «{city}» غير موجودة",
   "vérification après installation : {problem}": "التحقق بعد التثبيت: {problem}",
   "vérification en cours": "قيد التحقق",
@@ -306,8 +312,5 @@
   "Éteindre": "إيقاف التشغيل",
   "Éteindre le cadre ? Il faudra le débrancher puis le rebrancher pour le rallumer.": "إيقاف تشغيل الإطار؟ لإعادة تشغيله يجب فصله عن الكهرباء ثم توصيله من جديد.",
   "à": "إلى",
-  "échec de l'envoi ({why})": "فشل الإرسال ({why})",
-  "Vidéos": "مقاطع الفيديو",
-  "Son des vidéos": "صوت مقاطع الفيديو",
-  "Vidéo": "فيديو"
+  "échec de l'envoi ({why})": "فشل الإرسال ({why})"
 }

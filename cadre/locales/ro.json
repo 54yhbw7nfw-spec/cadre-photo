@@ -1,7 +1,6 @@
 {
   "@date": "{d} {month} {y}",
   "@months": ["ianuarie", "februarie", "martie", "aprilie", "mai", "iunie", "iulie", "august", "septembrie", "octombrie", "noiembrie", "decembrie"],
-
   "(actuel)": "(actuală)",
   "1. Scannez le QR code pour rejoindre": "1. Scanați codul QR pentru a intra în",
   "2. La page de configuration s'ouvre.": "2. Se deschide pagina de configurare.",
@@ -47,6 +46,7 @@
   "Connexion à « {ssid} » en cours. Ce réseau de configuration va disparaître : regardez la télévision. Si la connexion réussit, un QR code vous mène à la gestion des photos. Sinon, le réseau de configuration revient dans une minute environ.": "Conectare la „{ssid}”. Această rețea de configurare va dispărea: priviți televizorul. Dacă se conectează, un cod QR vă duce la administrarea fotografiilor. Altfel, rețeaua de configurare revine în aproximativ un minut.",
   "Connexion à « {ssid} »…": "Conectare la „{ssid}”…",
   "Conserver les originaux": "Păstrează originalele",
+  "Conversion de « {file} » pour le cadre : {pct} % — gardez cette page ouverte": "Se convertește „{file}” pentru ramă: {pct} % — păstrați această pagină deschisă",
   "Date": "Data",
   "Dernière heure": "Ultima oră",
   "Diagnostic": "Diagnostic",
@@ -85,7 +85,6 @@
   "Installer cette version ?": "Instalați această versiune?",
   "Installer depuis un fichier…": "Instalează dintr-un fișier…",
   "Installer la mise à jour « {file} » ?": "Instalați actualizarea „{file}”?",
-  "JPEG, PNG, WebP — réduites par le navigateur avant l'envoi, puis adaptées à l'écran par le cadre": "JPEG, PNG, WebP — micșorate de browser înainte de trimitere, apoi adaptate ecranului de către ramă",
   "Jusqu'au (inclus)": "Până la (inclusiv)",
   "L'admin est protégé par un mot de passe.": "Administrarea este protejată prin parolă.",
   "L'admin n'est pas protégé : toute personne sur le réseau peut gérer les photos.": "Administrarea nu este protejată: oricine din rețea poate gestiona fotografiile.",
@@ -135,6 +134,7 @@
   "Page {page} / {pages}": "Pagina {page} / {pages}",
   "Pause": "Pauză",
   "Photos": "Fotografii",
+  "Photos (JPEG, PNG, WebP) et vidéos de 2 min au plus — réduites par le navigateur avant l'envoi, puis adaptées à l'écran par le cadre": "Fotografii (JPEG, PNG, WebP) și videoclipuri de cel mult 2 min — micșorate de browser înainte de trimitere, apoi adaptate ecranului de către ramă",
   "Photos affichées": "Fotografii afișate",
   "Photos envoyées seulement": "Doar fotografiile trimise",
   "Position automatique : ": "Poziție automată: ",
@@ -161,6 +161,7 @@
   "Se déconnecter": "Deconectare",
   "Service réseau indisponible.": "Serviciul de rețea nu este disponibil.",
   "Sinon, allez sur": "Altfel, deschideți",
+  "Son des vidéos": "Sunetul videoclipurilor",
   "Souvenirs « ce jour-là »": "Amintiri „în această zi”",
   "Suivante": "Următoarea",
   "Supprimer": "Șterge",
@@ -188,6 +189,8 @@
   "Version {version} disponible": "Versiunea {version} disponibilă",
   "Version {version} installée : redémarrage des services, puis vérification (environ 3 minutes). Gardez cette page ouverte.": "Versiunea {version} instalată: serviciile repornesc, apoi urmează verificarea (aproximativ 3 minute). Păstrați această pagină deschisă.",
   "Version {version} installée et vérifiée.": "Versiunea {version} instalată și verificată.",
+  "Vidéo": "Videoclip",
+  "Vidéos": "Videoclipuri",
   "Ville": "Oraș",
   "Voir": "Vezi",
   "Voir les réglages de la page de gestion": "Verificați setările din pagina de administrare",
@@ -285,6 +288,9 @@
   "version absente du fichier": "versiunea lipsește din fișier",
   "version {version} déjà installée ou plus ancienne (installée : {current})": "versiunea {version} este deja instalată sau mai veche (instalată: {current})",
   "version {version} retirée : {reason}": "versiunea {version} retrasă: {reason}",
+  "vidéo illisible ({exc})": "videoclip ilizibil ({exc})",
+  "vidéo illisible ou format non pris en charge": "videoclip ilizibil sau format neacceptat",
+  "vidéo trop longue (2 min au plus)": "videoclip prea lung (maximum 2 min)",
   "ville « {city} » introuvable": "orașul „{city}” nu a fost găsit",
   "vérification après installation : {problem}": "verificare după instalare: {problem}",
   "vérification en cours": "verificare în curs",
@@ -306,8 +312,5 @@
   "Éteindre": "Oprește",
   "Éteindre le cadre ? Il faudra le débrancher puis le rebrancher pour le rallumer.": "Opriți rama? Va trebui scoasă din priză și băgată la loc pentru a o reporni.",
   "à": "la",
-  "échec de l'envoi ({why})": "trimitere eșuată ({why})",
-  "Vidéos": "Videoclipuri",
-  "Son des vidéos": "Sunetul videoclipurilor",
-  "Vidéo": "Videoclip"
+  "échec de l'envoi ({why})": "trimitere eșuată ({why})"
 }

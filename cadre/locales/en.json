@@ -1,7 +1,6 @@
 {
   "@date": "{d} {month} {y}",
   "@months": ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"],
-
   "(actuel)": "(current)",
   "1. Scannez le QR code pour rejoindre": "1. Scan the QR code to join",
   "2. La page de configuration s'ouvre.": "2. The setup page opens.",
@@ -47,6 +46,7 @@
   "Connexion à « {ssid} » en cours. Ce réseau de configuration va disparaître : regardez la télévision. Si la connexion réussit, un QR code vous mène à la gestion des photos. Sinon, le réseau de configuration revient dans une minute environ.": "Connecting to “{ssid}”. This setup network is about to disappear: look at the TV. If the connection succeeds, a QR code takes you to photo management. Otherwise, the setup network comes back in about a minute.",
   "Connexion à « {ssid} »…": "Connecting to “{ssid}”…",
   "Conserver les originaux": "Keep originals",
+  "Conversion de « {file} » pour le cadre : {pct} % — gardez cette page ouverte": "Converting “{file}” for the frame: {pct}% — keep this page open",
   "Date": "Date",
   "Dernière heure": "Last hour",
   "Diagnostic": "Diagnostics",
@@ -85,7 +85,6 @@
   "Installer cette version ?": "Install this version?",
   "Installer depuis un fichier…": "Install from a file…",
   "Installer la mise à jour « {file} » ?": "Install the update “{file}”?",
-  "JPEG, PNG, WebP — réduites par le navigateur avant l'envoi, puis adaptées à l'écran par le cadre": "JPEG, PNG, WebP — shrunk by the browser before upload, then fitted to the screen by the frame",
   "Jusqu'au (inclus)": "Until (inclusive)",
   "L'admin est protégé par un mot de passe.": "The admin page is password-protected.",
   "L'admin n'est pas protégé : toute personne sur le réseau peut gérer les photos.": "The admin page is not protected: anyone on the network can manage the photos.",
@@ -135,6 +134,7 @@
   "Page {page} / {pages}": "Page {page} / {pages}",
   "Pause": "Pause",
   "Photos": "Photos",
+  "Photos (JPEG, PNG, WebP) et vidéos de 2 min au plus — réduites par le navigateur avant l'envoi, puis adaptées à l'écran par le cadre": "Photos (JPEG, PNG, WebP) and videos up to 2 min — shrunk by the browser before upload, then fitted to the screen by the frame",
   "Photos affichées": "Photos shown",
   "Photos envoyées seulement": "Uploaded photos only",
   "Position automatique : ": "Automatic location: ",
@@ -161,6 +161,7 @@
   "Se déconnecter": "Sign out",
   "Service réseau indisponible.": "Network service unavailable.",
   "Sinon, allez sur": "Otherwise, go to",
+  "Son des vidéos": "Video sound",
   "Souvenirs « ce jour-là »": "“On this day” memories",
   "Suivante": "Next",
   "Supprimer": "Delete",
@@ -188,6 +189,8 @@
   "Version {version} disponible": "Version {version} available",
   "Version {version} installée : redémarrage des services, puis vérification (environ 3 minutes). Gardez cette page ouverte.": "Version {version} installed: services restarting, then check (about 3 minutes). Keep this page open.",
   "Version {version} installée et vérifiée.": "Version {version} installed and verified.",
+  "Vidéo": "Video",
+  "Vidéos": "Videos",
   "Ville": "City",
   "Voir": "View",
   "Voir les réglages de la page de gestion": "Check the settings on the management page",
@@ -285,6 +288,9 @@
   "version absente du fichier": "version missing from the file",
   "version {version} déjà installée ou plus ancienne (installée : {current})": "version {version} already installed or older (installed: {current})",
   "version {version} retirée : {reason}": "version {version} removed: {reason}",
+  "vidéo illisible ({exc})": "unreadable video ({exc})",
+  "vidéo illisible ou format non pris en charge": "unreadable video or unsupported format",
+  "vidéo trop longue (2 min au plus)": "video too long (2 min max)",
   "ville « {city} » introuvable": "city “{city}” not found",
   "vérification après installation : {problem}": "check after installation: {problem}",
   "vérification en cours": "being checked",
@@ -306,8 +312,5 @@
   "Éteindre": "Shut down",
   "Éteindre le cadre ? Il faudra le débrancher puis le rebrancher pour le rallumer.": "Shut down the frame? You will need to unplug it and plug it back in to turn it on again.",
   "à": "to",
-  "échec de l'envoi ({why})": "upload failed ({why})",
-  "Vidéos": "Videos",
-  "Son des vidéos": "Video sound",
-  "Vidéo": "Video"
+  "échec de l'envoi ({why})": "upload failed ({why})"
 }

@@ -1,7 +1,6 @@
 {
   "@date": "{y}年{m}月{d}日",
   "@months": ["1月", "2月", "3月", "4月", "5月", "6月", "7月", "8月", "9月", "10月", "11月", "12月"],
-
   "(actuel)": "（当前）",
   "1. Scannez le QR code pour rejoindre": "1. 扫描二维码，加入",
   "2. La page de configuration s'ouvre.": "2. 设置页面会自动打开。",
@@ -47,6 +46,7 @@
   "Connexion à « {ssid} » en cours. Ce réseau de configuration va disparaître : regardez la télévision. Si la connexion réussit, un QR code vous mène à la gestion des photos. Sinon, le réseau de configuration revient dans une minute environ.": "正在连接“{ssid}”。这个设置网络即将消失，请看电视屏幕。连接成功后，扫描二维码即可进入照片管理；否则，设置网络会在大约一分钟后重新出现。",
   "Connexion à « {ssid} »…": "正在连接“{ssid}”…",
   "Conserver les originaux": "保留原图",
+  "Conversion de « {file} » pour le cadre : {pct} % — gardez cette page ouverte": "正在为相框转换“{file}”：{pct}% — 请保持此页面打开",
   "Date": "日期",
   "Dernière heure": "最近 1 小时",
   "Diagnostic": "诊断",
@@ -85,7 +85,6 @@
   "Installer cette version ?": "安装此版本？",
   "Installer depuis un fichier…": "从文件安装…",
   "Installer la mise à jour « {file} » ?": "安装更新“{file}”？",
-  "JPEG, PNG, WebP — réduites par le navigateur avant l'envoi, puis adaptées à l'écran par le cadre": "JPEG、PNG、WebP — 上传前由浏览器压缩，再由相框适配屏幕",
   "Jusqu'au (inclus)": "截止日期（含当天）",
   "L'admin est protégé par un mot de passe.": "管理页面已设置密码保护。",
   "L'admin n'est pas protégé : toute personne sur le réseau peut gérer les photos.": "管理页面未设密码：同一网络中的任何人都可以管理照片。",
@@ -135,6 +134,7 @@
   "Page {page} / {pages}": "第 {page} / {pages} 页",
   "Pause": "暂停",
   "Photos": "照片",
+  "Photos (JPEG, PNG, WebP) et vidéos de 2 min au plus — réduites par le navigateur avant l'envoi, puis adaptées à l'écran par le cadre": "照片（JPEG、PNG、WebP）和 2 分钟以内的视频 — 上传前由浏览器压缩，再由相框适配屏幕",
   "Photos affichées": "显示的照片",
   "Photos envoyées seulement": "仅上传的照片",
   "Position automatique : ": "自动定位：",
@@ -161,6 +161,7 @@
   "Se déconnecter": "退出登录",
   "Service réseau indisponible.": "网络服务不可用。",
   "Sinon, allez sur": "或者访问",
+  "Son des vidéos": "视频声音",
   "Souvenirs « ce jour-là »": "“那年今日”回忆",
   "Suivante": "下一页",
   "Supprimer": "删除",
@@ -188,6 +189,8 @@
   "Version {version} disponible": "有可用版本 {version}",
   "Version {version} installée : redémarrage des services, puis vérification (environ 3 minutes). Gardez cette page ouverte.": "版本 {version} 已安装：正在重启服务，随后进行检查（约 3 分钟）。请保持此页面打开。",
   "Version {version} installée et vérifiée.": "版本 {version} 已安装并通过检查。",
+  "Vidéo": "视频",
+  "Vidéos": "视频",
   "Ville": "城市",
   "Voir": "查看",
   "Voir les réglages de la page de gestion": "请在管理页面检查设置",
@@ -285,6 +288,9 @@
   "version absente du fichier": "文件中缺少版本信息",
   "version {version} déjà installée ou plus ancienne (installée : {current})": "版本 {version} 已安装或更旧（当前已安装：{current}）",
   "version {version} retirée : {reason}": "已撤下版本 {version}：{reason}",
+  "vidéo illisible ({exc})": "视频无法读取（{exc}）",
+  "vidéo illisible ou format non pris en charge": "视频无法读取或格式不受支持",
+  "vidéo trop longue (2 min au plus)": "视频太长（最长 2 分钟）",
   "ville « {city} » introuvable": "找不到城市“{city}”",
   "vérification après installation : {problem}": "安装后检查：{problem}",
   "vérification en cours": "检查中",
@@ -306,8 +312,5 @@
   "Éteindre": "关机",
   "Éteindre le cadre ? Il faudra le débrancher puis le rebrancher pour le rallumer.": "关闭相框？之后需要拔掉电源再重新插上才能开机。",
   "à": "到",
-  "échec de l'envoi ({why})": "上传失败（{why}）",
-  "Vidéos": "视频",
-  "Son des vidéos": "视频声音",
-  "Vidéo": "视频"
+  "échec de l'envoi ({why})": "上传失败（{why}）"
 }

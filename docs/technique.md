@@ -407,6 +407,14 @@ est rangée à côté, `videos/<nom de la couverture>.mp4` (`cadre/videos.py`). 
   vidéo en paysage est réencodée : telle qu'iCloud la fournit (pistes de métadonnées, images B),
   elle faisait planter le lecteur. Pendant ce temps, le décodeur matériel est pris : les vidéos s'affichent comme des
   photos (couverture).
+- **Vidéos envoyées depuis l'admin** (2 min au plus) : le navigateur envoie tel quel le
+  H.264 ; le HEVC des iPhone (que le Pi ne décode qu'en logiciel, ~50 fois la durée de la vidéo
+  en 1080p) est converti par le navigateur, qui sait le lire : rejoué dans un canevas et
+  enregistré en H.264 (`MediaRecorder`, temps réel, page ouverte). Date (atome `mvhd`) et lieu
+  (ISO 6709 des iPhone) lus dans le fichier d'origine. Sur le Pi : fichier écrit sur la carte
+  (`TMPDIR=/var/lib/cadre/tmp`, `.up-…`), couverture tirée de la première image (comme iCloud :
+  doublon reconnu par l'empreinte visuelle), puis même préparation que les vidéos de l'album.
+  Sans conversion possible dans le navigateur, l'original part : le Pi le convertit, lentement.
 - **Écartés** : lecture du fichier iCloud tel quel (plantages) ; mpv (sur ce processeur graphique, chaque image repasse par le processeur : demi-
   vitesse à 90 % de CPU, ou écran noir) ; redressement par GStreamer (`v4l2h264enc` : image
   rose ou noire) ; enchaîner deux vidéos dans le même processus GStreamer (plantage).

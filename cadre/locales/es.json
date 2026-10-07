@@ -1,7 +1,6 @@
 {
   "@date": "{d} de {month} de {y}",
   "@months": ["enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"],
-
   "(actuel)": "(actual)",
   "1. Scannez le QR code pour rejoindre": "1. Escanee el código QR para unirse a",
   "2. La page de configuration s'ouvre.": "2. Se abre la página de configuración.",
@@ -47,6 +46,7 @@
   "Connexion à « {ssid} » en cours. Ce réseau de configuration va disparaître : regardez la télévision. Si la connexion réussit, un QR code vous mène à la gestion des photos. Sinon, le réseau de configuration revient dans une minute environ.": "Conectando a «{ssid}». Esta red de configuración va a desaparecer: mire la televisión. Si la conexión tiene éxito, un código QR le lleva a la gestión de fotos. Si no, la red de configuración vuelve en un minuto aproximadamente.",
   "Connexion à « {ssid} »…": "Conectando a «{ssid}»…",
   "Conserver les originaux": "Conservar los originales",
+  "Conversion de « {file} » pour le cadre : {pct} % — gardez cette page ouverte": "Convirtiendo «{file}» para el marco: {pct} % — mantenga esta página abierta",
   "Date": "Fecha",
   "Dernière heure": "Última hora",
   "Diagnostic": "Diagnóstico",
@@ -85,7 +85,6 @@
   "Installer cette version ?": "¿Instalar esta versión?",
   "Installer depuis un fichier…": "Instalar desde un archivo…",
   "Installer la mise à jour « {file} » ?": "¿Instalar la actualización «{file}»?",
-  "JPEG, PNG, WebP — réduites par le navigateur avant l'envoi, puis adaptées à l'écran par le cadre": "JPEG, PNG, WebP — reducidas por el navegador antes del envío y luego adaptadas a la pantalla por el marco",
   "Jusqu'au (inclus)": "Hasta el (incluido)",
   "L'admin est protégé par un mot de passe.": "La administración está protegida con contraseña.",
   "L'admin n'est pas protégé : toute personne sur le réseau peut gérer les photos.": "La administración no está protegida: cualquier persona en la red puede gestionar las fotos.",
@@ -135,6 +134,7 @@
   "Page {page} / {pages}": "Página {page} / {pages}",
   "Pause": "Pausa",
   "Photos": "Fotos",
+  "Photos (JPEG, PNG, WebP) et vidéos de 2 min au plus — réduites par le navigateur avant l'envoi, puis adaptées à l'écran par le cadre": "Fotos (JPEG, PNG, WebP) y vídeos de 2 min como máximo — reducidos por el navegador antes del envío y luego adaptados a la pantalla por el marco",
   "Photos affichées": "Fotos mostradas",
   "Photos envoyées seulement": "Solo las fotos enviadas",
   "Position automatique : ": "Posición automática: ",
@@ -161,6 +161,7 @@
   "Se déconnecter": "Cerrar sesión",
   "Service réseau indisponible.": "Servicio de red no disponible.",
   "Sinon, allez sur": "Si no, vaya a",
+  "Son des vidéos": "Sonido de los vídeos",
   "Souvenirs « ce jour-là »": "Recuerdos «tal día como hoy»",
   "Suivante": "Siguiente",
   "Supprimer": "Borrar",
@@ -188,6 +189,8 @@
   "Version {version} disponible": "Versión {version} disponible",
   "Version {version} installée : redémarrage des services, puis vérification (environ 3 minutes). Gardez cette page ouverte.": "Versión {version} instalada: reinicio de los servicios y luego verificación (unos 3 minutos). Mantenga esta página abierta.",
   "Version {version} installée et vérifiée.": "Versión {version} instalada y verificada.",
+  "Vidéo": "Vídeo",
+  "Vidéos": "Vídeos",
   "Ville": "Ciudad",
   "Voir": "Ver",
   "Voir les réglages de la page de gestion": "Revise los ajustes en la página de gestión",
@@ -285,6 +288,9 @@
   "version absente du fichier": "falta la versión en el archivo",
   "version {version} déjà installée ou plus ancienne (installée : {current})": "versión {version} ya instalada o más antigua (instalada: {current})",
   "version {version} retirée : {reason}": "versión {version} retirada: {reason}",
+  "vidéo illisible ({exc})": "vídeo ilegible ({exc})",
+  "vidéo illisible ou format non pris en charge": "vídeo ilegible o formato no admitido",
+  "vidéo trop longue (2 min au plus)": "vídeo demasiado largo (2 min como máximo)",
   "ville « {city} » introuvable": "ciudad «{city}» no encontrada",
   "vérification après installation : {problem}": "verificación tras la instalación: {problem}",
   "vérification en cours": "verificación en curso",
@@ -306,8 +312,5 @@
   "Éteindre": "Apagar",
   "Éteindre le cadre ? Il faudra le débrancher puis le rebrancher pour le rallumer.": "¿Apagar el marco? Habrá que desenchufarlo y volver a enchufarlo para encenderlo.",
   "à": "a",
-  "échec de l'envoi ({why})": "fallo del envío ({why})",
-  "Vidéos": "Vídeos",
-  "Son des vidéos": "Sonido de los vídeos",
-  "Vidéo": "Vídeo"
+  "échec de l'envoi ({why})": "fallo del envío ({why})"
 }

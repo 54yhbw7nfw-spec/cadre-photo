@@ -9,8 +9,9 @@ Group=cadre
 Environment=CADRE_DATA=/var/lib/cadre
 Environment=CADRE_INCOMING=/run/cadre-web/incoming
 Environment=PYTHONUNBUFFERED=1
-# Corps de requête bufferisés par waitress/werkzeug : en RAM aussi.
-Environment=TMPDIR=/run/cadre-web
+# Corps de requête bufferisés par waitress/werkzeug : sur la carte (une vidéo de 2 min ne
+# tiendrait pas dans /run, limité à ~40 Mo) ; dossier vidé au démarrage de l'admin.
+Environment=TMPDIR=/var/lib/cadre/tmp
 RuntimeDirectory=cadre-web
 WorkingDirectory=/opt/cadre
 ExecStart=/usr/bin/python3 -m cadre.web

@@ -1,7 +1,6 @@
 {
   "@date": "{d} de {month} de {y}",
   "@months": ["janeiro", "fevereiro", "março", "abril", "maio", "junho", "julho", "agosto", "setembro", "outubro", "novembro", "dezembro"],
-
   "(actuel)": "(atual)",
   "1. Scannez le QR code pour rejoindre": "1. Leia o código QR para se ligar à",
   "2. La page de configuration s'ouvre.": "2. Abre-se a página de configuração.",
@@ -47,6 +46,7 @@
   "Connexion à « {ssid} » en cours. Ce réseau de configuration va disparaître : regardez la télévision. Si la connexion réussit, un QR code vous mène à la gestion des photos. Sinon, le réseau de configuration revient dans une minute environ.": "A ligar a «{ssid}». Esta rede de configuração vai desaparecer: olhe para a televisão. Se a ligação for bem-sucedida, um código QR leva-o à gestão das fotografias. Caso contrário, a rede de configuração volta dentro de cerca de um minuto.",
   "Connexion à « {ssid} »…": "A ligar a «{ssid}»…",
   "Conserver les originaux": "Conservar os originais",
+  "Conversion de « {file} » pour le cadre : {pct} % — gardez cette page ouverte": "A converter «{file}» para a moldura: {pct} % — mantenha esta página aberta",
   "Date": "Data",
   "Dernière heure": "Última hora",
   "Diagnostic": "Diagnóstico",
@@ -85,7 +85,6 @@
   "Installer cette version ?": "Instalar esta versão?",
   "Installer depuis un fichier…": "Instalar a partir de um ficheiro…",
   "Installer la mise à jour « {file} » ?": "Instalar a atualização «{file}»?",
-  "JPEG, PNG, WebP — réduites par le navigateur avant l'envoi, puis adaptées à l'écran par le cadre": "JPEG, PNG, WebP — reduzidas pelo navegador antes do envio e depois adaptadas ao ecrã pela moldura",
   "Jusqu'au (inclus)": "Até (inclusive)",
   "L'admin est protégé par un mot de passe.": "A administração está protegida por palavra-passe.",
   "L'admin n'est pas protégé : toute personne sur le réseau peut gérer les photos.": "A administração não está protegida: qualquer pessoa na rede pode gerir as fotografias.",
@@ -135,6 +134,7 @@
   "Page {page} / {pages}": "Página {page} / {pages}",
   "Pause": "Pausa",
   "Photos": "Fotografias",
+  "Photos (JPEG, PNG, WebP) et vidéos de 2 min au plus — réduites par le navigateur avant l'envoi, puis adaptées à l'écran par le cadre": "Fotografias (JPEG, PNG, WebP) e vídeos até 2 min — reduzidos pelo navegador antes do envio e depois adaptados ao ecrã pela moldura",
   "Photos affichées": "Fotografias apresentadas",
   "Photos envoyées seulement": "Só as fotografias enviadas",
   "Position automatique : ": "Localização automática: ",
@@ -161,6 +161,7 @@
   "Se déconnecter": "Terminar sessão",
   "Service réseau indisponible.": "Serviço de rede indisponível.",
   "Sinon, allez sur": "Caso contrário, abra",
+  "Son des vidéos": "Som dos vídeos",
   "Souvenirs « ce jour-là »": "Recordações «neste dia»",
   "Suivante": "Seguinte",
   "Supprimer": "Apagar",
@@ -188,6 +189,8 @@
   "Version {version} disponible": "Versão {version} disponível",
   "Version {version} installée : redémarrage des services, puis vérification (environ 3 minutes). Gardez cette page ouverte.": "Versão {version} instalada: os serviços reiniciam e depois são verificados (cerca de 3 minutos). Mantenha esta página aberta.",
   "Version {version} installée et vérifiée.": "Versão {version} instalada e verificada.",
+  "Vidéo": "Vídeo",
+  "Vidéos": "Vídeos",
   "Ville": "Cidade",
   "Voir": "Ver",
   "Voir les réglages de la page de gestion": "Veja as definições na página de gestão",
@@ -285,6 +288,9 @@
   "version absente du fichier": "falta a versão no ficheiro",
   "version {version} déjà installée ou plus ancienne (installée : {current})": "versão {version} já instalada ou mais antiga (instalada: {current})",
   "version {version} retirée : {reason}": "versão {version} retirada: {reason}",
+  "vidéo illisible ({exc})": "vídeo ilegível ({exc})",
+  "vidéo illisible ou format non pris en charge": "vídeo ilegível ou formato não suportado",
+  "vidéo trop longue (2 min au plus)": "vídeo demasiado longo (2 min no máximo)",
   "ville « {city} » introuvable": "cidade «{city}» não encontrada",
   "vérification après installation : {problem}": "verificação após a instalação: {problem}",
   "vérification en cours": "verificação em curso",
@@ -306,8 +312,5 @@
   "Éteindre": "Desligar",
   "Éteindre le cadre ? Il faudra le débrancher puis le rebrancher pour le rallumer.": "Desligar a moldura? Será preciso retirar a ficha e voltar a ligá-la para a acender.",
   "à": "às",
-  "échec de l'envoi ({why})": "falha no envio ({why})",
-  "Vidéos": "Vídeos",
-  "Son des vidéos": "Som dos vídeos",
-  "Vidéo": "Vídeo"
+  "échec de l'envoi ({why})": "falha no envio ({why})"
 }

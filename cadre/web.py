@@ -16,8 +16,10 @@ import secrets
 import json
 import logging
 import os
+import shutil
 import socket
 import subprocess
+import tempfile
 import threading
 import time
 import urllib.parse
@@ -40,7 +42,7 @@ DISK_RESERVE_RATIO = 0.05
 PER_PAGE_MAX = 200
 
 app = Flask(__name__)
-app.config["MAX_CONTENT_LENGTH"] = 60 * 1024 * 1024
+app.config["MAX_CONTENT_LENGTH"] = 300 * 1024 * 1024  # vidéos (2 min) ; photos réduites avant
 app.config["PERMANENT_SESSION_LIFETIME"] = 30 * 86400
 app.config["SESSION_COOKIE_SAMESITE"] = "Lax"
 
@@ -86,15 +88,19 @@ class ProcessingQueue:
             try:
                 # Position envoyée à part par le navigateur (EXIF perdu à la réduction),
                 # sinon celle du fichier ; lue avant le traitement, qui peut déplacer le fichier.
-                position = places.parse(gps) or imaging.read_gps(path)
-                with process_lock:
-                    name, new = imaging.process(path, config.load_settings()["keep_originals"],
-                                                original_name, taken, sig)
+                if is_video_upload(path):
+                    name, new = add_video(path, original_name, taken, sig)
+                    position = places.parse(gps)
+                else:
+                    position = places.parse(gps) or imaging.read_gps(path)
+                    with process_lock:
+                        name, new = imaging.process(path, config.load_settings()["keep_originals"],
+                                                    original_name, taken, sig)
                 if new and position:
                     places.set_place(name, *position)
                 log.info("%s -> %s%s en %d ms", original_name, name,
                          "" if new else " (doublon)", (time.monotonic() - t0) * 1000)
-            except imaging.Rejected as exc:
+            except (imaging.Rejected, ValueError) as exc:
                 error = str(exc)
             except Exception as exc:  # disque plein, etc. : ne pas tuer le thread
                 log.exception("Échec du traitement de %s", original_name)
@@ -555,16 +561,53 @@ def photo(name):
     return send_from_directory(config.PHOTOS_DIR, name, max_age=30 * 86400)
 
 
+def is_video_upload(path):
+    return os.path.basename(path).startswith(".up-")
+
+
+def add_video(path, original_name, taken, sig):
+    """Vidéo envoyée depuis l'admin : couverture (photo) puis préparation en tâche de fond."""
+    info = videos.probe(path)
+    if not info["codec"]:
+        raise ValueError("vidéo illisible ou format non pris en charge")
+    if info["duration"] > videos.MAX_SECONDS:
+        raise ValueError("vidéo trop longue (2 min au plus)")
+    poster = os.path.join(config.VIDEOS_DIR, ".poster-" + uuid.uuid4().hex + ".jpg")
+    try:
+        videos.make_poster(path, poster)
+        if not taken and info.get("creation"):
+            taken = info["creation"]
+        with process_lock:
+            name, new = imaging.process(poster, False, "video.jpg", taken,
+                                        sig or "video:" + imaging.file_digest(path))
+    finally:
+        if os.path.exists(poster):
+            os.unlink(poster)
+    if new or not videos.is_video(name):
+        os.replace(path, videos.source_path(name))
+        video_wake.set()
+    return name, new
+
+
 @app.post("/api/upload")
 def upload():
     f = request.files.get("file")
     if f is None or not f.filename:
         return jsonify(error="aucun fichier"), 400
-    if queue.full():
+    video = (request.form.get("kind") == "video"
+             or os.path.splitext(f.filename)[1].lower() in videos.EXTENSIONS)
+    if queue.full() and not video:
         return jsonify(busy=True), 503
     disk = disk_status()
     if disk["free"] - queue.pending_bytes - (request.content_length or 0) < disk["reserve"]:
         return jsonify(error="carte SD pleine (marge du système atteinte)"), 507
+    if video:  # trop gros pour la RAM : sur la carte, traitée par la même file
+        os.makedirs(config.VIDEOS_DIR, exist_ok=True)
+        dest = os.path.join(config.VIDEOS_DIR, ".up-" + uuid.uuid4().hex)
+        f.save(dest)
+        queue.put(dest, os.path.basename(f.filename), 0, request.form.get("taken", "")[:19],
+                  request.form.get("sig", "")[:300], request.form.get("gps", "")[:40])
+        return jsonify(ok=True)
     dest = os.path.join(config.INCOMING_DIR, uuid.uuid4().hex)
     f.save(dest)
     # Photo réduite par le navigateur : EXIF perdu, d'où la date et la signature transmises à part.
@@ -820,6 +863,13 @@ def main():
 
     logging.basicConfig(level=logging.INFO, format="%(levelname)s %(message)s")
     logging.getLogger("waitress.queue").setLevel(logging.ERROR)
+    # Fichiers temporaires des envois (TMPDIR, sur la carte) : vidé (envois interrompus) et créé
+    # avant le premier usage, sinon Python se rabat sur /tmp, en RAM.
+    tmp = os.environ.get("TMPDIR", "")
+    if tmp.startswith(config.DATA_DIR + "/"):
+        shutil.rmtree(tmp, ignore_errors=True)
+        os.makedirs(tmp, exist_ok=True)
+        tempfile.tempdir = tmp
     for d in (config.PHOTOS_DIR, config.THUMBS_DIR, config.ORIGINALS_DIR, config.INCOMING_DIR,
               config.VIDEOS_DIR):
         os.makedirs(d, exist_ok=True)
