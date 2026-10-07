@@ -1,6 +1,6 @@
 # Cadre photo
 
-[Français](README.md) · [English](README.en.md) · [Español](README.es.md) · [Deutsch](README.de.md) · [Română](README.ro.md) · **中文**
+[Français](README.md) · [English](README.en.md) · [Español](README.es.md) · [Deutsch](README.de.md) · [Português](README.pt.md) · [Română](README.ro.md) · **中文**
 
 **用一块 20 欧元的树莓派，把任何电视变成家庭电子相框。**
 

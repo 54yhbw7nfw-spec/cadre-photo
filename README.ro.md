@@ -1,6 +1,6 @@
 # Cadre photo
 
-[Français](README.md) · [English](README.en.md) · [Español](README.es.md) · [Deutsch](README.de.md) · **Română** · [中文](README.zh.md)
+[Français](README.md) · [English](README.en.md) · [Español](README.es.md) · [Deutsch](README.de.md) · [Português](README.pt.md) · **Română** · [中文](README.zh.md)
 
 **Transformați orice televizor într-o ramă foto de familie, cu un Raspberry Pi de 20 €.**
 

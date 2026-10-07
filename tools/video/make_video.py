@@ -1,11 +1,18 @@
-"""Mode d'emploi vidéo du cadre : diapositives commentées (voix de synthèse Windows) en MP4.
+"""Mode d'emploi vidéo du cadre : diapositives commentées (voix neuronale) en MP4, par langue.
 
-Prérequis (PC Windows) : ffmpeg, Pillow, edge-tts (pip install edge-tts, Internet), et les visuels :
-  python tools/video/shots.py http://<ip du cadre> build/video/shots      captures de l'admin
-    (dont admin-complet.png, page entière, découpée par section : « fichier#n » ou « #n-m »)
-  écrans du cadre : tools/video/screens.py lancé sur le Pi -> build/video/screens
-Usage : python tools/video/make_video.py build/video     -> build/video/cadre-photo-mode-d-emploi.mp4
+Prérequis (PC Windows) : ffmpeg, Pillow, edge-tts (pip install edge-tts, Internet), et les visuels
+de la langue (fr, en, es, de, pt, ro, zh) :
+  python tools/video/shots.py http://<ip du cadre> build/video/shots-<langue> <langue>
+    captures de l'admin (dont admin-complet.png, page entière, découpée par section :
+    « fichier#n » ou « #n-m ») ;
+  écrans du cadre : tools/video/screens.py <sortie> <langue> lancé sur le Pi
+    -> build/video/ecrans-<langue>
+Usage : python tools/video/make_video.py build/video [langue]
+  -> build/video/cadre-photo-mode-d-emploi.mp4 (français) ou …-<langue>.mp4
+Textes : SLIDES ci-dessous en français, tools/video/locales/<langue>.json pour les autres
+(titre, points clés, narration de chaque diapositive, dans le même ordre).
 """
+import json
 import os
 import subprocess
 import sys
@@ -18,18 +25,16 @@ TEXT = (235, 235, 235)
 MUTED = (160, 160, 165)
 ACCENT = (110, 170, 255)
 FONTS = r"C:\Windows\Fonts"
-VOICE = "fr-FR-DeniseNeural"  # voix neuronale Microsoft (edge-tts)
+# Voix neuronales Microsoft (edge-tts), une par langue.
+VOICES = {"fr": "fr-FR-DeniseNeural", "en": "en-GB-SoniaNeural", "es": "es-ES-ElviraNeural",
+          "de": "de-DE-KatjaNeural", "pt": "pt-PT-RaquelNeural", "ro": "ro-RO-AlinaNeural",
+          "zh": "zh-CN-XiaoxiaoNeural"}
+# Polices (titre, texte) : Segoe UI n'a pas le chinois.
+FACES = {"zh": ("msyhbd.ttc", "msyh.ttc")}
 PAUSE = 0.9  # s de silence après chaque narration
-# Zones à masquer sur les captures : le lien réel de l'album iCloud (accès « contributeur »).
-# Données personnelles masquées sur les captures (coordonnées dans la page entière) :
-# (zone, texte de remplacement, police, taille).
-_TOP = [((126, 814, 834, 842), "https://photos.icloud.com/shared/album/…", "segoeui.ttf", 15),
-        ((368, 361, 558, 387), "Niort", "segoeui.ttf", 15),
-        ((636, 362, 835, 388), "Niort, France · 18 °C, nuageux", "segoeui.ttf", 13)]
-MASKS = {"shots/admin-haut.png": _TOP,
-         "shots/admin-complet.png": _TOP + [
-             ((118, 2609, 800, 2634), "Lieu des photos, rapport de diagnostic, mise à jour par lien",
-              "consola.ttf", 13)]}
+LOCALES = os.path.join(os.path.dirname(os.path.abspath(__file__)), "locales")
+# Les données personnelles des captures (lien de l'album, réseaux Wi-Fi) sont floutées par
+# shots.py, quelle que soit la langue.
 
 # (titre, visuels « dossier/fichier », points clés à l'écran, narration)
 SLIDES = [
@@ -60,13 +65,14 @@ SLIDES = [
      "maison, et le QR code de la page de gestion s'affiche à la télé."),
     ("La page de gestion", ["shots/admin-complet.png#0"],
      ["QR code de la télé, ou http://cadre.local", "Transition, durée, ordre aléatoire",
-      "Réglages par thème : diaporama, photos, écran"],
+      "Réglages par thème : diaporama, photos, écran", "7 langues : page et cadre"],
      "Pour gérer le cadre, scannez le QR code affiché à la télé, ou tapez cadre point local "
      "dans le navigateur d'un téléphone ou d'un ordinateur connecté au même Wi-Fi. En haut de "
      "la page se trouvent les réglages : la transition entre les photos, la durée "
      "d'affichage, l'ordre aléatoire, la date et le lieu sur les photos, et la mise en veille la "
      "nuit. Ils sont rangés par thème : le diaporama, ce qui s'affiche sur les photos, et "
-     "l'écran."),
+     "l'écran. La langue de la page se choisit en haut à droite, et celle du cadre dans les "
+     "réglages de l'écran."),
     ("Ajouter des photos", ["shots/admin-photos.png"],
      ["Glisser les photos, ou toucher pour les choisir", "Visibles en quelques secondes",
       "Sélectionner puis « Supprimer la sélection »"],
@@ -153,6 +159,34 @@ def font(name, size):
     return ImageFont.truetype(os.path.join(FONTS, name), size)
 
 
+def slides(lang):
+    """Diapositives dans la langue : visuels de SLIDES, textes de locales/<langue>.json."""
+    if lang == "fr":
+        return SLIDES
+    with open(os.path.join(LOCALES, lang + ".json"), encoding="utf-8") as f:
+        texts = json.load(f)
+    if len(texts) != len(SLIDES):
+        raise SystemExit(f"{lang}.json : {len(texts)} diapositives, {len(SLIDES)} attendues")
+    return [(title, visuals, bullets, narration)
+            for (_, visuals, _, _), (title, bullets, narration) in zip(SLIDES, texts)]
+
+
+def wrap(d, text, f, width):
+    """Lignes de text tenant dans width pixels : par mots, ou par caractères (chinois)."""
+    units = list(text) if not " " in text.strip() or any(ord(c) >= 0x2E80 for c in text) \
+        else text.split(" ")
+    sep = "" if units == list(text) else " "
+    lines, line = [], ""
+    for u in units:
+        trial = (line + sep + u) if line else u
+        if d.textlength(trial, font=f) > width and line:
+            lines.append(line)
+            line = u.lstrip()
+        else:
+            line = trial
+    return lines + [line]
+
+
 def fit(img, box_w, box_h):
     img = img.convert("RGB")
     scale = min(box_w / img.width, box_h / img.height)
@@ -190,16 +224,14 @@ def cards(img):
     return spans
 
 
-def load_visual(base, name):
+def load_visual(base, name, lang):
     """« dossier/fichier.png », « …png#n » (n-ième section de l'admin, à partir de 0) ou
-    « …png#n-m » (sections n à m) : pas de coordonnées à refaire quand la page change."""
+    « …png#n-m » (sections n à m) : pas de coordonnées à refaire quand la page change.
+    Dossiers de la langue : shots -> shots-<langue>, screens -> ecrans-<langue>."""
     name, _, sections = name.partition("#")
-    img = Image.open(os.path.join(base, name)).convert("RGB")
-    d = ImageDraw.Draw(img)
-    for (x0, y0, x1, y1), text, face, size in MASKS.get(name, []):  # avant toute découpe
-        d.rectangle((x0, y0, x1, y1), fill=img.getpixel((x0 + 2, y0 + 2)))
-        d.text((x0 + 6, (y0 + y1) // 2), text, font=font(face, size), fill=(70, 70, 75),
-               anchor="lm")
+    folder, _, file = name.partition("/")
+    folder = {"shots": "shots-", "screens": "ecrans-"}[folder] + lang
+    img = Image.open(os.path.join(base, folder, file)).convert("RGB")
     if sections:
         sections, _, maxh = sections.partition(":")  # « #4:420 » : 420 px au plus
         first, _, last = sections.partition("-")
@@ -211,14 +243,15 @@ def load_visual(base, name):
     return img
 
 
-def render_slide(base, title, visuals, bullets, path):
+def render_slide(base, lang, title, visuals, bullets, path):
+    title_face, text_face = FACES.get(lang, ("seguisb.ttf", "segoeui.ttf"))
     img = Image.new("RGBA", (W, H), BG + (255,))
     d = ImageDraw.Draw(img)
-    d.text((90, 70), title, font=font("seguisb.ttf", 64), fill=TEXT)
+    d.text((90, 70), title, font=font(title_face, 64), fill=TEXT)
     d.rectangle((90, 178, 210, 184), fill=ACCENT)
     area_w = 1180 if bullets else W - 180
     area_h = H - 290
-    pics = [load_visual(base, v) for v in visuals]
+    pics = [load_visual(base, v, lang) for v in visuals]
     if len(pics) == 1:
         cards = [framed(fit(pics[0], area_w, area_h))]
     else:  # deux visuels empilés
@@ -230,31 +263,22 @@ def render_slide(base, title, visuals, bullets, path):
         img.alpha_composite(c, (max(0, x), max(170, y)))
         y += c.height - 30
     if bullets:
-        f = font("segoeui.ttf", 40)
+        f = font(text_face, 40)
         y = 300
         for b in bullets:
             d.ellipse((1335, y + 20, 1349, y + 34), fill=ACCENT)
             # Guillemets collés à leur mot (espace insécable : pas de coupure de ligne).
             b = b.replace("« ", "« ").replace(" »", " »")
-            words, line, lines = b.split(" "), "", []
-            for w_ in words:
-                trial = (line + " " + w_).strip()
-                if d.textlength(trial, font=f) > 470 and line:
-                    lines.append(line)
-                    line = w_
-                else:
-                    line = trial
-            lines.append(line)
-            for ln in lines:
+            for ln in wrap(d, b, f, 470):
                 d.text((1370, y), ln, font=f, fill=TEXT)
                 y += 54
             y += 34
     img.convert("RGB").save(path)
 
 
-def speak(text, path):
+def speak(text, path, lang):
     """Voix neuronale de Microsoft (celle de la lecture à voix haute d'Edge) : MP3."""
-    subprocess.run([sys.executable, "-m", "edge_tts", "--voice", VOICE, "--text", text,
+    subprocess.run([sys.executable, "-m", "edge_tts", "--voice", VOICES[lang], "--text", text,
                     "--write-media", path], check=True)
 
 
@@ -264,15 +288,15 @@ def duration(path):
     return float(out.stdout)
 
 
-def main(base):
-    work = os.path.join(base, "slides")
+def main(base, lang="fr"):
+    work = os.path.join(base, "slides-" + lang)
     os.makedirs(work, exist_ok=True)
     segments = []
-    for i, (title, visuals, bullets, narration) in enumerate(SLIDES, 1):
+    for i, (title, visuals, bullets, narration) in enumerate(slides(lang), 1):
         png, voice, mp4 = (os.path.abspath(os.path.join(work, f"{i:02d}.{e}"))
                          for e in ("png", "mp3", "mp4"))
-        render_slide(base, title, visuals, bullets, png)
-        speak(narration, voice)
+        render_slide(base, lang, title, visuals, bullets, png)
+        speak(narration, voice, lang)
         dur = duration(voice) + PAUSE
         subprocess.run([
             "ffmpeg", "-y", "-loglevel", "error", "-loop", "1", "-i", png, "-i", voice,
@@ -288,11 +312,12 @@ def main(base):
     listing = os.path.join(work, "liste.txt")
     with open(listing, "w", encoding="utf-8") as f:
         f.writelines(f"file '{s}'\n" for s in segments)
-    out = os.path.abspath(os.path.join(base, "cadre-photo-mode-d-emploi.mp4"))
+    out = os.path.abspath(os.path.join(
+        base, "cadre-photo-mode-d-emploi" + ("" if lang == "fr" else "-" + lang) + ".mp4"))
     subprocess.run(["ffmpeg", "-y", "-loglevel", "error", "-f", "concat", "-safe", "0",
                     "-i", listing, "-c", "copy", "-movflags", "+faststart", out], check=True)
     print("vidéo :", out)
 
 
 if __name__ == "__main__":
-    main(sys.argv[1])
+    main(*sys.argv[1:3])

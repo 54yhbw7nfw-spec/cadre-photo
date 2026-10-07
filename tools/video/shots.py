@@ -7,17 +7,32 @@ une image servie lentement.
 Usage : python tools/video/shots.py http://<ip du cadre> build/video/shots [langue]
 La langue (fr, en, es, de, pt, ro, zh ; fr par défaut) est celle que Firefox demande à la page
 (Accept-Language) : un profil Firefox par langue.
+
+Données personnelles floutées par une feuille de style du profil (userContent.css), quelle que
+soit la mise en page de la langue : lien de l'album iCloud, réseaux Wi-Fi, notes de mise à jour.
+La ville de la météo (CITY) et la langue du cadre (celle des captures) sont changées sur le
+cadre le temps des captures, puis remises.
 """
 import http.server
+import json
 import os
 import subprocess
 import sys
 import threading
 import time
+import urllib.request
 
 FIREFOX = r"C:\Program Files (x86)\Mozilla Firefox\firefox.exe"
 PORT = 8766
 WAIT = 15  # s laissées à la page pour charger photos et réglages
+CITY = "Niort"  # ville de la météo montrée sur les captures
+
+BLUR = "color: transparent !important; text-shadow: 0 0 8px rgba(0, 0, 0, .55) !important;"
+USER_CSS = f"""
+#icloud-form input[name=url], #wifi-state, #wifi-result, #wifi-saved .grow,
+#wifi-visible .grow {{ {BLUR} }}
+#upd-notes {{ display: none !important; }}
+"""
 
 # (fichier, chemin sur le cadre, largeur, hauteur, défilement vertical dans la page)
 SHOTS = [
@@ -54,7 +69,13 @@ def main(base, out, lang="fr"):
     profile = os.path.abspath(os.path.join(out, "..", "ffprofile-" + lang))
     os.makedirs(profile, exist_ok=True)
     with open(os.path.join(profile, "user.js"), "w") as f:
-        f.write(f'user_pref("intl.accept_languages", "{lang}");\n')
+        f.write(f'user_pref("intl.accept_languages", "{lang}");\n'
+                'user_pref("toolkit.legacyUserProfileCustomizations.stylesheets", true);\n')
+    os.makedirs(os.path.join(profile, "chrome"), exist_ok=True)
+    with open(os.path.join(profile, "chrome", "userContent.css"), "w") as f:
+        f.write(USER_CSS)
+    city = weather_city(base, CITY)
+    frame_lang = frame_language(base, lang)
     server = http.server.ThreadingHTTPServer(("127.0.0.1", PORT), Handler)
     server.pages = {}
     threading.Thread(target=server.serve_forever, daemon=True).start()
@@ -67,6 +88,28 @@ def main(base, out, lang="fr"):
                         f"http://127.0.0.1:{PORT}{key}"], capture_output=True, timeout=120)
         print(name, "ok" if os.path.exists(dest) else "ÉCHEC")
     server.shutdown()
+    weather_city(base, city)
+    frame_language(base, frame_lang)
+
+
+def frame_language(base, lang):
+    """Change la langue du cadre (réglage) ; renvoie l'ancienne."""
+    with urllib.request.urlopen(base + "/api/settings", timeout=30) as r:
+        old = json.load(r)["language"]
+    req = urllib.request.Request(base + "/api/settings", json.dumps({"language": lang}).encode(),
+                                 {"Content-Type": "application/json"})
+    urllib.request.urlopen(req, timeout=30).close()
+    return old
+
+
+def weather_city(base, city):
+    """Change la ville de la météo du cadre ; renvoie l'ancienne."""
+    with urllib.request.urlopen(base + "/api/weather", timeout=30) as r:
+        old = json.load(r)["city"]
+    req = urllib.request.Request(base + "/api/weather", json.dumps({"city": city}).encode(),
+                                 {"Content-Type": "application/json"})
+    urllib.request.urlopen(req, timeout=60).close()
+    return old
 
 
 if __name__ == "__main__":

@@ -1,7 +1,8 @@
 """Écrans du cadre pour le mode d'emploi vidéo, produits par le code du diaporama (sur le Pi).
 
-Usage (sur le Pi) : cd /opt/cadre && SDL_VIDEODRIVER=dummy python3 /chemin/screens.py <sortie>
+Usage (sur le Pi) : cd /opt/cadre && SDL_VIDEODRIVER=dummy python3 /chemin/screens.py <sortie> [langue]
 Les méthodes de dessin de Display sont appelées sans écran : texture() renvoie la Surface.
+Langue des écrans : fr par défaut (en, es, de, pt, ro, zh : cadre/locales).
 """
 import json
 import os
@@ -10,28 +11,42 @@ import sys
 
 import pygame
 
-from cadre import config, display, places, splash
+from cadre import config, display, i18n, places, splash
 
 # Le Mont Blanc depuis l'aiguille du Midi (album iCloud du cadre de test).
 TITLE_PHOTO = "20240808-094711_7300f94c98.jpg"
+# Message d'exemple, dans la langue de la vidéo.
+MESSAGES = {
+    "fr": "Bon anniversaire Mamie ! Gros bisous de toute la famille",
+    "en": "Happy birthday Grandma! Big hugs from all the family",
+    "es": "¡Feliz cumpleaños, abuela! Un beso enorme de toda la familia",
+    "de": "Alles Gute zum Geburtstag, Oma! Dicke Umarmung von der ganzen Familie",
+    "pt": "Parabéns, avó! Um grande beijinho de toda a família",
+    "ro": "La mulți ani, bunico! Te pupăm cu drag, toată familia",
+    "zh": "奶奶生日快乐！全家人都爱您",
+}
 
 
-def main(out):
+def main(out, lang="fr"):
     os.makedirs(out, exist_ok=True)
     pygame.font.init()
     socket.gethostname = lambda: "cadre"  # nom habituel, pas celui du Pi de test
     d = display.Display.__new__(display.Display)  # sans fenêtre ni rendu GPU
     d.texture = lambda surf: surf
+    d.lang = lang
+    splash.tr = lambda text: i18n.gettext(text, lang)  # au lieu du réglage du cadre
+    message = MESSAGES[lang]
+    ago = i18n.ngettext("Il y a {n} an", "Il y a {n} ans", 2, lang)
     W, H = display.W, display.H
 
     def save(name, surf):
         pygame.image.save(surf, os.path.join(out, name))
 
     splash.background(W, H).save(os.path.join(out, "demarrage.png"))
-    splash.background(W, H, "Extinction...",
-                      "Attendez que la diode verte du cadre s'éteigne avant de le débrancher.") \
-        .save(os.path.join(out, "extinction.png"))
-    save("connexion.png", d.message_texture(["Connexion au Wi-Fi..."]))
+    splash.background(W, H, splash.tr("Extinction..."),
+                      splash.tr("Attendez que la diode verte du cadre s'éteigne avant de le "
+                                "débrancher.")).save(os.path.join(out, "extinction.png"))
+    save("connexion.png", d.message_texture([d.tr("Connexion au Wi-Fi...")]))
     save("hotspot.png", d.hotspot_texture({"ap_ssid": "CadrePhoto-Setup",
                                            "ap_password": "k7m2qx9p4t", "ip": "10.42.0.1"}))
     d.qr_key, d.qr_until, d.info_until = None, 1e12, 0
@@ -54,16 +69,16 @@ def main(out):
     d.draw_date(screen, name, located.get(name))
     save("photo.png", screen)
     banner = screen.copy()
-    d.draw_banner(banner, "Bon anniversaire Mamie ! Gros bisous de toute la famille")
+    d.draw_banner(banner, message)
     save("bandeau.png", banner)
-    save("message.png", d.message_card("Bon anniversaire Mamie ! Gros bisous de toute la famille"))
+    save("message.png", d.message_card(message))
 
     # Écran complet : souvenir avec son lieu, pictogramme « nouveau », heure et météo
     # (coin composé comme Display.update_corner, sans rendu GPU).
     def full_screen(photo, name):
         full = pygame.Surface((W, H))
         full.blit(photo, ((W - photo.get_width()) // 2, (H - photo.get_height()) // 2))
-        d.draw_date(full, name, located.get(name), True, "Il y a 2 ans")
+        d.draw_date(full, name, located.get(name), True, ago)
         d.draw_badge(full)
         parts = [display.render("16:08", 34, display.TEXT),
                  display.weather_icon("partly", True),
@@ -102,4 +117,4 @@ def main(out):
 
 
 if __name__ == "__main__":
-    main(sys.argv[1])
+    main(*sys.argv[1:3])
