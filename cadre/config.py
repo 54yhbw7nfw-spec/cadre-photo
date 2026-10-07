@@ -15,6 +15,7 @@ ICLOUD_FILE = os.path.join(DATA_DIR, "icloud.json")
 PLACES_FILE = os.path.join(DATA_DIR, "places.json")
 MESSAGE_FILE = os.path.join(DATA_DIR, "message.json")  # message affiché sur le cadre
 FLAGS_FILE = os.path.join(DATA_DIR, "flags.json")      # photos favorites et masquées
+HASHES_FILE = os.path.join(DATA_DIR, "hashes.json")    # empreintes visuelles (doublons)
 WEATHER_FILE = os.path.join(DATA_DIR, "weather.json")  # ville et dernière météo relevée
 UPDATE_URL_FILE = os.path.join(DATA_DIR, "update-url.txt")  # adresse des mises à jour
 # Adresse proposée par défaut : dernière « release » du dépôt public (docs/mise-a-jour.md).

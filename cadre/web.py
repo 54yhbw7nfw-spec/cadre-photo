@@ -184,8 +184,10 @@ class IcloudSync:
             st = self.load()
             if url == st.get("url", ""):
                 return
+            adopted = set(st.get("adopted", []))
             for name in st.get("photos", {}).values():
-                imaging.delete(name)
+                if name not in adopted:  # photo envoyée aussi depuis l'admin : gardée
+                    imaging.delete(name)
             config.atomic_write_json(config.ICLOUD_FILE, {"url": url, "photos": {}})
         log.info("Album iCloud : %s", url or "aucun")
         self.wake.set()
@@ -228,9 +230,17 @@ class IcloudSync:
             known = {pid: name for pid, name in known.items() if pid not in missing}
             self.update(url, lambda st: [st["photos"].pop(pid, None) for pid in missing])
         gone = {pid: name for pid, name in known.items() if pid not in album}
+        adopted = set(self.load().get("adopted", []))
         for name in gone.values():
-            imaging.delete(name)
-        self.update(url, lambda st: [st["photos"].pop(pid, None) for pid in gone])
+            if name not in adopted:  # photo envoyée aussi depuis l'admin : gardée
+                imaging.delete(name)
+
+        def forget(st):
+            for pid, name in gone.items():
+                st["photos"].pop(pid, None)
+                if name in st.get("adopted", []):
+                    st["adopted"].remove(name)
+        self.update(url, forget)
 
         located = places.load()
         for p in photos:
@@ -246,26 +256,35 @@ class IcloudSync:
                 error = "carte SD pleine : synchronisation arrêtée"
                 break
             try:
-                name = self.add(p)
+                name, adopt = self.add(p)
             except (OSError, imaging.Rejected) as exc:
                 log.warning("Photo iCloud %s : %s", p["id"], exc)
                 error = f"une photo n'a pas pu être ajoutée ({exc})"
                 continue
-            if not self.update(url, lambda st: st["photos"].__setitem__(p["id"], name)):
-                imaging.delete(name)  # album changé pendant le téléchargement
+            def record(st):
+                st["photos"][p["id"]] = name
+                if adopt and name not in st.setdefault("adopted", []):
+                    st["adopted"].append(name)
+            if not self.update(url, record):
+                if not adopt:
+                    imaging.delete(name)  # album changé pendant le téléchargement
                 return
         self.update(url, lambda st: st.update(error=error, last_sync=time.time()))
         log.info("Album iCloud « %s » : %d photos, %d ajoutées, %d retirées en %d s",
                  title, len(photos), len(new), len(gone), time.monotonic() - t0)
 
     def add(self, photo):
+        """Télécharge une photo (et sa vidéo) de l'album ; renvoie (nom, adoptée) : adoptée si
+        c'est une photo déjà envoyée depuis l'admin (doublon), qui ne sera pas supprimée avec
+        l'album."""
         path = os.path.join(config.INCOMING_DIR, "icloud-" + uuid.uuid4().hex)
         try:
             download(photo["url"], path, ICLOUD_MAX_BYTES)
             taken = photo["taken"].strftime("%Y:%m:%d %H:%M:%S") if photo["taken"] else ""
             with process_lock:
-                name, _ = imaging.process(path, False, "icloud.jpg", taken,
-                                          "icloud:" + photo["id"])
+                sig = "icloud:" + photo["id"]
+                name, _ = imaging.process(path, False, "icloud.jpg", taken, sig)
+            adopt = not name.endswith(f"_{hashlib.sha1(sig.encode()).hexdigest()[:10]}.jpg")
             if photo.get("position"):
                 places.set_place(name, *photo["position"])
             if photo.get("video") and not videos.is_video(name):
@@ -280,7 +299,7 @@ class IcloudSync:
                     if os.path.exists(tmp):
                         os.unlink(tmp)
                 video_wake.set()
-            return name
+            return name, adopt
         finally:
             try:
                 os.unlink(path)
@@ -300,6 +319,14 @@ def download(url, dest, limit):
             if size > limit:
                 raise OSError("fichier trop volumineux")
             f.write(chunk)
+
+
+def index_photos():
+    """Empreintes visuelles des photos d'avant la détection des doublons (une fois)."""
+    with process_lock:
+        pairs = imaging.index_missing()
+    for name, other in pairs:
+        log.info("Doublon déjà présent : %s et %s", name, other)
 
 
 # --- Vidéos : préparation en tâche de fond ---------------------------------------------------
@@ -803,6 +830,7 @@ def main():
     icloud_sync.start()
     threading.Thread(target=weather_loop, name="météo", daemon=True).start()
     threading.Thread(target=video_worker, name="vidéos", daemon=True).start()
+    threading.Thread(target=index_photos, name="empreintes", daemon=True).start()
 
     from waitress import serve
     log.info("Admin web sur le port %d", args.port)

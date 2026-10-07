@@ -3,12 +3,18 @@
 Nom des fichiers produits : AAAAMMJJ-HHMMSS_<empreinte>.jpg
 - la date (prise de vue EXIF, sinon réception) donne l'ordre chronologique du mode non aléatoire ;
 - l'empreinte du fichier reçu détecte les doublons et rend les URL immuables (cache navigateur).
+
+Doublons d'un fichier différent (la même photo envoyée depuis le téléphone, réduite par le
+navigateur, et arrivée par l'album iCloud, réduite par Apple) : empreinte visuelle (dHash,
+64 bits, insensible à la taille et à la compression) proche ET même date de prise de vue.
 """
 import hashlib
+import json
 import os
 import re
 import shutil
 import tempfile
+import threading
 from datetime import datetime
 
 from PIL import Image, ImageOps
@@ -27,6 +33,9 @@ EXIF_DATETIME = 0x0132
 EXIF_GPS = 0x8825
 ROTATED_90 = {5, 6, 7, 8}
 NAME_RE = re.compile(r"^\d{8}-\d{6}_[0-9a-f]{10}\.jpg$")
+SIMILAR_BITS = 10  # empreintes visuelles à 10 bits d'écart au plus (sur 64) : même image
+SAME_SHOT = 120    # s : écart de date de prise de vue toléré (horloges, arrondis)
+_hash_lock = threading.Lock()
 
 
 class Rejected(Exception):
@@ -47,6 +56,78 @@ def find_by_digest(digest):
         if name.endswith(suffix):
             return name
     return None
+
+
+def dhash(img):
+    """Empreinte visuelle : 64 comparaisons de luminosité entre pixels voisins (image 9x8)."""
+    px = list(img.convert("L").resize((9, 8), Image.BILINEAR).getdata())
+    return sum(1 << i for i, (a, b) in enumerate(
+        (px[r * 9 + c], px[r * 9 + c + 1]) for r in range(8) for c in range(8)) if a > b)
+
+
+def load_hashes():
+    try:
+        with open(config.HASHES_FILE) as f:
+            return json.load(f)
+    except (OSError, ValueError):
+        return {}
+
+
+def remember_hash(name, h):
+    with _hash_lock:
+        hashes = load_hashes()
+        hashes[name] = f"{h:016x}"
+        config.atomic_write_json(config.HASHES_FILE, hashes)
+
+
+def forget_hash(name):
+    with _hash_lock:
+        hashes = load_hashes()
+        if hashes.pop(name, None) is not None:
+            config.atomic_write_json(config.HASHES_FILE, hashes)
+
+
+def name_date(name):
+    try:
+        return datetime.strptime(name[:15], "%Y%m%d-%H%M%S")
+    except ValueError:
+        return None
+
+
+def find_similar(h, date, hashes=None, exclude=None):
+    """Photo du cadre identique à l'œil (empreinte proche, même date de prise de vue)."""
+    for name, other in (hashes if hashes is not None else load_hashes()).items():
+        if name == exclude or bin(h ^ int(other, 16)).count("1") > SIMILAR_BITS:
+            continue
+        d = name_date(name)
+        if d and abs((d - date).total_seconds()) <= SAME_SHOT and \
+                os.path.exists(os.path.join(config.PHOTOS_DIR, name)):
+            return name
+    return None
+
+
+def index_missing():
+    """Empreintes des photos qui n'en ont pas (photos d'avant cette fonction) ; renvoie les
+    doublons déjà présents [(photo, doublon), …]."""
+    hashes = load_hashes()
+    for name in config.list_photos():
+        if name in hashes:
+            continue
+        try:
+            with Image.open(os.path.join(config.PHOTOS_DIR, name)) as im:
+                im.draft("RGB", (160, 90))  # décodage JPEG réduit : rapide sur le Pi
+                h = dhash(im)
+        except OSError:
+            continue
+        remember_hash(name, h)
+        hashes[name] = f"{h:016x}"
+    pairs = []
+    for name in sorted(hashes):
+        d = name_date(name)
+        other = find_similar(int(hashes[name], 16), d, hashes, exclude=name) if d else None
+        if other and other > name:
+            pairs.append((name, other))
+    return pairs
 
 
 def parse_exif_date(raw):
@@ -126,7 +207,13 @@ def process(src, keep_original=False, original_name="", taken="", sig=""):
         # Aucune vraie photo n'est noire à 100 % : réduction ratée côté navigateur.
         raise Rejected("image entièrement noire (réduction du navigateur ratée) : "
                        "renvoyer la photo, ou cocher « Conserver les originaux »")
-    date = date or parse_exif_date(taken) or datetime.now()
+    shot = date or parse_exif_date(taken)
+    h = dhash(img)
+    if shot:  # sans date de prise de vue, pas de comparaison possible
+        similar = find_similar(h, shot)
+        if similar:
+            return similar, False
+    date = shot or datetime.now()
     name = f"{date:%Y%m%d-%H%M%S}_{digest}.jpg"
 
     thumb = img.copy()
@@ -134,6 +221,7 @@ def process(src, keep_original=False, original_name="", taken="", sig=""):
     # Miniature d'abord : la grille de l'admin ne voit jamais une photo sans miniature.
     save_jpeg_atomic(thumb, os.path.join(config.THUMBS_DIR, name), quality=80)
     save_jpeg_atomic(img, os.path.join(config.PHOTOS_DIR, name), quality=90)
+    remember_hash(name, h)
 
     if keep_original:
         ext = os.path.splitext(original_name)[1].lower() or ".bin"
@@ -148,6 +236,7 @@ def delete(name):
         return False
     places.remove(name)
     videos.delete(name)
+    forget_hash(name)
     config.forget_flags(name)
     found = False
     for path in (os.path.join(config.PHOTOS_DIR, name), os.path.join(config.THUMBS_DIR, name)):

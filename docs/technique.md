@@ -34,7 +34,6 @@ cahier des charges : [cahier-des-charges.md](cahier-des-charges.md) ; mise à jo
 ## Reste à faire / idées
 
 - Album iCloud : tester un lien de l'ancien format (`www.icloud.com/sharedalbum/#B0…`).
-- Doublons entre photos de l'admin et de l'album iCloud non détectés (réductions différentes).
 - Lieu : impossible pour les photos déjà envoyées sans position (WhatsApp, ou réduites avant
   cette fonction) ; il faut renvoyer les originaux.
 - Raspberry Pi Zero 2 W : démarrage ~3 fois plus rapide, 1080p envisageable.
@@ -373,6 +372,17 @@ roumain, russe, arabe et chinois (mandarin simplifié). Le texte français du co
   `i18n.plural_index` (et `pluralIndex` dans les pages).
 - Ajout ou changement d'un texte : `python tools/i18n_check.py` liste ce qui manque dans chaque
   langue ; les messages des services sont à déclarer dans sa liste `MESSAGES`.
+
+## Doublons
+
+Même fichier : empreinte du fichier (ou de la signature nom|taille|date du navigateur, ou de
+l'identifiant iCloud) dans le nom. Même photo dans deux fichiers différents (envoyée depuis le
+téléphone et arrivée par l'album) : empreinte visuelle dHash 64 bits (`hashes.json`), à
+10 bits d'écart au plus, et même date de prise de vue à 2 min près (`imaging.find_similar`).
+Une photo sans date de prise de vue n'est pas comparée. Le doublon n'est pas ajouté ; une
+photo de l'album déjà envoyée par l'admin est « adoptée » (`adopted` dans `icloud.json`) :
+elle n'est pas supprimée quand elle quitte l'album. Empreintes des photos plus anciennes
+calculées au démarrage de l'admin (une fois) ; doublons déjà présents signalés dans le journal.
 
 ## Vidéos
 
