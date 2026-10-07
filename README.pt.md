@@ -12,7 +12,11 @@ comando da televisão e atualiza-se à distância.
 
 
 
-Uploading cadre-photo-mode-d-emploi-pt.mp4…
+
+
+https://github.com/user-attachments/assets/38ade30c-4ee2-4553-86c4-8b9763bcd0fb
+
+
 
 
 
