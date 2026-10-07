@@ -10,7 +10,11 @@ album iCloud partajat pe care rama îl urmărește singură. Gândită pentru a 
 rude și apoi uitată: se conectează la Wi-Fi printr-un cod QR, se comandă cu telecomanda
 televizorului și se actualizează de la distanță.
 
-▶ [Vizionați videoclipul de prezentare (română)](docs/video/cadre-photo-mode-d-emploi-ro.mp4)
+
+
+Uploading cadre-photo-mode-d-emploi-ro.mp4…
+
+
 
 ## Ce știe să facă
 
