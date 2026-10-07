@@ -10,7 +10,11 @@ tomaron. La familia añade fotos desde el móvil, sin aplicación ni cuenta, o l
 olvidarse: se conecta al Wi-Fi con un código QR, se maneja con el mando de la tele y se
 actualiza a distancia.
 
-▶ [Ver el vídeo tutorial (español)](docs/video/cadre-photo-mode-d-emploi-es.mp4)
+
+
+https://github.com/user-attachments/assets/3c9c3b45-1680-46d4-b0f2-a077d93b124f
+
+
 
 ## Qué hace
 
