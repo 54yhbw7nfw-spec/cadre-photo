@@ -113,7 +113,7 @@ effet au redémarrage, protégée par `cadre-net-rollback`.
 
 Une vidéo par langue dans `docs/video/` : `cadre-photo-mode-d-emploi.mp4` (français) et
 `cadre-photo-mode-d-emploi-<langue>.mp4` (en, es, de, pt, ro, ru, ar, zh) ; copies de `build/video/…`,
-~5 min, 18 diapositives commentées, voix neuronales Microsoft via `edge-tts` (Denise, Sonia,
+~5 min, 19 diapositives commentées, voix neuronales Microsoft via `edge-tts` (Denise, Sonia,
 Elvira, Katja, Raquel, Alina, Svetlana, Zariyah, Xiaoxiao ; Internet requis). Pour les refaire, sur le PC, pour
 chaque langue :
 1. `python tools/video/shots.py http://<ip du cadre> build/video/shots-<langue> <langue>`

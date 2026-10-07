@@ -88,6 +88,14 @@ SLIDES = [
      "l'icône des personnes et activez Site web public. Copiez ensuite le lien et collez-le "
      "dans la page de gestion. Le cadre vérifie l'album toutes les trente minutes, et ses "
      "photos sont entourées d'orange dans la galerie."),
+    ("Les vidéos de l'album", ["shots/admin-photos.png"],
+     ["Vidéos de l'album iCloud (2 min au plus)", "Préparées à leur arrivée : quelques minutes",
+      "Réglages « Vidéos » et « Son des vidéos »", "Flèches : arrêt ; haut ou bas : pause"],
+     "Les vidéos de l'album iCloud passent aussi dans le diaporama, avec le son. Le cadre les "
+     "prépare à leur arrivée, ce qui prend quelques minutes ; en attendant, leur image "
+     "s'affiche comme une photo. Dans la galerie, un triangle les signale. Les réglages Vidéos "
+     "et Son des vidéos permettent de les couper. Pendant une vidéo, les flèches de la "
+     "télécommande l'arrêtent, et haut ou bas la met en pause."),
     ("Pendant le diaporama", ["screens/photo.png"],
      ["Lieu et date de prise de vue en bas à droite", "« Afficher la date », « Afficher le lieu »",
       "Lieu : photos d'iPhone et album iCloud (WhatsApp l'efface)"],
