@@ -10,7 +10,11 @@
 забыть о ней: она подключается к Wi-Fi по QR-коду, управляется пультом телевизора и обновляется
 удалённо.
 
-▶ [Смотреть видеоинструкцию (на русском)](docs/video/cadre-photo-mode-d-emploi-ru.mp4)
+
+
+https://github.com/user-attachments/assets/dd75dfeb-d6ef-40cb-b4d5-bc0db3209628
+
+
 
 ## Что она умеет
 
