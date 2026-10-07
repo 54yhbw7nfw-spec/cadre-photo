@@ -10,7 +10,11 @@ partilha-as num álbum do iCloud que a moldura acompanha sozinha. Pensada para s
 casa de um familiar e depois esquecida: liga-se ao Wi-Fi com um código QR, controla-se com o
 comando da televisão e atualiza-se à distância.
 
-▶ [Ver o vídeo de apresentação (português)](docs/video/cadre-photo-mode-d-emploi-pt.mp4)
+
+
+Uploading cadre-photo-mode-d-emploi-pt.mp4…
+
+
 
 ## O que faz
 
