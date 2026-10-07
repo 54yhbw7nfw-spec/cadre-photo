@@ -10,7 +10,11 @@ iCloud album that the frame follows on its own. Built to be set up at a relative
 forgotten: it joins the Wi-Fi through a QR code, is driven with the TV remote, and is updated
 remotely.
 
-▶ [Watch the video tutorial (English)](docs/video/cadre-photo-mode-d-emploi-en.mp4)
+
+
+Uploading cadre-photo-mode-d-emploi-en.mp4…
+
+
 
 ## What it does
 
